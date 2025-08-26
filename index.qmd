@@ -1,0 +1,10 @@
+---
+title: "ISSS626"
+---
+
+Welcome to ISSS626 Geospatial Analytics and Applications
+
+To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+
+```         
+```

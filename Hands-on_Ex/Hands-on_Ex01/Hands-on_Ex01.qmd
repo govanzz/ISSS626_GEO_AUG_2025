@@ -1,0 +1,20 @@
+---
+title: "Hands-on Exercise 1"
+author: "Gautamgovan"
+date: "Aug 20, 2025"
+date-modified: "last-modified"
+format: html
+execute: 
+  echo: true
+  eval: true
+  warning: false
+  freeze: true 
+---
+
+## Overview 
+
+wwww
+
+### Getting Started 
+
+xxxx
