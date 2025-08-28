@@ -3,7 +3,10 @@ title: "Hands-on Exercise 1"
 author: "Gautamgovan"
 date: "Aug 20, 2025"
 date-modified: "last-modified"
-format: html
+format: 
+  html:
+    toc: true
+    number-sections: true
 execute: 
   echo: true
   eval: true
@@ -11,10 +14,19 @@ execute:
   freeze: true 
 ---
 
-## Overview 
+## Overview
 
 wwww
 
-### Getting Started 
+### Getting Started
 
-xxxx
+Install and launching R packages
+
+The code chunk below uses p_load() of pacman package to check if sf and tidyverse packages are installed in the computer. If they are, then they will be launched into R.
+
+```{r}
+pacman::p_load(sf,tidyverse)
+```
+
+### Importing Geospatial data 
+

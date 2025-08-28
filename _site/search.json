@@ -18,13 +18,13 @@
     "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html",
     "title": "Hands-on Exercise 1",
     "section": "",
-    "text": "wwww\n\n\nxxxx"
+    "text": "wwww\n\n\nInstall and launching R packages\nThe code chunk below uses p_load() of pacman package to check if sf and tidyverse packages are installed in the computer. If they are, then they will be launched into R.\n\npacman::p_load(sf,tidyverse)"
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#overview",
     "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#overview",
     "title": "Hands-on Exercise 1",
     "section": "",
-    "text": "wwww\n\n\nxxxx"
+    "text": "wwww\n\n\nInstall and launching R packages\nThe code chunk below uses p_load() of pacman package to check if sf and tidyverse packages are installed in the computer. If they are, then they will be launched into R.\n\npacman::p_load(sf,tidyverse)"
   }
 ]
