@@ -319,10 +319,17 @@ title("Disc", line = 1)
 #### Computing KDE by using fixed bandwidth
 
 Next, we will compute a KDE layer by defining a bandwidth of 600 meter. Notice that in the code chunk below, the sigma value used is 0.6. This is because the unit of measurement of childcareSG_ppp_km object is in kilometer, hence the 600m is 0.6km.
+```{r}
+kde_childcareSG_fb <- density(childcareSG_ppp_km,
+                              sigma=0.6, 
+                              edge=TRUE,
+                              kernel="gaussian")
+plot(kde_childcareSG_fb)
+```
 
 ```{r}
 kde_childcareSG_ab <- adaptive.density(childcareSG_ppp_km,
-                                       sigma = bw.diggle,
+                                       sigma = 0.6,
                                        edge  = TRUE)
 par(mar = c(4, 4, 6, 2))  # more space at top
 plot(kde_childcareSG_ab, main = "Kernel Density of Childcare Services")
@@ -333,6 +340,7 @@ plot(kde_childcareSG_ab, main = "Kernel Density of Childcare Services")
 We can compare the fixed and adaptive kernel density estimation outputs by using the code chunk below.
 
 ```{r}
+#| label: babaoo
 par(mfrow=c(1,2))
 plot(kde_childcareSG_fb, main = "Fixed bandwidth")
 plot(kde_childcareSG_ab, main = "Adaptive bandwidth")
