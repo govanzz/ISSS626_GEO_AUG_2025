@@ -570,7 +570,7 @@ plot(density(childcare_jw_ppp.km,
      main = "Jurong West")
 
 ```
-##2nd Order Spatial Point Patterns Analysis Methods
+## 2nd Order Spatial Point Patterns Analysis Methods
 Second-order spatial point pattern analysis examines the spatial relationships between points in a pattern, specifically focusing on how the presence of one point influences the location of others. It goes beyond simply describing the overall density of points (first-order effects) by investigating clustering, dispersion, or randomness at various spatial scales.
 
 Using appropriate functions of [spatstat](https://cran.r-project.org/web/packages/spatstat/index.html), this hands-on exercise aims to discover the spatial point processes of childcare centres in Singapore.
