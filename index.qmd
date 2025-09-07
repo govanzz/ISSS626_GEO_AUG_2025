@@ -1,12 +1,58 @@
 ---
-title: "ISSS626"
+title: "ISSS626 – Geospatial Analytics and Applications"
+page-layout: full
+format:
+  html:
+    toc: false
+    css: styles.css
 ---
 
-Welcome to ISSS626 Geospatial Analytics and Applications
+<div class="welcome-row">
+  <section class="welcome-text">
+    <h2 id="welcome">Welcome</h2>
+    <p>This website hosts my coursework for <strong>ISSS626 – Geospatial Analytics and Applications</strong>.</p>
+    <ul>
+      <li>📝 Hands-on Exercises</li>
+      <li>🧾 Take-home Exercises (coming soon)</li>
+    </ul>
+  </section>
 
-In this website, you will find my coursework prepared for this course 
+  <figure class="welcome-fig">
+    <img src="images/World.png" alt="World map thumbnail">
+  </figure>
+</div>
 
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
 
-```         
-```
+
+## Contacts
+- **Email:** [gautamgovan@gmail.com](mailto:gautamgovan@gmail.com)
+- **LinkedIn:** <https://www.linkedin.com/in/gautamgovan-e>
+
+<style>
+/* Welcome section: text left, image in the red box area on the right */
+.welcome-row{
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  max-width: 1100px;     /* keeps it aligned with the page content */
+  margin: 0 auto 1.75rem;
+}
+.welcome-text{ flex: 2 1 560px; }
+.welcome-fig{
+  flex: 1 1 300px;
+  margin: 0;
+  text-align: center;
+}
+.welcome-fig img{
+  width: 100%;
+  max-width: 320px;      /* control the size in the box */
+  height: auto;
+  border-radius: 8px;
+}
+
+/* Stack nicely on small screens */
+@media (max-width: 900px){
+  .welcome-row{ flex-direction: column; }
+}
+
+</style>
