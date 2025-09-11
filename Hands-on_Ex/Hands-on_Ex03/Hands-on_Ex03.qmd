@@ -98,8 +98,93 @@ fire_sf <- fire_sf %>%
 
 ## Visualising the Fire Points
 
+### Overall plot
+```{r}
+tm_shape(kbb_sf)+
+  tm_polygons() +
+tm_shape(fire_sf) +
+  tm_dots()
+```
+### Visuaising geographic distribution of forest fires by month
+
+```{r}
+tm <- tm_shape(kbb_sf) + tm_polygons() +
+      tm_shape(fire_sf) + tm_dots(size = 0.08) +
+      tm_facets(by = "Month_fac", ncol = 3, free.coords = FALSE) +
+      tm_title("Distribution of Forest Fires in Kepulauan Bangka Belitung (by Month)") +
+      tm_layout(legend.show = FALSE, frame = FALSE)
+
+tm
 
 
+```
+## Computing STKDE by Month
+
+In this section, we will learn how to compute STKDE by using spattemp.density() of sparr package
+
+### Extracting forest fires by month
+
+The code chunk below is used to remove the unwanted fields from fire_sf sf data.frame. This is because as.ppp() only need the mark field and geometry field from the input sf data.frame.
+
+```{r}
+fire_month <- fire_sf %>% 
+  select(Month_num)
+```
+
+### Creating ppp
+The code chunk below is used to derive a ppp object called fire_month from fire_month sf data.frame.
+
+```{r}
+fire_month_ppp <- as.ppp(fire_month)
+fire_month_ppp
+```
+The code chunk below is used to check the output is in the correct object class.
+
+```{r}
+summary(fire_month_ppp)
+```
+Next, we will check if there are duplicated point events by using the code chunk below.
+
+```{r}
+any(duplicated(fire_month_ppp))
+```
+### Including Owin object
+
+The code chunk below is used to combine origin_am_ppp and am_owin objects into one.
+
+```{r}
+fire_month_owin <- fire_month_ppp[kbb_owin]
+summary(fire_month_owin)
+```
+```{r}
+plot(fire_month_owin)
+```
+### Computing Spatio-temporal KDE
+
+Next, spattemp.density() of sparr package is used to compute the STKDE.
+
+```{r}
+st_kde <- spattemp.density(fire_month_owin)
+summary(st_kde)
+```
+### Plotting the spatio-temporal KDE object
+
+In the code chunk below, plot() of R base is used to the KDE for between July 2023 - December 2023.
+
+```{r}
+tims <- c(7,8,9,10,11,12)
+par(mfcol=c(2,3))
+for(i in tims){ 
+  plot(st_kde, i, 
+       override.par=FALSE, 
+       fix.range=TRUE, 
+       main=paste("KDE at month",i))
+}
+```
+
+## Computing STKDE by Day of Year
+
+In this section, We will learn how to computer the STKDE of forest fires by day of year.
 
 
 
