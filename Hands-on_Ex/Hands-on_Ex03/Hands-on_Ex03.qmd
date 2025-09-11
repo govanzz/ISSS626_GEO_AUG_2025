@@ -13,8 +13,108 @@ execute:
   warning: false
   freeze: true 
 ---
-## Overview {.unnumbered}
+## Overview
 A spatio-temporal point process (also called space-time or spatial-temporal point process) is a random collection of points, where each point represents the time and location of an event. Examples of events include incidence of disease, sightings or births of a species, or the occurrences of fires, earthquakes, lightning strikes, tsunamis, or volcanic eruptions.
 
 The analysis of spatio-temporal point patterns is becoming increasingly necessary, given the rapid emergence of geographically and temporally indexed data in a wide range of fields. Several spatio-temporal point patterns analysis methods have been introduced and implemented in R in the last ten years. This chapter shows how various R packages can be combined to run a set of spatio-temporal point pattern analyses in a guided and intuitive way. A real world forest fire events in Kepulauan Bangka Belitung, Indonesia from 1st January 2023 to 31st December 2023 is used to illustrate the methods, procedures and interpretations.
+
+The specific questions we would like to answer are:
+
+- Are the locations of forest fire in Kepulauan Bangka Belitung spatial and spatio-temporally independent?
+- If the answer is **NO**, where and when do the observed forest fire locations tend to cluster?
+
+## Data 
+
+For the purpose of this exercise, two data sets will be used, they are:
+
+- **forestfires**, a CSV file providing locations of forest fires detected from the Moderate Resolution Imaging Spectroradiometer (MODIS) sensor data.  
+  The data are downloaded from [Fire Information for Resource Management System](https://firms.modaps.eosdis.nasa.gov/).  
+  
+
+- **Kepulauan_Bangka_Belitung**, an ESRI shapefile showing the sub-district (i.e. *kelurahan*) boundary of Kepulauan Bangka Belitung.  
+  The data set was downloaded from [Indonesia Geospatial](https://tanahair.indonesia.go.id/portal-web) portal.  
+  The original data covers the whole Indonesia. For the purpose of this exercise, only sub-districts within Kepulauan Bangka Belitung are extracted.
+  
+## Installing and Loading the R packages
+
+
+For the purpose of this study, six R packages will be used. They are:
+
+- **[sf](https://r-spatial.github.io/sf/)** – provides functions for importing, processing, and wrangling geospatial data.
+- **[raster](https://rspatial.org/raster/)** – for handling raster data in R.
+- **[spatstat](https://spatstat.org/)** – for performing Spatial Point Patterns Analysis such as `Kcross`, `Lcross`, etc.
+- **[sparr](https://cran.r-project.org/package=sparr)** – provides functions to estimate fixed and adaptive kernel-smoothed spatial relative risk surfaces via the density-ratio method and perform subsequent inference. Fixed-bandwidth spatiotemporal density and relative risk estimation is also supported.
+- **[tmap](https://cran.r-project.org/package=tmap)** – provides functions to produce cartographic quality thematic maps.
+- **[tidyverse](https://www.tidyverse.org/)** – a family of R packages that provide functions to perform common data science tasks including, but not limited to, data import, data transformation, data wrangling, and data visualisation.
+
+```{r}
+pacman::p_load(sf, terra, spatstat, sparr, tmap, tidyverse)
+```
+## Importing and Preparing Study Area
+
+### Importing study area
+
+```{r}
+
+kbb_sf <- st_read(
+  dsn   = "C:/govanzz/ISSS626_GEO_AUG_2025/Hands-on_Ex/Hands-on_Ex03/Data/geospatial",
+  layer = "Kepulauan_Bangka_Belitung"
+) %>%
+  st_union() %>%
+  st_zm(drop = TRUE, what = "ZM") %>%
+  st_transform(crs = 32748)   # WGS 84 / UTM zone 48S
+
+```
+### Converting OWIN
+Next, as.owin() is used to convert kbb into an owin object.
+
+```{r}
+kbb_owin <- as.owin(kbb_sf)
+kbb_owin
+```
+Next, class() is used to confirm if the output is indeed an owin object.
+```{r}
+class(kbb_owin)
+```
+## Importing and Preparing Forest Fire data
+
+Next, we will import the forest fire data set (i.e. forestfires.csv) into R environment.
+
+```{r}
+
+fire_sf <- read_csv("C:/govanzz/ISSS626_GEO_AUG_2025/Hands-on_Ex/Hands-on_Ex03/Data/aspatial/forestfires.csv") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+           crs = 4326) %>%
+  st_transform(crs = 32748)
+```
+```{r}
+fire_sf <- fire_sf %>% 
+  mutate(DayofYear = yday(acq_date)) %>%
+  mutate(Month_num = month(acq_date)) %>%
+  mutate(Month_fac = month(acq_date, 
+                           label = TRUE, 
+                           abbr = FALSE))
+```
+
+## Visualising the Fire Points
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
