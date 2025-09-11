@@ -173,21 +173,89 @@ In the code chunk below, plot() of R base is used to the KDE for between July 20
 
 ```{r}
 tims <- c(7,8,9,10,11,12)
-par(mfcol=c(2,3))
-for(i in tims){ 
-  plot(st_kde, i, 
-       override.par=FALSE, 
-       fix.range=TRUE, 
-       main=paste("KDE at month",i))
+par(mfcol=c(2,3), mar=c(3,3,2,1))  # add room for titles with mar()
+
+for(i in tims){
+  plot(st_kde, i,
+       override.par = FALSE,
+       fix.range = TRUE,
+       main = "")   # leave main empty
+  title(main = paste("KDE at month", i), cex.main = 0.9, line = 1)
 }
+
 ```
 
 ## Computing STKDE by Day of Year
 
 In this section, We will learn how to computer the STKDE of forest fires by day of year.
 
+###  Creating ppp object
+
+In the code chunk below, DayofYear field is included in the output ppp object.
+```{r}
+fire_yday_ppp <- fire_sf %>% 
+  select(DayofYear) %>%
+  as.ppp()
+```
+
+### Including Owin object
+
+Next, code chunk below is used to combine the ppp object and the owin object.
+
+```{r}
+fire_yday_owin <- fire_yday_ppp[kbb_owin]
+summary(fire_yday_owin)
+```
+
+### 
+
+```{r}
+kde_yday <- spattemp.density(
+  fire_yday_owin)
+summary(kde_yday)
+```
+```{r}
+plot(kde_yday)
+```
+
+## Computing STKDE by Day of Year: Improved method
+
+One of the nice function provides in sparr package is BOOT.spattemp(). It supports bandwidth selection for standalone spatiotemporal density/intensity based on bootstrap estimation of the MISE, providing an isotropic scalar spatial bandwidth and a scalar temporal bandwidth.
+
+Code chunk below uses BOOT.spattemp() to determine both the spatial bandwidth and the scalar temporal bandwidth.
+
+```{r}
+set.seed(1234)
+BOOT.spattemp(fire_yday_owin) 
+```
+### Computing spatio-temporal KDE
+
+Now, the STKDE will be derived by using h and lambda values derive in previous step.
+
+```{r}
+kde_yday <- spattemp.density(fire_yday_owin,
+                             h = 9000,
+                             lambda = 19)
+summary(kde_yday)
+```
+### Plotting the output spatio-temporal KDE
+
+plot() of sparr package is used to plot the output as shown below.
+
+```{r}
+# mid-month DOY for Jul–Dec
+tims <- c(196, 227, 258, 288, 319, 349)  # all within 10..352
+labs <- c("Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+par(mfcol = c(2,3), mar = c(3,3,2,1))
+for (j in seq_along(tims)) {
+  i <- tims[j]
+  plot(kde_yday, i, main = "", override.par = FALSE, fix.range = TRUE)
+  title(main = paste("KDE -", labs[j]), cex.main = 0.9, line = 1)
+}
 
 
+```
 
 
 
