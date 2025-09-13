@@ -1,0 +1,15 @@
+{
+  "hash": "fba461177c0cd364f15a684c9a59c620",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"In class 3 B\"\nauthor: \"Gautamgovan\"\ndate: \"September 13, 2025\"\ndate-modified: \"last-modified\"\nexecute: \n  eval: true\n  echo: true\n  warning: false\n  freeze: true\n---\n\n## Loading R Package\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(tidyverse,sf,tmap,httr)\n```\n:::\n\n\n## Importing ACRA data\n\n::: {.cell}\n\n```{.r .cell-code}\nfolder_path <- \"C:/govanzz/ISSS626_GEO_AUG_2025/In-class_Exercise/In-class_Ex03b/data/aspatial\"\nfile_list <- list.files(path = folder_path,\n                        pattern = \"^ACRA.*\\\\.csv$\",\n                        full.names = TRUE)\n\nacra_data <- file_list %>%\n  map_dfr(read_csv)\n```\n:::\n\n\n## Saving ACRA data\n\n::: {.cell}\n\n```{.r .cell-code}\nwrite_rds(acra_data, \"C:/govanzz/ISSS626_GEO_AUG_2025/In-class_Exercise/In-class_Ex03b/data/rds/acra_data.rds\")\n```\n:::\n\n\n## Tidying ACRA data \n\n::: {.cell}\n\n```{.r .cell-code}\nbiz_56111 <- acra_data %>%\n  select(1:24) %>%\n  filter(primary_ssic_code == 56111) %>%\n  rename(date = registration_incorporation_date) %>%\n  mutate(date = as.Date(date),\n         YEAR = year(date),\n         MONTH_NUM = month(date),\n         MONTH_ABBR = month(date,\n                            label = TRUE,\n                            abbr = TRUE)) %>%\n  mutate(\n    postal_code = str_pad(postal_code,\n                          width = 6, side = \"left\", pad = \"0\")) %>%\n  filter(YEAR==2025)\n```\n:::\n\n\n\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

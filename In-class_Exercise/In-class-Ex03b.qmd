@@ -1,0 +1,52 @@
+---
+title: "In class 3 B"
+author: "Gautamgovan"
+date: "September 13, 2025"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  freeze: true
+---
+
+## Loading R Package
+```{r}
+pacman::p_load(tidyverse,sf,tmap,httr)
+```
+
+## Importing ACRA data
+```{r}
+folder_path <- "C:/govanzz/ISSS626_GEO_AUG_2025/In-class_Exercise/In-class_Ex03b/data/aspatial"
+file_list <- list.files(path = folder_path,
+                        pattern = "^ACRA.*\\.csv$",
+                        full.names = TRUE)
+
+acra_data <- file_list %>%
+  map_dfr(read_csv)
+```
+
+## Saving ACRA data
+```{r}
+write_rds(acra_data, "C:/govanzz/ISSS626_GEO_AUG_2025/In-class_Exercise/In-class_Ex03b/data/rds/acra_data.rds")
+```
+
+## Tidying ACRA data 
+```{r}
+biz_56111 <- acra_data %>%
+  select(1:24) %>%
+  filter(primary_ssic_code == 56111) %>%
+  rename(date = registration_incorporation_date) %>%
+  mutate(date = as.Date(date),
+         YEAR = year(date),
+         MONTH_NUM = month(date),
+         MONTH_ABBR = month(date,
+                            label = TRUE,
+                            abbr = TRUE)) %>%
+  mutate(
+    postal_code = str_pad(postal_code,
+                          width = 6, side = "left", pad = "0")) %>%
+  filter(YEAR==2025)
+```
+
+
