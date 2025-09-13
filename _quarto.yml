@@ -13,6 +13,11 @@ website:
             href: "Hands-on_Ex/Hands-on_Ex02/Hands-on_Ex02.html"
           - text: "Hands-on Exercise 3"
             href: "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html"
+      - text: "In Class Exercise"
+        menu: 
+          - text: "In Class Exercise 3"
+            href: "In-class_Exercise/In-class_Ex03.html"
+      
     right: 
       - href: index.qmd
         text: Home
