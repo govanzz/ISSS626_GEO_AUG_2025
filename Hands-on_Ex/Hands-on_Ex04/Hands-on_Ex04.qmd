@@ -1,0 +1,16 @@
+---
+title: "Hands-on Exercise 4"
+author: "Gautamgovan"
+date: "Sep 17, 2025"
+date-modified: "last-modified"
+format: 
+  html:
+    toc: true
+    number-sections: true
+execute: 
+  echo: true
+  eval: true
+  warning: false
+  freeze: true 
+---
+
