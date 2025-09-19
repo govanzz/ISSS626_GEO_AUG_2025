@@ -27,3 +27,63 @@ Our workflow mirrors the point-pattern framework taught in class:
 - **Spatio-temporal analysis:** **STKDE** (monthly slices) to detect **emerging, persistent, and fading** clusters over the study window.
 
 The results are communicated through cartographic maps and concise figure captions  words , followed by a synthesis translating findings into **urban land-use and economic development implications**—e.g., infrastructure readiness, zoning flexibility, activation of under-served subzones, and monitoring of over-concentration risks.
+
+## The Data
+
+This study uses ACRA corporate entity registrations combined with reference layers and services to enable spatial and spatio-temporal analysis.
+
+### Data sources
+
+| Dataset Name | Description | Format | Provider | Notes |
+|---|---|---|---|---|
+| **ACRA – Information on Corporate Entities (A–Z, Others)** | All entity registrations. Used to extract new businesses by SSIC and date. | CSV (27 files) | data.gov.sg / ACRA | Split alphabetically: A–Z plus a 27th file for names starting with digits/symbols. |
+| **SSIC 2020** | Singapore Standard Industrial Classification; used to choose business types (2-/3-/5-digit). | CSV/XLSX | SingStat | We derive `ssic2`, `ssic3` and use `primary_ssic_code`. |
+| **OneMap Search API** | Geocoding service to convert postal codes to coordinates. | Web API | SLA / OneMap | Returns WGS84 (lat/lon). We transform to SVY21 (EPSG:3414). |
+| **Master Plan Subzones (MPSZ 2024)** | Administrative subzone polygons for aggregation and mapping. | GPKG/Shapefile | data.gov.sg / URA/SLA | Reprojected to SVY21 (EPSG:3414) for analysis. |
+
+### Fields used (ACRA)
+
+| Field | Meaning | Example |
+|---|---|---|
+| `uen` | Unique Entity Number (entity identifier) | 201912345K |
+| `entity_name` | Registered business name | ABC PTE. LTD. |
+| `registration_incorporation_date` | Registration date (YYYY-MM-DD) | 2025-03-14 |
+| `primary_ssic_code` | Primary SSIC code (2/3/4/5-digit) | 56111 |
+| `postal_code` | Registered postal code (should be 6 digits) | 018989 |
+| `entity_type` / `status` | Type/status if required for filtering | LIVE COMPANY |
+
+> Additional columns may exist in different ACRA dumps; we standardise names with `janitor::clean_names()` and coalesce equivalent fields where needed.
+
+### Study coverage
+
+- **Temporal window:** 1 Jan 2024 – 30 Jun 2025 (inclusive).  
+- **Spatial extent:** Singapore national boundary; mapping/aggregation by **subzone** and **planning area**.  
+- **Business scope:** At least **three** SSIC types (2- or 3-digit groups, or 5-digit subclasses), selected prior to analysis.
+
+### Pre-processing & wrangling (summary)
+
+- Read and row-bind **all 27 ACRA CSVs**; add `source_file` for provenance.  
+- Standardise fields: parse `registration_incorporation_date` as Date (UTC), derive `year`, `month`.  
+- **Postal code hygiene:** keep digits only, left-pad to 6; drop non-6-digit values before geocoding.  
+- **Deduplicate** by `uen` + `registration_incorporation_date` (if necessary).  
+- Filter to the target SSIC code set and to the study window.  
+- **Geocode** unique postal codes via OneMap; join `X`/`Y` back to ACRA records.  
+- Convert to `sf` (WGS84) → transform to **SVY21 (EPSG:3414)** for distance-based methods.  
+- Join subzone attributes; save intermediates as RDS for reproducibility.
+
+### Data quality & limitations
+
+- **Geocoding precision:** Postal codes resolve to building/entrance centroids, not unit-level; some industrial sites share codes.  
+- **Registration vs. operation:** Registration date ≠ opening date; counts reflect legal registrations.  
+- **Address anomalies:** Legacy/PO box or malformed postcodes may not geocode; these are excluded.  
+- **Classification drift:** SSIC codes can change over time; we use the recorded `primary_ssic_code` as-is.
+
+### Coordinate reference systems (CRS)
+
+- **Input:** WGS84 (EPSG:4326) from OneMap.  
+- **Analysis/Maps:** SVY21 / Singapore TM (EPSG:3414), metres, suitable for KDE and K-functions.
+
+### Ethical/usage notes
+
+- ACRA data contains **entity names** (public corporate info), not personal data.  
+- Results are aggregated for planning insights; avoid singling out individual firms.

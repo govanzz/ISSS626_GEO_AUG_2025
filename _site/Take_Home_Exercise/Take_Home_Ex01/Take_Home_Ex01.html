@@ -167,6 +167,16 @@ ul.task-list li input[type="checkbox"] {
    
   <ul>
   <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview"><span class="header-section-number">1</span> Overview</a></li>
+  <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data"><span class="header-section-number">2</span> The Data</a>
+  <ul class="collapse">
+  <li><a href="#data-sources" id="toc-data-sources" class="nav-link" data-scroll-target="#data-sources"><span class="header-section-number">2.1</span> Data sources</a></li>
+  <li><a href="#fields-used-acra" id="toc-fields-used-acra" class="nav-link" data-scroll-target="#fields-used-acra"><span class="header-section-number">2.2</span> Fields used (ACRA)</a></li>
+  <li><a href="#study-coverage" id="toc-study-coverage" class="nav-link" data-scroll-target="#study-coverage"><span class="header-section-number">2.3</span> Study coverage</a></li>
+  <li><a href="#pre-processing-wrangling-summary" id="toc-pre-processing-wrangling-summary" class="nav-link" data-scroll-target="#pre-processing-wrangling-summary"><span class="header-section-number">2.4</span> Pre-processing &amp; wrangling (summary)</a></li>
+  <li><a href="#data-quality-limitations" id="toc-data-quality-limitations" class="nav-link" data-scroll-target="#data-quality-limitations"><span class="header-section-number">2.5</span> Data quality &amp; limitations</a></li>
+  <li><a href="#coordinate-reference-systems-crs" id="toc-coordinate-reference-systems-crs" class="nav-link" data-scroll-target="#coordinate-reference-systems-crs"><span class="header-section-number">2.6</span> Coordinate reference systems (CRS)</a></li>
+  <li><a href="#ethicalusage-notes" id="toc-ethicalusage-notes" class="nav-link" data-scroll-target="#ethicalusage-notes"><span class="header-section-number">2.7</span> Ethical/usage notes</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -222,8 +232,173 @@ ul.task-list li input[type="checkbox"] {
 <li><strong>Spatio-temporal analysis:</strong> <strong>STKDE</strong> (monthly slices) to detect <strong>emerging, persistent, and fading</strong> clusters over the study window.</li>
 </ul>
 <p>The results are communicated through cartographic maps and concise figure captions words , followed by a synthesis translating findings into <strong>urban land-use and economic development implications</strong>—e.g., infrastructure readiness, zoning flexibility, activation of under-served subzones, and monitoring of over-concentration risks.</p>
+</section>
+<section id="the-data" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="the-data"><span class="header-section-number">2</span> The Data</h2>
+<p>This study uses ACRA corporate entity registrations combined with reference layers and services to enable spatial and spatio-temporal analysis.</p>
+<section id="data-sources" class="level3" data-number="2.1">
+<h3 data-number="2.1" class="anchored" data-anchor-id="data-sources"><span class="header-section-number">2.1</span> Data sources</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Dataset Name</th>
+<th>Description</th>
+<th>Format</th>
+<th>Provider</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>ACRA – Information on Corporate Entities (A–Z, Others)</strong></td>
+<td>All entity registrations. Used to extract new businesses by SSIC and date.</td>
+<td>CSV (27 files)</td>
+<td>data.gov.sg / ACRA</td>
+<td>Split alphabetically: A–Z plus a 27th file for names starting with digits/symbols.</td>
+</tr>
+<tr class="even">
+<td><strong>SSIC 2020</strong></td>
+<td>Singapore Standard Industrial Classification; used to choose business types (2-/3-/5-digit).</td>
+<td>CSV/XLSX</td>
+<td>SingStat</td>
+<td>We derive <code>ssic2</code>, <code>ssic3</code> and use <code>primary_ssic_code</code>.</td>
+</tr>
+<tr class="odd">
+<td><strong>OneMap Search API</strong></td>
+<td>Geocoding service to convert postal codes to coordinates.</td>
+<td>Web API</td>
+<td>SLA / OneMap</td>
+<td>Returns WGS84 (lat/lon). We transform to SVY21 (EPSG:3414).</td>
+</tr>
+<tr class="even">
+<td><strong>Master Plan Subzones (MPSZ 2024)</strong></td>
+<td>Administrative subzone polygons for aggregation and mapping.</td>
+<td>GPKG/Shapefile</td>
+<td>data.gov.sg / URA/SLA</td>
+<td>Reprojected to SVY21 (EPSG:3414) for analysis.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="fields-used-acra" class="level3" data-number="2.2">
+<h3 data-number="2.2" class="anchored" data-anchor-id="fields-used-acra"><span class="header-section-number">2.2</span> Fields used (ACRA)</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 33%">
+<col style="width: 33%">
+<col style="width: 33%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Field</th>
+<th>Meaning</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>uen</code></td>
+<td>Unique Entity Number (entity identifier)</td>
+<td>201912345K</td>
+</tr>
+<tr class="even">
+<td><code>entity_name</code></td>
+<td>Registered business name</td>
+<td>ABC PTE. LTD.</td>
+</tr>
+<tr class="odd">
+<td><code>registration_incorporation_date</code></td>
+<td>Registration date (YYYY-MM-DD)</td>
+<td>2025-03-14</td>
+</tr>
+<tr class="even">
+<td><code>primary_ssic_code</code></td>
+<td>Primary SSIC code (2/3/4/5-digit)</td>
+<td>56111</td>
+</tr>
+<tr class="odd">
+<td><code>postal_code</code></td>
+<td>Registered postal code (should be 6 digits)</td>
+<td>018989</td>
+</tr>
+<tr class="even">
+<td><code>entity_type</code> / <code>status</code></td>
+<td>Type/status if required for filtering</td>
+<td>LIVE COMPANY</td>
+</tr>
+</tbody>
+</table>
+<blockquote class="blockquote">
+<p>Additional columns may exist in different ACRA dumps; we standardise names with <code>janitor::clean_names()</code> and coalesce equivalent fields where needed.</p>
+</blockquote>
+</section>
+<section id="study-coverage" class="level3" data-number="2.3">
+<h3 data-number="2.3" class="anchored" data-anchor-id="study-coverage"><span class="header-section-number">2.3</span> Study coverage</h3>
+<ul>
+<li><strong>Temporal window:</strong> 1 Jan 2024 – 30 Jun 2025 (inclusive).<br>
+</li>
+<li><strong>Spatial extent:</strong> Singapore national boundary; mapping/aggregation by <strong>subzone</strong> and <strong>planning area</strong>.<br>
+</li>
+<li><strong>Business scope:</strong> At least <strong>three</strong> SSIC types (2- or 3-digit groups, or 5-digit subclasses), selected prior to analysis.</li>
+</ul>
+</section>
+<section id="pre-processing-wrangling-summary" class="level3" data-number="2.4">
+<h3 data-number="2.4" class="anchored" data-anchor-id="pre-processing-wrangling-summary"><span class="header-section-number">2.4</span> Pre-processing &amp; wrangling (summary)</h3>
+<ul>
+<li>Read and row-bind <strong>all 27 ACRA CSVs</strong>; add <code>source_file</code> for provenance.<br>
+</li>
+<li>Standardise fields: parse <code>registration_incorporation_date</code> as Date (UTC), derive <code>year</code>, <code>month</code>.<br>
+</li>
+<li><strong>Postal code hygiene:</strong> keep digits only, left-pad to 6; drop non-6-digit values before geocoding.<br>
+</li>
+<li><strong>Deduplicate</strong> by <code>uen</code> + <code>registration_incorporation_date</code> (if necessary).<br>
+</li>
+<li>Filter to the target SSIC code set and to the study window.<br>
+</li>
+<li><strong>Geocode</strong> unique postal codes via OneMap; join <code>X</code>/<code>Y</code> back to ACRA records.<br>
+</li>
+<li>Convert to <code>sf</code> (WGS84) → transform to <strong>SVY21 (EPSG:3414)</strong> for distance-based methods.<br>
+</li>
+<li>Join subzone attributes; save intermediates as RDS for reproducibility.</li>
+</ul>
+</section>
+<section id="data-quality-limitations" class="level3" data-number="2.5">
+<h3 data-number="2.5" class="anchored" data-anchor-id="data-quality-limitations"><span class="header-section-number">2.5</span> Data quality &amp; limitations</h3>
+<ul>
+<li><strong>Geocoding precision:</strong> Postal codes resolve to building/entrance centroids, not unit-level; some industrial sites share codes.<br>
+</li>
+<li><strong>Registration vs.&nbsp;operation:</strong> Registration date ≠ opening date; counts reflect legal registrations.<br>
+</li>
+<li><strong>Address anomalies:</strong> Legacy/PO box or malformed postcodes may not geocode; these are excluded.<br>
+</li>
+<li><strong>Classification drift:</strong> SSIC codes can change over time; we use the recorded <code>primary_ssic_code</code> as-is.</li>
+</ul>
+</section>
+<section id="coordinate-reference-systems-crs" class="level3" data-number="2.6">
+<h3 data-number="2.6" class="anchored" data-anchor-id="coordinate-reference-systems-crs"><span class="header-section-number">2.6</span> Coordinate reference systems (CRS)</h3>
+<ul>
+<li><strong>Input:</strong> WGS84 (EPSG:4326) from OneMap.<br>
+</li>
+<li><strong>Analysis/Maps:</strong> SVY21 / Singapore TM (EPSG:3414), metres, suitable for KDE and K-functions.</li>
+</ul>
+</section>
+<section id="ethicalusage-notes" class="level3" data-number="2.7">
+<h3 data-number="2.7" class="anchored" data-anchor-id="ethicalusage-notes"><span class="header-section-number">2.7</span> Ethical/usage notes</h3>
+<ul>
+<li>ACRA data contains <strong>entity names</strong> (public corporate info), not personal data.<br>
+</li>
+<li>Results are aggregated for planning insights; avoid singling out individual firms.</li>
+</ul>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
