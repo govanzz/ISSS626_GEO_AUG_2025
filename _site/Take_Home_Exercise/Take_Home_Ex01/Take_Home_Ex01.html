@@ -161,8 +161,14 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview"><span class="header-section-number">1</span> Overview</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -193,7 +199,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">September 19, 2025</p>
+      <p class="date-modified">September 20, 2025</p>
     </div>
   </div>
     
@@ -204,8 +210,21 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
+<section id="overview" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="overview"><span class="header-section-number">1</span> Overview</h2>
+<p>This take-home exercise investigates the <strong>spatial</strong> (“where”) and <strong>spatio-temporal</strong> (“where + when”) patterns of <strong>new business registrations in Singapore</strong> between <strong>1 Jan 2024 and 30 Jun 2025</strong>. Using the ACRA “Information on Corporate Entities” datasets and SSIC 2020 classifications, we select at least <strong>three business types</strong> (2- or 3-digit SSIC) and analyse how their locations and intensities evolve over time.</p>
+<p>Our workflow mirrors the point-pattern framework taught in class:</p>
+<ul>
+<li><strong>Data wrangling &amp; geocoding:</strong> tidy ACRA records, standardise dates/SSIC codes, and geocode by postal code via OneMap; convert to <code>sf</code> with SVY21 (EPSG:3414).</li>
+<li><strong>Exploratory mapping:</strong> counts by subzone/planning area to establish baseline patterns.</li>
+<li><strong>First-order analysis (intensity):</strong> <strong>Kernel Density Estimation (KDE)</strong> to reveal spatial hot spots for each SSIC and period.</li>
+<li><strong>Second-order analysis (dependence):</strong> <strong>Ripley’s K / CSR envelopes</strong> to test whether registrations are clustered, random, or dispersed.</li>
+<li><strong>Spatio-temporal analysis:</strong> <strong>STKDE</strong> (monthly slices) to detect <strong>emerging, persistent, and fading</strong> clusters over the study window.</li>
+</ul>
+<p>The results are communicated through cartographic maps and concise figure captions words , followed by a synthesis translating findings into <strong>urban land-use and economic development implications</strong>—e.g., infrastructure readiness, zoning flexibility, activation of under-served subzones, and monitoring of over-concentration risks.</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
