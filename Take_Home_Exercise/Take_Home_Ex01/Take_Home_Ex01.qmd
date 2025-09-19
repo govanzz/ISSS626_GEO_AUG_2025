@@ -3,9 +3,27 @@ title: "Take Home Exercise 1"
 author: "Gautamgovan"
 date: "September 13, 2025"
 date-modified: "last-modified"
+format: 
+  html:
+    toc: true
+    number-sections: true
 execute: 
   eval: true
   echo: true
   warning: false
   freeze: true
 ---
+
+## Overview 
+
+This take-home exercise investigates the **spatial** (“where”) and **spatio-temporal** (“where + when”) patterns of **new business registrations in Singapore** between **1 Jan 2024 and 30 Jun 2025**. Using the ACRA “Information on Corporate Entities” datasets and SSIC 2020 classifications, we select at least **three business types** (2- or 3-digit SSIC) and analyse how their locations and intensities evolve over time.
+
+Our workflow mirrors the point-pattern framework taught in class:
+
+- **Data wrangling & geocoding:** tidy ACRA records, standardise dates/SSIC codes, and geocode by postal code via OneMap; convert to `sf` with SVY21 (EPSG:3414).
+- **Exploratory mapping:** counts by subzone/planning area to establish baseline patterns.
+- **First-order analysis (intensity):** **Kernel Density Estimation (KDE)** to reveal spatial hot spots for each SSIC and period.
+- **Second-order analysis (dependence):** **Ripley’s K / CSR envelopes** to test whether registrations are clustered, random, or dispersed.
+- **Spatio-temporal analysis:** **STKDE** (monthly slices) to detect **emerging, persistent, and fading** clusters over the study window.
+
+The results are communicated through cartographic maps and concise figure captions  words , followed by a synthesis translating findings into **urban land-use and economic development implications**—e.g., infrastructure readiness, zoning flexibility, activation of under-served subzones, and monitoring of over-concentration risks.
