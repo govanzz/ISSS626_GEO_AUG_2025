@@ -220,6 +220,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#data-wrangling" id="toc-data-wrangling" class="nav-link" data-scroll-target="#data-wrangling"><span class="header-section-number">4</span> Data Wrangling</a>
   <ul class="collapse">
   <li><a href="#preparing-the-subzone-boundary-why-how" id="toc-preparing-the-subzone-boundary-why-how" class="nav-link" data-scroll-target="#preparing-the-subzone-boundary-why-how"><span class="header-section-number">4.1</span> Preparing the Subzone Boundary (why &amp; how)</a></li>
+  <li><a href="#load-tidy-acra" id="toc-load-tidy-acra" class="nav-link" data-scroll-target="#load-tidy-acra"><span class="header-section-number">4.2</span> Load &amp; Tidy Acra</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -458,8 +459,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  gtsummary,   <span class="co"># summary tables </span></span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  dplyr,</span>
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  janitor,</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  stringr</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  stringr,</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  readr,</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  purrr</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="data-wrangling" class="level2" data-number="4">
@@ -512,6 +515,14 @@ Writing layer `subzones' to data source
   `data/geospatial/mpsz_subzones_2019_nosea.gpkg' using driver `GPKG'
 Writing 332 features with 9 fields and geometry type Unknown (any).</code></pre>
 </div>
+</div>
+</section>
+<section id="load-tidy-acra" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="load-tidy-acra"><span class="header-section-number">4.2</span> Load &amp; Tidy Acra</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>aspatial_dir <span class="ot">&lt;-</span> <span class="st">"data/aspatial"</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>rds_dir      <span class="ot">&lt;-</span> <span class="st">"data/rds"</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(rds_dir, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 

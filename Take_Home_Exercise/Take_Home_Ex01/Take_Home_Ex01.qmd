@@ -105,7 +105,9 @@ pacman::p_load(
   gtsummary,   # summary tables 
   dplyr,
   janitor,
-  stringr
+  stringr,
+  readr,
+  purrr
 )
 ```
 ## Data Wrangling 
@@ -157,7 +159,13 @@ subzones_std <- subzones %>%
 st_write(subzones_std, "data/geospatial/mpsz_subzones_2019_nosea.gpkg",
          layer = "subzones", delete_dsn = TRUE)
 ```
+### Load & Tidy Acra 
 
+```{r}
+aspatial_dir <- "data/aspatial"
+rds_dir      <- "data/rds"
+dir.create(rds_dir, showWarnings = FALSE, recursive = TRUE)
+```
 
 
 
