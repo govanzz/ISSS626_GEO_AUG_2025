@@ -165,7 +165,214 @@ st_write(subzones_std, "data/geospatial/mpsz_subzones_2019_nosea.gpkg",
 aspatial_dir <- "data/aspatial"
 rds_dir      <- "data/rds"
 dir.create(rds_dir, showWarnings = FALSE, recursive = TRUE)
+file_list <- list.files(aspatial_dir, pattern = "^ACRA.*\\.csv$", full.names = TRUE)
+
+acra_raw <- file_list |>
+  map_dfr(~ read_csv(.x, show_col_types = FALSE)) |>
+  clean_names()
+
+# 2) Tidy dates, SSIC, postal codes; derive time fields; filter study window
+acra_tidy <- acra_raw |>
+  mutate(
+    reg_date  = as.Date(registration_incorporation_date),
+    year      = year(reg_date),
+    month_num = month(reg_date),
+    month     = month(reg_date, label = TRUE, abbr = TRUE),
+
+    # keep only digits in postal_code; left-pad to 6
+    postal_code = postal_code |>
+      str_replace_all("[^0-9]", "") |>
+      str_pad(width = 6, side = "left", pad = "0"),
+
+    # normalise primary SSIC to 5 chars, and derive 2-/3-digit prefixes
+    primary_ssic_code = str_pad(str_sub(primary_ssic_code, 1, 5), 5, pad = "0"),
+    ssic2 = str_sub(primary_ssic_code, 1, 2),
+    ssic3 = str_sub(primary_ssic_code, 1, 3)
+  ) |>
+  filter(!is.na(reg_date),
+         reg_date >= as.Date("2024-01-01"),
+         reg_date <= as.Date("2025-06-30"))
+```
+### Select the 3 Industries 
+Choosing the three industries
+
+The assignment requires at least three business types. We select broad, policy-relevant **2-digit SSIC** groups that span consumer, knowledge, and logistics activities:
+
+- **56 — Food & Beverage Service Activities** (restaurants, cafés, bars)  
+- **62 — Computer programming, IT consultancy & related activities**  
+- **52 — Warehousing & support activities for transportation**  
+
+In the code below, we:
+
+1. **Build** a small lookup to attach readable sector labels to each 2-digit SSIC.  
+2. **Filter** the cleaned ACRA records to these codes.  
+3. **Produce** a quick *sector × year* table to sanity-check sample sizes for 2024 and 2025.  
+
+
+
+```{r}
+# 56 = Food & Beverage, 62 = Information Technology, 52 = Warehousing & support activities for transport
+targets <- tibble(
+  ssic2 = c("56", "62", "52"),
+  sector = c("F&B (56)", "IT (62)", "Logistics/Warehousing (52)")
+)
+
+biz_sel <- acra_tidy |>
+  filter(ssic2 %in% targets$ssic2) |>
+  left_join(targets, by = "ssic2")
+
+table(biz_sel$sector, biz_sel$year)
+```
+### Geocode unique postcodes with OneMap 
+
+```{r}
+#| label: geo code chunk 
+#| echo: true
+#| eval: false
+# Helper that hits OneMap Search API for one postcode
+onemap_lookup <- function(pc){
+  res <- GET("https://onemap.gov.sg/api/common/elastic/search",
+             query = list(searchVal = pc, returnGeom = "Y", getAddrDetails = "Y", pageNum = "1"))
+  js <- content(res)
+  if (!is.null(js$found) && js$found > 0) {
+    r <- js$results[[1]]
+    tibble(POSTAL = r$POSTAL, X = as.numeric(r$X), Y = as.numeric(r$Y))
+  } else {
+    tibble(POSTAL = pc, X = NA_real_, Y = NA_real_)
+  }
+}
+
+# Geocode unique postcodes
+pcs <- biz_sel$postal_code |> unique()
+geo_tbl <- map_dfr(pcs, ~ tryCatch(onemap_lookup(.x), error = function(e)
+  tibble(POSTAL = .x, X = NA_real_, Y = NA_real_)))
+
+# Join back and keep geocoded rows
+biz_geo <- biz_sel |>
+  left_join(geo_tbl, by = c("postal_code" = "POSTAL")) |>
+  filter(!is.na(X), !is.na(Y))
 ```
 
+### Convert to sf, project to SVY21, and join subzones
+```{r}
+#| label: make-sf-and-join
+#| echo: true
+#| eval: false
+biz_pts <- st_as_sf(biz_geo, coords = c("X","Y"), crs = 4326) |>
+  st_transform(3414) |>
+  st_join(subzones_std |> dplyr::select(SUBZONE_N, PLN_AREA_N), left = TRUE)
 
+# Save intermediates for fast reload
+write_rds(acra_tidy, file.path(rds_dir, "acra_tidy_2024H1_2025H1.rds"))
+write_rds(biz_pts,  file.path(rds_dir, "biz_points_geocoded.rds"))
+```
+### Load precomputed outputs
+```{r}
+#| label: load-precomputed
+#| echo: true
+#| eval: true
+#| message: false
+#| warning: false
+
+acra_tidy <- readr::read_rds(file.path(rds_dir, "acra_tidy_2024H1_2025H1.rds"))
+biz_pts   <- readr::read_rds(file.path(rds_dir, "biz_points_geocoded.rds"))
+
+```
+
+### Quick sanity check 
+#### counts, CRS, validity
+```{r}
+#| label: qc-basic
+#| message: false
+#| warning: false
+
+# Expect these to exist from earlier chunks:
+stopifnot(exists("subzones_std"), exists("biz_pts"))
+
+# Basic shapes
+nrow(subzones_std); nrow(biz_pts)
+
+# CRS should be SVY21 / EPSG:3414
+st_crs(subzones_std)$epsg
+st_crs(biz_pts)$epsg
+
+# Any invalid geometries?
+all(st_is_valid(subzones_std))
+all(st_is_valid(biz_pts))
+
+# Any missing coordinates?
+sum(is.na(st_coordinates(biz_pts)[,1]))
+sum(is.na(st_coordinates(biz_pts)[,2]))
+
+# Quick distribution check
+biz_pts |>
+  st_drop_geometry() |>
+  count(sector, year, name = "n") |>
+  arrange(sector, year)
+```
+#### Are points inside Singapore subzones?
+```{r}
+#| label: qc-coverage
+#| echo: true
+#| eval: false
+inside <- st_intersects(biz_pts, subzones_std, sparse = TRUE)
+mean(lengths(inside) > 0)   # share of points that fall in a subzone (expect ~1)
+```
+we find that intersects results in 0 which means some thing went wrong somewhere
+therefore we rectify this in the next Sub section 
+
+#### Rebuild the sf points with the correct CRS directly (no transform)
+```{r}
+#| echo: true
+#| eval: false
+# X/Y from OneMap are already SVY21 metres → set crs = 3414 and DO NOT transform
+biz_pts <- st_as_sf(biz_geo, coords = c("X","Y"), crs = 3414) |>
+  st_join(subzones_std |> dplyr::select(SUBZONE_N, PLN_AREA_N), left = TRUE)
+
+# Quick sanity
+stopifnot(st_crs(biz_pts)$epsg == 3414)
+mean(lengths(st_intersects(biz_pts, subzones_std)) > 0)  # should be ~1
+
+# Overwrite the saved file
+write_rds(biz_pts, file.path(rds_dir, "biz_points_geocoded.rds"))
+```
+
+#### Load precomputed outputs again
+```{r}
+#| label: reload_load-precomputed
+#| echo: true
+#| eval: true
+#| message: false
+#| warning: false
+
+acra_tidy <- readr::read_rds(file.path(rds_dir, "acra_tidy_2024H1_2025H1.rds"))
+biz_pts   <- readr::read_rds(file.path(rds_dir, "biz_points_geocoded.rds"))
+
+```
+#### Quick Check again
+```{r}
+
+#| label: qc-rebuild-using-biz-pts
+#| eval: true
+# Coordinate ranges in SVY21 metres
+coords <- sf::st_coordinates(biz_pts)
+summary(coords)
+
+# Validity + missing checks
+all(sf::st_is_valid(biz_pts))
+sum(is.na(coords[,1]))
+sum(is.na(coords[,2]))
+
+# Coverage inside subzones
+inside <- sf::st_intersects(biz_pts, subzones_std, sparse = TRUE)
+mean(lengths(inside) > 0)   # should be ~1
+```
+Now intersects() does leave 1 which means all points are in Singapore
+
+#### Quick Map 
+```{r}
+tmap_mode("plot")
+tm_shape(subzones_std) + tm_polygons(col = "grey90", border.col = "white") +
+tm_shape(biz_pts) + tm_dots(size = 0.02, alpha = 0.5)
+```
 
