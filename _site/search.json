@@ -334,5 +334,19 @@
     "title": "ISSS626 – Geospatial Analytics and Applications",
     "section": "Contacts",
     "text": "Contacts\n\nEmail: gautamgovan@gmail.com\nLinkedIn: https://www.linkedin.com/in/gautamgovan-e"
+  },
+  {
+    "objectID": "Take_Home_Exercise/Take_Home_Ex01/Take_Home_Ex01.html#load-packages",
+    "href": "Take_Home_Exercise/Take_Home_Ex01/Take_Home_Ex01.html#load-packages",
+    "title": "Take Home Exercise 1",
+    "section": "3 Load Packages",
+    "text": "3 Load Packages\nFollowing code chunk is used to load neccessary packages\n\npacman::p_load(\n  tidyverse,   # dplyr/readr/purrr/stringr\n  sf, tmap,    # geospatial + mapping\n  httr,        # OneMap API calls\n  lubridate,   # year(), month(), etc.\n  spatstat,    # KDE, K-function, CSR (monolithic ok)\n  spNetwork,   # network KDE (optional/bonus)\n  sparr,       # relative risk (optional/bonus)\n  plotly,      # interactive plots (optional)\n  gtsummary,   # summary tables \n  dplyr,\n  janitor,\n  stringr\n)"
+  },
+  {
+    "objectID": "Take_Home_Exercise/Take_Home_Ex01/Take_Home_Ex01.html#data-wrangling",
+    "href": "Take_Home_Exercise/Take_Home_Ex01/Take_Home_Ex01.html#data-wrangling",
+    "title": "Take Home Exercise 1",
+    "section": "4 Data Wrangling",
+    "text": "4 Data Wrangling\n\n4.1 Preparing the Subzone Boundary (why & how)\nThis chunk converts URA’s Master Plan Subzone (No Sea) GeoJSON into a clean, projected GeoPackage with consistent field names. We use it as: 1) the analysis window for point-pattern methods, and\n2) the join layer to aggregate new businesses by subzone/planning area. Extract data for planning\n\nsz_raw_path &lt;- \"data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson\"\n\nsubzones &lt;- st_read(sz_raw_path, quiet = TRUE) %&gt;%\n  clean_names() %&gt;%                 # lower_case_names\n  st_make_valid() %&gt;%               # fix any tiny geometry issues\n  st_transform(3414)                # SVY21 metres (needed for KDE/K-functions)\n\nStandardise key attribute names\n\n# Helper: extract a field value from the HTML in `description`\nextract_field &lt;- function(html, key){\n  m &lt;- str_match(html, paste0(\"&lt;th&gt;\", key, \"&lt;/th&gt;\\\\s*&lt;td&gt;([^&lt;]*)&lt;/td&gt;\"))\n  val &lt;- m[, 2]\n  val &lt;- ifelse(is.na(val) | val == \"\", NA_character_, str_squish(val))\n  return(val)\n}\n\nsubzones_std &lt;- subzones %&gt;%\n  mutate(\n    SUBZONE_NO = as.integer(extract_field(description, \"SUBZONE_NO\")),\n    SUBZONE_N  = extract_field(description, \"SUBZONE_N\"),\n    SUBZONE_C  = extract_field(description, \"SUBZONE_C\"),\n    CA_IND     = extract_field(description, \"CA_IND\"),\n    PLN_AREA_N = extract_field(description, \"PLN_AREA_N\"),\n    PLN_AREA_C = extract_field(description, \"PLN_AREA_C\"),\n    REGION_N   = extract_field(description, \"REGION_N\"),\n    REGION_C   = extract_field(description, \"REGION_C\"),\n    FMEL_UPD_D = extract_field(description, \"FMEL_UPD_D\")\n  ) %&gt;%\n  select(SUBZONE_NO, SUBZONE_N, SUBZONE_C, CA_IND,\n         PLN_AREA_N, PLN_AREA_C, REGION_N, REGION_C, FMEL_UPD_D, geometry) %&gt;%\n  st_make_valid() %&gt;%\n  st_transform(3414)\n\n# save a clean, fast-to-load copy\nst_write(subzones_std, \"data/geospatial/mpsz_subzones_2019_nosea.gpkg\",\n         layer = \"subzones\", delete_dsn = TRUE)\n\nDeleting source `data/geospatial/mpsz_subzones_2019_nosea.gpkg' using driver `GPKG'\nWriting layer `subzones' to data source \n  `data/geospatial/mpsz_subzones_2019_nosea.gpkg' using driver `GPKG'\nWriting 332 features with 9 fields and geometry type Unknown (any)."
   }
 ]

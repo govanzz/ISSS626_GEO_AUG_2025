@@ -87,3 +87,77 @@ This study uses ACRA corporate entity registrations combined with reference laye
 
 - ACRA data contains **entity names** (public corporate info), not personal data.  
 - Results are aggregated for planning insights; avoid singling out individual firms.
+
+## Load Packages
+
+Following code chunk is used to load neccessary packages 
+
+```{r}
+pacman::p_load(
+  tidyverse,   # dplyr/readr/purrr/stringr
+  sf, tmap,    # geospatial + mapping
+  httr,        # OneMap API calls
+  lubridate,   # year(), month(), etc.
+  spatstat,    # KDE, K-function, CSR (monolithic ok)
+  spNetwork,   # network KDE (optional/bonus)
+  sparr,       # relative risk (optional/bonus)
+  plotly,      # interactive plots (optional)
+  gtsummary,   # summary tables 
+  dplyr,
+  janitor,
+  stringr
+)
+```
+## Data Wrangling 
+### Preparing the Subzone Boundary (why & how)
+
+This chunk converts URA’s **Master Plan Subzone (No Sea)** GeoJSON into a clean, projected **GeoPackage** with consistent field names. We use it as:
+1) the **analysis window** for point-pattern methods, and  
+2) the **join layer** to aggregate new businesses by subzone/planning area.
+Extract data for planning 
+
+
+```{r}
+sz_raw_path <- "data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson"
+
+subzones <- st_read(sz_raw_path, quiet = TRUE) %>%
+  clean_names() %>%                 # lower_case_names
+  st_make_valid() %>%               # fix any tiny geometry issues
+  st_transform(3414)                # SVY21 metres (needed for KDE/K-functions)
+```
+
+Standardise key attribute names 
+```{r}
+# Helper: extract a field value from the HTML in `description`
+extract_field <- function(html, key){
+  m <- str_match(html, paste0("<th>", key, "</th>\\s*<td>([^<]*)</td>"))
+  val <- m[, 2]
+  val <- ifelse(is.na(val) | val == "", NA_character_, str_squish(val))
+  return(val)
+}
+
+subzones_std <- subzones %>%
+  mutate(
+    SUBZONE_NO = as.integer(extract_field(description, "SUBZONE_NO")),
+    SUBZONE_N  = extract_field(description, "SUBZONE_N"),
+    SUBZONE_C  = extract_field(description, "SUBZONE_C"),
+    CA_IND     = extract_field(description, "CA_IND"),
+    PLN_AREA_N = extract_field(description, "PLN_AREA_N"),
+    PLN_AREA_C = extract_field(description, "PLN_AREA_C"),
+    REGION_N   = extract_field(description, "REGION_N"),
+    REGION_C   = extract_field(description, "REGION_C"),
+    FMEL_UPD_D = extract_field(description, "FMEL_UPD_D")
+  ) %>%
+  select(SUBZONE_NO, SUBZONE_N, SUBZONE_C, CA_IND,
+         PLN_AREA_N, PLN_AREA_C, REGION_N, REGION_C, FMEL_UPD_D, geometry) %>%
+  st_make_valid() %>%
+  st_transform(3414)
+
+# save a clean, fast-to-load copy
+st_write(subzones_std, "data/geospatial/mpsz_subzones_2019_nosea.gpkg",
+         layer = "subzones", delete_dsn = TRUE)
+```
+
+
+
+

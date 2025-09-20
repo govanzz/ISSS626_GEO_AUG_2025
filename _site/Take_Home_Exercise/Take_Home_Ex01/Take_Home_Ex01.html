@@ -22,6 +22,41 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
@@ -181,6 +216,11 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#coordinate-reference-systems-crs" id="toc-coordinate-reference-systems-crs" class="nav-link" data-scroll-target="#coordinate-reference-systems-crs"><span class="header-section-number">2.6</span> Coordinate reference systems (CRS)</a></li>
   <li><a href="#ethicalusage-notes" id="toc-ethicalusage-notes" class="nav-link" data-scroll-target="#ethicalusage-notes"><span class="header-section-number">2.7</span> Ethical/usage notes</a></li>
   </ul></li>
+  <li><a href="#load-packages" id="toc-load-packages" class="nav-link" data-scroll-target="#load-packages"><span class="header-section-number">3</span> Load Packages</a></li>
+  <li><a href="#data-wrangling" id="toc-data-wrangling" class="nav-link" data-scroll-target="#data-wrangling"><span class="header-section-number">4</span> Data Wrangling</a>
+  <ul class="collapse">
+  <li><a href="#preparing-the-subzone-boundary-why-how" id="toc-preparing-the-subzone-boundary-why-how" class="nav-link" data-scroll-target="#preparing-the-subzone-boundary-why-how"><span class="header-section-number">4.1</span> Preparing the Subzone Boundary (why &amp; how)</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -213,7 +253,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">September 20, 2025</p>
+      <p class="date-modified">September 21, 2025</p>
     </div>
   </div>
     
@@ -400,6 +440,79 @@ ul.task-list li input[type="checkbox"] {
 </li>
 <li>Results are aggregated for planning insights; avoid singling out individual firms.</li>
 </ul>
+</section>
+</section>
+<section id="load-packages" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="load-packages"><span class="header-section-number">3</span> Load Packages</h2>
+<p>Following code chunk is used to load neccessary packages</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  tidyverse,   <span class="co"># dplyr/readr/purrr/stringr</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  sf, tmap,    <span class="co"># geospatial + mapping</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  httr,        <span class="co"># OneMap API calls</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  lubridate,   <span class="co"># year(), month(), etc.</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  spatstat,    <span class="co"># KDE, K-function, CSR (monolithic ok)</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  spNetwork,   <span class="co"># network KDE (optional/bonus)</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  sparr,       <span class="co"># relative risk (optional/bonus)</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  plotly,      <span class="co"># interactive plots (optional)</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  gtsummary,   <span class="co"># summary tables </span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  dplyr,</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  janitor,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  stringr</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="data-wrangling" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="data-wrangling"><span class="header-section-number">4</span> Data Wrangling</h2>
+<section id="preparing-the-subzone-boundary-why-how" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="preparing-the-subzone-boundary-why-how"><span class="header-section-number">4.1</span> Preparing the Subzone Boundary (why &amp; how)</h3>
+<p>This chunk converts URA’s <strong>Master Plan Subzone (No Sea)</strong> GeoJSON into a clean, projected <strong>GeoPackage</strong> with consistent field names. We use it as: 1) the <strong>analysis window</strong> for point-pattern methods, and<br>
+2) the <strong>join layer</strong> to aggregate new businesses by subzone/planning area. Extract data for planning</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>sz_raw_path <span class="ot">&lt;-</span> <span class="st">"data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson"</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>subzones <span class="ot">&lt;-</span> <span class="fu">st_read</span>(sz_raw_path, <span class="at">quiet =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clean_names</span>() <span class="sc">%&gt;%</span>                 <span class="co"># lower_case_names</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_make_valid</span>() <span class="sc">%&gt;%</span>               <span class="co"># fix any tiny geometry issues</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="dv">3414</span>)                <span class="co"># SVY21 metres (needed for KDE/K-functions)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Standardise key attribute names</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Helper: extract a field value from the HTML in `description`</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>extract_field <span class="ot">&lt;-</span> <span class="cf">function</span>(html, key){</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  m <span class="ot">&lt;-</span> <span class="fu">str_match</span>(html, <span class="fu">paste0</span>(<span class="st">"&lt;th&gt;"</span>, key, <span class="st">"&lt;/th&gt;</span><span class="sc">\\</span><span class="st">s*&lt;td&gt;([^&lt;]*)&lt;/td&gt;"</span>))</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  val <span class="ot">&lt;-</span> m[, <span class="dv">2</span>]</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  val <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(<span class="fu">is.na</span>(val) <span class="sc">|</span> val <span class="sc">==</span> <span class="st">""</span>, <span class="cn">NA_character_</span>, <span class="fu">str_squish</span>(val))</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(val)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>subzones_std <span class="ot">&lt;-</span> subzones <span class="sc">%&gt;%</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">SUBZONE_NO =</span> <span class="fu">as.integer</span>(<span class="fu">extract_field</span>(description, <span class="st">"SUBZONE_NO"</span>)),</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">SUBZONE_N  =</span> <span class="fu">extract_field</span>(description, <span class="st">"SUBZONE_N"</span>),</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">SUBZONE_C  =</span> <span class="fu">extract_field</span>(description, <span class="st">"SUBZONE_C"</span>),</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">CA_IND     =</span> <span class="fu">extract_field</span>(description, <span class="st">"CA_IND"</span>),</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">PLN_AREA_N =</span> <span class="fu">extract_field</span>(description, <span class="st">"PLN_AREA_N"</span>),</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">PLN_AREA_C =</span> <span class="fu">extract_field</span>(description, <span class="st">"PLN_AREA_C"</span>),</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">REGION_N   =</span> <span class="fu">extract_field</span>(description, <span class="st">"REGION_N"</span>),</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">REGION_C   =</span> <span class="fu">extract_field</span>(description, <span class="st">"REGION_C"</span>),</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">FMEL_UPD_D =</span> <span class="fu">extract_field</span>(description, <span class="st">"FMEL_UPD_D"</span>)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(SUBZONE_NO, SUBZONE_N, SUBZONE_C, CA_IND,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>         PLN_AREA_N, PLN_AREA_C, REGION_N, REGION_C, FMEL_UPD_D, geometry) <span class="sc">%&gt;%</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_make_valid</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="dv">3414</span>)</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="co"># save a clean, fast-to-load copy</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a><span class="fu">st_write</span>(subzones_std, <span class="st">"data/geospatial/mpsz_subzones_2019_nosea.gpkg"</span>,</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>         <span class="at">layer =</span> <span class="st">"subzones"</span>, <span class="at">delete_dsn =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Deleting source `data/geospatial/mpsz_subzones_2019_nosea.gpkg' using driver `GPKG'
+Writing layer `subzones' to data source 
+  `data/geospatial/mpsz_subzones_2019_nosea.gpkg' using driver `GPKG'
+Writing 332 features with 9 fields and geometry type Unknown (any).</code></pre>
+</div>
+</div>
 
 
 </section>
