@@ -228,6 +228,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#quick-sanity-check" id="toc-quick-sanity-check" class="nav-link" data-scroll-target="#quick-sanity-check"><span class="header-section-number">4.7</span> Quick sanity check</a></li>
   <li><a href="#removing-unwanted-planning-areas" id="toc-removing-unwanted-planning-areas" class="nav-link" data-scroll-target="#removing-unwanted-planning-areas"><span class="header-section-number">4.8</span> Removing unwanted planning areas</a></li>
   </ul></li>
+  <li><a href="#eda" id="toc-eda" class="nav-link" data-scroll-target="#eda"><span class="header-section-number">5</span> EDA</a>
+  <ul class="collapse">
+  <li><a href="#top-planning-areas-per-sector" id="toc-top-planning-areas-per-sector" class="nav-link" data-scroll-target="#top-planning-areas-per-sector"><span class="header-section-number">5.1</span> Top Planning Areas per sector</a></li>
+  <li><a href="#subzone-coverage-check-how-many-subzones-have-1-registration-by-sector" id="toc-subzone-coverage-check-how-many-subzones-have-1-registration-by-sector" class="nav-link" data-scroll-target="#subzone-coverage-check-how-many-subzones-have-1-registration-by-sector"><span class="header-section-number">5.2</span> Subzone coverage check: how many subzones have ≥1 registration (by sector)</a></li>
+  <li><a href="#choroplethcounts-by-planning-area-and-subzone" id="toc-choroplethcounts-by-planning-area-and-subzone" class="nav-link" data-scroll-target="#choroplethcounts-by-planning-area-and-subzone"><span class="header-section-number">5.3</span> Choropleth:counts By Planning Area and Subzone</a></li>
+  </ul></li>
+  <li><a href="#st-order-spatio-temporal-analysis" id="toc-st-order-spatio-temporal-analysis" class="nav-link" data-scroll-target="#st-order-spatio-temporal-analysis"><span class="header-section-number">6</span> 1st Order Spatio Temporal Analysis</a>
+  <ul class="collapse">
+  <li><a href="#clarkevans-test-per-sector" id="toc-clarkevans-test-per-sector" class="nav-link" data-scroll-target="#clarkevans-test-per-sector"><span class="header-section-number">6.1</span> Clark–Evans test per sector</a></li>
+  <li><a href="#fb" id="toc-fb" class="nav-link" data-scroll-target="#fb"><span class="header-section-number">6.2</span> F&amp;B</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -260,7 +271,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">September 21, 2025</p>
+      <p class="date-modified">September 22, 2025</p>
     </div>
   </div>
     
@@ -837,9 +848,234 @@ Writing 332 features with 9 fields and geometry type Unknown (any).</code></pre>
 </div>
 </div>
 </div>
-
-
 </section>
+</section>
+</section>
+<section id="eda" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="eda"><span class="header-section-number">5</span> EDA</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Sector x Year counts</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>biz_pts_use <span class="sc">|&gt;</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>() <span class="sc">|&gt;</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(sector, year, <span class="at">name =</span> <span class="st">"n"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(sector, year)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 3
+  sector                      year     n
+  &lt;chr&gt;                      &lt;dbl&gt; &lt;int&gt;
+1 F&amp;B (56)                    2024  3790
+2 F&amp;B (56)                    2025  1965
+3 IT (62)                     2024  5844
+4 IT (62)                     2025  2895
+5 Logistics/Warehousing (52)  2024   995
+6 Logistics/Warehousing (52)  2025   723</code></pre>
+</div>
+</div>
+<section id="top-planning-areas-per-sector" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="top-planning-areas-per-sector"><span class="header-section-number">5.1</span> Top Planning Areas per sector</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Top Planning Areas per sector (top 10)</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>top_pa <span class="ot">&lt;-</span> biz_pts_use <span class="sc">|&gt;</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>() <span class="sc">|&gt;</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(sector, PLN_AREA_N, <span class="at">name =</span> <span class="st">"n"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(sector) <span class="sc">|&gt;</span></span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(n, <span class="at">n =</span> <span class="dv">10</span>, <span class="at">with_ties =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>()</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>top_pa</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 30 × 3
+   sector   PLN_AREA_N        n
+   &lt;chr&gt;    &lt;chr&gt;         &lt;int&gt;
+ 1 F&amp;B (56) GEYLANG         526
+ 2 F&amp;B (56) DOWNTOWN CORE   362
+ 3 F&amp;B (56) KALLANG         294
+ 4 F&amp;B (56) WOODLANDS       287
+ 5 F&amp;B (56) OUTRAM          283
+ 6 F&amp;B (56) BEDOK           269
+ 7 F&amp;B (56) HOUGANG         254
+ 8 F&amp;B (56) SEMBAWANG       210
+ 9 F&amp;B (56) TOA PAYOH       210
+10 F&amp;B (56) YISHUN          209
+# ℹ 20 more rows</code></pre>
+</div>
+</div>
+</section>
+<section id="subzone-coverage-check-how-many-subzones-have-1-registration-by-sector" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="subzone-coverage-check-how-many-subzones-have-1-registration-by-sector"><span class="header-section-number">5.2</span> Subzone coverage check: how many subzones have ≥1 registration (by sector)</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># all sector × subzone combinations in your study window</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>all_grid <span class="ot">&lt;-</span> <span class="fu">expand_grid</span>(</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">sector    =</span> <span class="fu">unique</span>(biz_pts_use<span class="sc">$</span>sector),</span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">SUBZONE_N =</span> <span class="fu">unique</span>(subzones_use<span class="sc">$</span>SUBZONE_N)</span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a><span class="co"># fill missing combos with n = 0, then compute has_any</span></span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>subzone_cover <span class="ot">&lt;-</span> biz_pts_use <span class="sc">|&gt;</span></span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>() <span class="sc">|&gt;</span></span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(sector, SUBZONE_N, <span class="at">name =</span> <span class="st">"n"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(all_grid, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"sector"</span>,<span class="st">"SUBZONE_N"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">n =</span> <span class="fu">replace_na</span>(n, <span class="dv">0</span>), <span class="at">has_any =</span> n <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
+<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(sector, has_any, <span class="at">name =</span> <span class="st">"subzones"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">names_from =</span> has_any, <span class="at">values_from =</span> subzones, <span class="at">values_fill =</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
+<span id="cb48-15"><a href="#cb48-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="st">`</span><span class="at">subzones_with_≥1</span><span class="st">`</span> <span class="ot">=</span> <span class="st">`</span><span class="at">TRUE</span><span class="st">`</span>, <span class="st">`</span><span class="at">subzones_with_0</span><span class="st">`</span> <span class="ot">=</span> <span class="st">`</span><span class="at">FALSE</span><span class="st">`</span>) <span class="sc">|&gt;</span></span>
+<span id="cb48-16"><a href="#cb48-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">subzones_total =</span> <span class="st">`</span><span class="at">subzones_with_≥1</span><span class="st">`</span> <span class="sc">+</span> <span class="st">`</span><span class="at">subzones_with_0</span><span class="st">`</span>) <span class="sc">|&gt;</span></span>
+<span id="cb48-17"><a href="#cb48-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(sector, subzones_total, <span class="st">`</span><span class="at">subzones_with_≥1</span><span class="st">`</span>, <span class="st">`</span><span class="at">subzones_with_0</span><span class="st">`</span>) <span class="sc">|&gt;</span></span>
+<span id="cb48-18"><a href="#cb48-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(sector)</span>
+<span id="cb48-19"><a href="#cb48-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-20"><a href="#cb48-20" aria-hidden="true" tabindex="-1"></a>subzone_cover</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 4
+  sector                     subzones_total `subzones_with_≥1` subzones_with_0
+  &lt;chr&gt;                               &lt;int&gt;              &lt;int&gt;           &lt;int&gt;
+1 F&amp;B (56)                              319                278              41
+2 IT (62)                               319                260              59
+3 Logistics/Warehousing (52)            319                202             117</code></pre>
+</div>
+</div>
+<ul>
+<li><p><strong>Headline:</strong> IT and Logistics appear to “peak” in the CBD due to <em>registered-office addresses</em>; <strong>Logistics relocates to industrial corridors</strong> and IT to <strong>business parks + town centres</strong>.</p></li>
+<li><p><strong>Policy insight:</strong></p>
+<ul>
+<li><strong>F&amp;B:</strong> island-wide, population-following growth → watch <strong>malls/transport nodes</strong>.<br>
+</li>
+<li><strong>IT:</strong> concentrates in <strong>CBD + parks</strong> → plan <strong>flexible office stock</strong> near transit.<br>
+</li>
+<li><strong>Logistics:</strong> anchored to <strong>port/airport/expressways</strong> → reserve <strong>industrial land</strong> and manage <strong>last-mile interfaces</strong> with residential areas.</li>
+</ul></li>
+</ul>
+</section>
+<section id="choroplethcounts-by-planning-area-and-subzone" class="level3" data-number="5.3">
+<h3 data-number="5.3" class="anchored" data-anchor-id="choroplethcounts-by-planning-area-and-subzone"><span class="header-section-number">5.3</span> Choropleth:counts By Planning Area and Subzone</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Planning Area counts</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>pa_counts <span class="ot">&lt;-</span> biz_pts_use <span class="sc">|&gt;</span></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>() <span class="sc">|&gt;</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(PLN_AREA_N, sector, <span class="at">name =</span> <span class="st">"n"</span>)</span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>subzones_pa <span class="ot">&lt;-</span> subzones_use <span class="sc">|&gt;</span></span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">distinct</span>(PLN_AREA_N, <span class="at">.keep_all =</span> <span class="cn">TRUE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(pa_counts <span class="sc">|&gt;</span></span>
+<span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a>              <span class="fu">group_by</span>(PLN_AREA_N) <span class="sc">|&gt;</span></span>
+<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a>              <span class="fu">summarise</span>(<span class="at">n_all =</span> <span class="fu">sum</span>(n), <span class="at">.groups =</span> <span class="st">"drop"</span>),</span>
+<span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a>            <span class="at">by =</span> <span class="st">"PLN_AREA_N"</span>)</span>
+<span id="cb50-12"><a href="#cb50-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-13"><a href="#cb50-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Build a single Singapore outline from your filtered subzones</span></span>
+<span id="cb50-14"><a href="#cb50-14" aria-hidden="true" tabindex="-1"></a>sg_outline <span class="ot">&lt;-</span> subzones_use <span class="sc">|&gt;</span></span>
+<span id="cb50-15"><a href="#cb50-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_union</span>() <span class="sc">|&gt;</span>              <span class="co"># dissolve to one geometry</span></span>
+<span id="cb50-16"><a href="#cb50-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_make_valid</span>() <span class="sc">|&gt;</span></span>
+<span id="cb50-17"><a href="#cb50-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>() <span class="sc">|&gt;</span></span>
+<span id="cb50-18"><a href="#cb50-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">name =</span> <span class="st">"Singapore"</span>) <span class="co"># (dummy column just to keep an sf)</span></span>
+<span id="cb50-19"><a href="#cb50-19" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb50-20"><a href="#cb50-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-21"><a href="#cb50-21" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(subzones_pa) <span class="sc">+</span></span>
+<span id="cb50-22"><a href="#cb50-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(</span>
+<span id="cb50-23"><a href="#cb50-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">col =</span> <span class="st">"n_all"</span>,</span>
+<span id="cb50-24"><a href="#cb50-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Registrations (all sectors)"</span>,</span>
+<span id="cb50-25"><a href="#cb50-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">style =</span> <span class="st">"quantile"</span>, <span class="at">n =</span> <span class="dv">5</span>,</span>
+<span id="cb50-26"><a href="#cb50-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">border.col =</span> <span class="st">"grey30"</span>, <span class="at">border.lwd =</span> <span class="fl">0.6</span></span>
+<span id="cb50-27"><a href="#cb50-27" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb50-28"><a href="#cb50-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(sg_outline) <span class="sc">+</span></span>
+<span id="cb50-29"><a href="#cb50-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">col =</span> <span class="st">"black"</span>, <span class="at">lwd =</span> <span class="fl">1.2</span>) <span class="sc">+</span>   <span class="co"># &lt;- country border</span></span>
+<span id="cb50-30"><a href="#cb50-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">frame =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex01_files/figure-html/unnamed-chunk-14-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Darker shades indicate planning areas with higher counts of registered businesses.<br>
+- The strongest concentrations appear in <strong>Downtown Core, Geylang, and Kallang</strong>, reflecting both genuine activity and the prevalence of registered office addresses in the CBD.<br>
+- Peripheral industrial/logistics corridors (e.g., <strong>Jurong, Woodlands, Changi</strong>) also show elevated counts.<br>
+- Many heartland towns register moderate F&amp;B and IT entries, highlighting the <strong>broad spatial reach of local services</strong>.</p>
+<p>This baseline choropleth provides the starting point for intensity (KDE) and clustering (K/CSR) analyses in subsequent sections.</p>
+</section>
+</section>
+<section id="st-order-spatio-temporal-analysis" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="st-order-spatio-temporal-analysis"><span class="header-section-number">6</span> 1st Order Spatio Temporal Analysis</h2>
+<p>Convert sf → owin and ppp</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Build polygonal window (country outline) from filtered subzones</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>W <span class="ot">&lt;-</span> spatstat.geom<span class="sc">::</span><span class="fu">as.owin</span>(<span class="fu">st_union</span>(subzones_use))   <span class="co"># SVY21 metres (EPSG:3414)</span></span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Helper: convert an sf points subset to ppp in window W</span></span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>to_ppp <span class="ot">&lt;-</span> <span class="cf">function</span>(pts_sf) {</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>  xy <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_coordinates</span>(pts_sf)</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>  spatstat.geom<span class="sc">::</span><span class="fu">ppp</span>(<span class="at">x =</span> xy[,<span class="dv">1</span>], <span class="at">y =</span> xy[,<span class="dv">2</span>], <span class="at">window =</span> W, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="clarkevans-test-per-sector" class="level3" data-number="6.1">
+<h3 data-number="6.1" class="anchored" data-anchor-id="clarkevans-test-per-sector"><span class="header-section-number">6.1</span> Clark–Evans test per sector</h3>
+<p>The Clark–Evans nearest-neighbour test evaluates whether business registrations are <strong>randomly distributed</strong>, <strong>clustered</strong>, or <strong>regularly spaced</strong> relative to Complete Spatial Randomness (CSR).</p>
+<ul>
+<li><strong>Null hypothesis (H₀):</strong> The point pattern of business registrations follows <strong>CSR</strong> (i.e., randomly distributed).<br>
+</li>
+<li><strong>Alternative hypothesis (H₁):</strong> The point pattern is <strong>more clustered than CSR</strong> (R &lt; 1).</li>
+</ul>
+<p>We test this hypothesis for each selected sector (F&amp;B, IT, Logistics/Warehousing) using both the <strong>asymptotic test</strong> and the <strong>Monte Carlo CSR simulation</strong> (999 realisations).</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>sectors <span class="ot">&lt;-</span> <span class="fu">unique</span>(biz_pts_use<span class="sc">$</span>sector)</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Asymptotic (no CSR simulation)</span></span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>ce_asym <span class="ot">&lt;-</span> <span class="fu">lapply</span>(sectors, <span class="cf">function</span>(sec){</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">to_ppp</span>(biz_pts_use <span class="sc">%&gt;%</span> <span class="fu">filter</span>(sector <span class="sc">==</span> sec))</span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>  z <span class="ot">&lt;-</span> <span class="fu">clarkevans.test</span>(X, <span class="at">correction =</span> <span class="st">"none"</span>, <span class="at">clipregion =</span> W, <span class="at">alternative =</span> <span class="st">"clustered"</span>)</span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">sector =</span> sec,</span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">n =</span> X<span class="sc">$</span>n,</span>
+<span id="cb52-8"><a href="#cb52-8" aria-hidden="true" tabindex="-1"></a>         <span class="at">R =</span> <span class="fu">unname</span>(z<span class="sc">$</span>statistic),</span>
+<span id="cb52-9"><a href="#cb52-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">p_value =</span> z<span class="sc">$</span>p.value,</span>
+<span id="cb52-10"><a href="#cb52-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">method =</span> <span class="st">"Asymptotic (no CSR)"</span>)</span>
+<span id="cb52-11"><a href="#cb52-11" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">%&gt;%</span> <span class="fu">bind_rows</span>()</span>
+<span id="cb52-12"><a href="#cb52-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-13"><a href="#cb52-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Monte Carlo against CSR (recommended for reporting)</span></span>
+<span id="cb52-14"><a href="#cb52-14" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
+<span id="cb52-15"><a href="#cb52-15" aria-hidden="true" tabindex="-1"></a>ce_mc <span class="ot">&lt;-</span> <span class="fu">lapply</span>(sectors, <span class="cf">function</span>(sec){</span>
+<span id="cb52-16"><a href="#cb52-16" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">to_ppp</span>(biz_pts_use <span class="sc">%&gt;%</span> <span class="fu">filter</span>(sector <span class="sc">==</span> sec))</span>
+<span id="cb52-17"><a href="#cb52-17" aria-hidden="true" tabindex="-1"></a>  z <span class="ot">&lt;-</span> <span class="fu">clarkevans.test</span>(X, <span class="at">correction =</span> <span class="st">"none"</span>, <span class="at">clipregion =</span> W,</span>
+<span id="cb52-18"><a href="#cb52-18" aria-hidden="true" tabindex="-1"></a>                       <span class="at">alternative =</span> <span class="st">"clustered"</span>, <span class="at">method =</span> <span class="st">"MonteCarlo"</span>, <span class="at">nsim =</span> <span class="dv">999</span>)</span>
+<span id="cb52-19"><a href="#cb52-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(<span class="at">sector =</span> sec,</span>
+<span id="cb52-20"><a href="#cb52-20" aria-hidden="true" tabindex="-1"></a>         <span class="at">n =</span> X<span class="sc">$</span>n,</span>
+<span id="cb52-21"><a href="#cb52-21" aria-hidden="true" tabindex="-1"></a>         <span class="at">R =</span> <span class="fu">unname</span>(z<span class="sc">$</span>statistic),</span>
+<span id="cb52-22"><a href="#cb52-22" aria-hidden="true" tabindex="-1"></a>         <span class="at">p_value =</span> z<span class="sc">$</span>p.value,</span>
+<span id="cb52-23"><a href="#cb52-23" aria-hidden="true" tabindex="-1"></a>         <span class="at">method =</span> <span class="st">"Monte Carlo (999 CSR sims)"</span>)</span>
+<span id="cb52-24"><a href="#cb52-24" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">%&gt;%</span> <span class="fu">bind_rows</span>()</span>
+<span id="cb52-25"><a href="#cb52-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb52-26"><a href="#cb52-26" aria-hidden="true" tabindex="-1"></a>ce_results <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(ce_asym, ce_mc) <span class="sc">%&gt;%</span></span>
+<span id="cb52-27"><a href="#cb52-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(sector, method)</span>
+<span id="cb52-28"><a href="#cb52-28" aria-hidden="true" tabindex="-1"></a>ce_results</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>ce_results</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 5
+  sector                         n     R p_value method                    
+  &lt;chr&gt;                      &lt;int&gt; &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;                     
+1 F&amp;B (56)                    5755 0.365   0     Asymptotic (no CSR)       
+2 F&amp;B (56)                    5755 0.365   0.001 Monte Carlo (999 CSR sims)
+3 IT (62)                     8739 0.248   0     Asymptotic (no CSR)       
+4 IT (62)                     8739 0.248   0.001 Monte Carlo (999 CSR sims)
+5 Logistics/Warehousing (52)  1718 0.317   0     Asymptotic (no CSR)       
+6 Logistics/Warehousing (52)  1718 0.317   0.001 Monte Carlo (999 CSR sims)</code></pre>
+</div>
+</div>
+<p><strong>Clark–Evans nearest-neighbour test (window = Singapore outline, SVY21).</strong><br>
+Across all sectors the Clark–Evans statistic (R) is <strong>below 1</strong> and Monte-Carlo p-values are <strong>significant</strong> (()), indicating <strong>clustering relative to CSR</strong> at nearest-neighbour scale.</p>
+<ul>
+<li><strong>IT (62):</strong> (R ), (p ) → <strong>strongest clustering</strong>. Likely reflects CBD/fringe-CBD registered-office addresses and business-park nodes (one-north, CBP).<br>
+</li>
+<li><strong>Logistics/Warehousing (52):</strong> (R ), (p ) → <strong>clear clustering</strong>, consistent with industrial land concentration near port/airport/expressways.<br>
+</li>
+<li><strong>F&amp;B (56):</strong> (R ), (p ) → <strong>clustered but more diffuse</strong> than IT/Logistics, aligning with town-centre/mall/transit nodes spread island-wide.</li>
+</ul>
+<p><strong>Implications.</strong><br>
+Nearest-neighbour distances are <strong>smaller than CSR expectations</strong> ( (R&lt;1) ), so new registrations tend to occur near one another rather than randomly. This justifies: 1) mapping <strong>first-order intensity</strong> with KDE to locate hot spots, and<br>
+2) using <strong>K/CSR envelopes</strong> to see at which spatial ranges clustering persists beyond nearest neighbours.</p>
+</section>
+<section id="fb" class="level3" data-number="6.2">
+<h3 data-number="6.2" class="anchored" data-anchor-id="fb"><span class="header-section-number">6.2</span> F&amp;B</h3>
+
+
 </section>
 </section>
 

@@ -414,4 +414,198 @@ tmap_mode("plot")
 tm_shape(subzones_use) + tm_polygons(col = "grey90", border.col = "white") +
 tm_shape(biz_pts) + tm_dots(size = 0.02, alpha = 0.5)
 ```
+## EDA
+```{r}
+# Sector x Year counts
+biz_pts_use |>
+  st_drop_geometry() |>
+  count(sector, year, name = "n") |>
+  arrange(sector, year)
+```
+
+### Top Planning Areas per sector 
+```{r}
+# Top Planning Areas per sector (top 10)
+top_pa <- biz_pts_use |>
+  st_drop_geometry() |>
+  count(sector, PLN_AREA_N, name = "n") |>
+  group_by(sector) |>
+  slice_max(n, n = 10, with_ties = FALSE) |>
+  ungroup()
+
+top_pa
+```
+
+### Subzone coverage check: how many subzones have ≥1 registration (by sector)
+```{r}
+# all sector × subzone combinations in your study window
+all_grid <- expand_grid(
+  sector    = unique(biz_pts_use$sector),
+  SUBZONE_N = unique(subzones_use$SUBZONE_N)
+)
+
+# fill missing combos with n = 0, then compute has_any
+subzone_cover <- biz_pts_use |>
+  st_drop_geometry() |>
+  count(sector, SUBZONE_N, name = "n") |>
+  right_join(all_grid, by = c("sector","SUBZONE_N")) |>
+  mutate(n = replace_na(n, 0), has_any = n > 0) |>
+  count(sector, has_any, name = "subzones") |>
+  tidyr::pivot_wider(names_from = has_any, values_from = subzones, values_fill = 0) |>
+  rename(`subzones_with_≥1` = `TRUE`, `subzones_with_0` = `FALSE`) |>
+  mutate(subzones_total = `subzones_with_≥1` + `subzones_with_0`) |>
+  select(sector, subzones_total, `subzones_with_≥1`, `subzones_with_0`) |>
+  arrange(sector)
+
+subzone_cover
+```
+
+- **Headline:** IT and Logistics appear to “peak” in the CBD due to *registered-office addresses*; **Logistics relocates to industrial corridors** and IT to **business parks + town centres**.  
+
+- **Policy insight:**  
+  - **F&B:** island-wide, population-following growth → watch **malls/transport nodes**.  
+  - **IT:** concentrates in **CBD + parks** → plan **flexible office stock** near transit.  
+  - **Logistics:** anchored to **port/airport/expressways** → reserve **industrial land** and manage **last-mile interfaces** with residential areas.  
+
+### Choropleth:counts By Planning Area and Subzone 
+
+```{r}
+#Planning Area counts
+pa_counts <- biz_pts_use |>
+  st_drop_geometry() |>
+  count(PLN_AREA_N, sector, name = "n")
+
+subzones_pa <- subzones_use |>
+  distinct(PLN_AREA_N, .keep_all = TRUE) |>
+  left_join(pa_counts |>
+              group_by(PLN_AREA_N) |>
+              summarise(n_all = sum(n), .groups = "drop"),
+            by = "PLN_AREA_N")
+
+# Build a single Singapore outline from your filtered subzones
+sg_outline <- subzones_use |>
+  st_union() |>              # dissolve to one geometry
+  st_make_valid() |>
+  st_as_sf() |>
+  mutate(name = "Singapore") # (dummy column just to keep an sf)
+tmap_mode("plot")
+
+tm_shape(subzones_pa) +
+  tm_polygons(
+    col = "n_all",
+    title = "Registrations (all sectors)",
+    style = "quantile", n = 5,
+    border.col = "grey30", border.lwd = 0.6
+  ) +
+  tm_shape(sg_outline) +
+  tm_borders(col = "black", lwd = 1.2) +   # <- country border
+  tm_layout(frame = FALSE)
+
+
+```
+
+Darker shades indicate planning areas with higher counts of registered businesses.  
+- The strongest concentrations appear in **Downtown Core, Geylang, and Kallang**, reflecting both genuine activity and the prevalence of registered office addresses in the CBD.  
+- Peripheral industrial/logistics corridors (e.g., **Jurong, Woodlands, Changi**) also show elevated counts.  
+- Many heartland towns register moderate F&B and IT entries, highlighting the **broad spatial reach of local services**.  
+
+This baseline choropleth provides the starting point for intensity (KDE) and clustering (K/CSR) analyses in subsequent sections.
+
+## 1st Order Spatio Temporal Analysis 
+Convert sf → owin and ppp
+
+```{r}
+# Build polygonal window (country outline) from filtered subzones
+W <- spatstat.geom::as.owin(st_union(subzones_use))   # SVY21 metres (EPSG:3414)
+
+# Helper: convert an sf points subset to ppp in window W
+to_ppp <- function(pts_sf) {
+  xy <- sf::st_coordinates(pts_sf)
+  spatstat.geom::ppp(x = xy[,1], y = xy[,2], window = W, check = FALSE)
+}
+```
+
+### Clark–Evans test per sector
+
+The Clark–Evans nearest-neighbour test evaluates whether business registrations are **randomly distributed**, **clustered**, or **regularly spaced** relative to Complete Spatial Randomness (CSR).  
+
+- **Null hypothesis (H₀):** The point pattern of business registrations follows **CSR** (i.e., randomly distributed).  
+- **Alternative hypothesis (H₁):** The point pattern is **more clustered than CSR** (R < 1).  
+
+We test this hypothesis for each selected sector (F&B, IT, Logistics/Warehousing) using both the **asymptotic test** and the **Monte Carlo CSR simulation** (999 realisations).
+
+
+```{r}
+#| label:  clark evans chunk
+#| eval: false
+sectors <- unique(biz_pts_use$sector)
+# Asymptotic (no CSR simulation)
+ce_asym <- lapply(sectors, function(sec){
+  X <- to_ppp(biz_pts_use %>% filter(sector == sec))
+  z <- clarkevans.test(X, correction = "none", clipregion = W, alternative = "clustered")
+  tibble(sector = sec,
+         n = X$n,
+         R = unname(z$statistic),
+         p_value = z$p.value,
+         method = "Asymptotic (no CSR)")
+}) %>% bind_rows()
+
+# Monte Carlo against CSR (recommended for reporting)
+set.seed(42)
+ce_mc <- lapply(sectors, function(sec){
+  X <- to_ppp(biz_pts_use %>% filter(sector == sec))
+  z <- clarkevans.test(X, correction = "none", clipregion = W,
+                       alternative = "clustered", method = "MonteCarlo", nsim = 999)
+  tibble(sector = sec,
+         n = X$n,
+         R = unname(z$statistic),
+         p_value = z$p.value,
+         method = "Monte Carlo (999 CSR sims)")
+}) %>% bind_rows()
+
+ce_results <- bind_rows(ce_asym, ce_mc) %>%
+  arrange(sector, method)
+ce_results
+
+
+
+
+
+
+```
+```{r}
+#| eval: false
+#| include: false
+# Save to disk
+#| echo: false
+#| eval: false
+saveRDS(ce_results, file = "data/rds/clark_evans_results.rds")
+```
+
+```{r}
+#| label: load-clark-evans
+#| echo: false
+ce_results <- readRDS("data/rds/clark_evans_results.rds")
+```
+
+```{r}
+ce_results
+```
+**Clark–Evans nearest-neighbour test (window = Singapore outline, SVY21).**  
+Across all sectors the Clark–Evans statistic \(R\) is **below 1** and Monte-Carlo p-values are **significant** (\(\le 0.001\)), indicating **clustering relative to CSR** at nearest-neighbour scale.
+
+- **IT (62):** \(R \approx 0.249\), \(p \le 0.001\) → **strongest clustering**. Likely reflects CBD/fringe-CBD registered-office addresses and business-park nodes (one-north, CBP).  
+- **Logistics/Warehousing (52):** \(R \approx 0.318\), \(p \le 0.001\) → **clear clustering**, consistent with industrial land concentration near port/airport/expressways.  
+- **F&B (56):** \(R \approx 0.365\), \(p \le 0.001\) → **clustered but more diffuse** than IT/Logistics, aligning with town-centre/mall/transit nodes spread island-wide.
+
+**Implications.**  
+Nearest-neighbour distances are **smaller than CSR expectations** ( \(R<1\) ), so new registrations tend to occur near one another rather than randomly. This justifies:
+1) mapping **first-order intensity** with KDE to locate hot spots, and  
+2) using **K/CSR envelopes** to see at which spatial ranges clustering persists beyond nearest neighbours.
+
+### F&B 
+
+
+
+
 
