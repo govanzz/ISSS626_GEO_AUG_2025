@@ -375,4 +375,43 @@ tmap_mode("plot")
 tm_shape(subzones_std) + tm_polygons(col = "grey90", border.col = "white") +
 tm_shape(biz_pts) + tm_dots(size = 0.02, alpha = 0.5)
 ```
+### Removing unwanted planning areas
+
+
+To avoid empty polygons biasing our maps and point-pattern statistics, we trim the study area to places that actually have registrations. Specifically, we:
+
+- **Keep** planning areas with ≥ 1 geocoded point (computed from `biz_pts`).  
+- **Exclude** *NORTH-EASTERN ISLANDS* on purpose (offshore, no relevant activity for our scope).  
+- **Keep** *WESTERN ISLANDS* because logistics/port activity is plausible.  
+- **Filter** both the polygon layer (`subzones_std → subzones_use`) and the points (`biz_pts → biz_pts_use`) so subsequent joins and KDE/K-functions use a consistent window.  
+
+This reduces noise, speeds processing, and prevents intensity estimates from being diluted by large empty areas.
+
+```{r}
+# Planning areas that have at least one point
+keep_pa <- biz_pts |>
+  st_drop_geometry() |>
+  count(PLN_AREA_N, name = "n") |>
+  filter(n > 0) |>
+  pull(PLN_AREA_N)
+
+subzones_use <- subzones_std |> filter(PLN_AREA_N %in% keep_pa)
+
+subzones_use <- subzones_std |>
+  dplyr::filter(PLN_AREA_N %in% keep_pa,
+                PLN_AREA_N != "NORTH-EASTERN ISLANDS")
+
+#  also drop any biz points that lie in North-Eastern Islands,
+# or that didn’t pick up a planning area for any reason.
+biz_pts_use <- biz_pts |>
+  dplyr::filter(!is.na(PLN_AREA_N),
+                PLN_AREA_N != "NORTH-EASTERN ISLANDS")
+```
+
+#### Map Check 
+```{r}
+tmap_mode("plot")
+tm_shape(subzones_use) + tm_polygons(col = "grey90", border.col = "white") +
+tm_shape(biz_pts) + tm_dots(size = 0.02, alpha = 0.5)
+```
 

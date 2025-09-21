@@ -226,6 +226,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#convert-to-sf-project-to-svy21-and-join-subzones" id="toc-convert-to-sf-project-to-svy21-and-join-subzones" class="nav-link" data-scroll-target="#convert-to-sf-project-to-svy21-and-join-subzones"><span class="header-section-number">4.5</span> Convert to sf, project to SVY21, and join subzones</a></li>
   <li><a href="#load-precomputed-outputs" id="toc-load-precomputed-outputs" class="nav-link" data-scroll-target="#load-precomputed-outputs"><span class="header-section-number">4.6</span> Load precomputed outputs</a></li>
   <li><a href="#quick-sanity-check" id="toc-quick-sanity-check" class="nav-link" data-scroll-target="#quick-sanity-check"><span class="header-section-number">4.7</span> Quick sanity check</a></li>
+  <li><a href="#removing-unwanted-planning-areas" id="toc-removing-unwanted-planning-areas" class="nav-link" data-scroll-target="#removing-unwanted-planning-areas"><span class="header-section-number">4.8</span> Removing unwanted planning areas</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -783,6 +784,55 @@ Writing 332 features with 9 fields and geometry type Unknown (any).</code></pre>
 <div>
 <figure class="figure">
 <p><img src="Take_Home_Ex01_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="removing-unwanted-planning-areas" class="level3" data-number="4.8">
+<h3 data-number="4.8" class="anchored" data-anchor-id="removing-unwanted-planning-areas"><span class="header-section-number">4.8</span> Removing unwanted planning areas</h3>
+<p>To avoid empty polygons biasing our maps and point-pattern statistics, we trim the study area to places that actually have registrations. Specifically, we:</p>
+<ul>
+<li><strong>Keep</strong> planning areas with ≥ 1 geocoded point (computed from <code>biz_pts</code>).<br>
+</li>
+<li><strong>Exclude</strong> <em>NORTH-EASTERN ISLANDS</em> on purpose (offshore, no relevant activity for our scope).<br>
+</li>
+<li><strong>Keep</strong> <em>WESTERN ISLANDS</em> because logistics/port activity is plausible.<br>
+</li>
+<li><strong>Filter</strong> both the polygon layer (<code>subzones_std → subzones_use</code>) and the points (<code>biz_pts → biz_pts_use</code>) so subsequent joins and KDE/K-functions use a consistent window.</li>
+</ul>
+<p>This reduces noise, speeds processing, and prevents intensity estimates from being diluted by large empty areas.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Planning areas that have at least one point</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>keep_pa <span class="ot">&lt;-</span> biz_pts <span class="sc">|&gt;</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_drop_geometry</span>() <span class="sc">|&gt;</span></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">count</span>(PLN_AREA_N, <span class="at">name =</span> <span class="st">"n"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">|&gt;</span></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pull</span>(PLN_AREA_N)</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>subzones_use <span class="ot">&lt;-</span> subzones_std <span class="sc">|&gt;</span> <span class="fu">filter</span>(PLN_AREA_N <span class="sc">%in%</span> keep_pa)</span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>subzones_use <span class="ot">&lt;-</span> subzones_std <span class="sc">|&gt;</span></span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(PLN_AREA_N <span class="sc">%in%</span> keep_pa,</span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>                PLN_AREA_N <span class="sc">!=</span> <span class="st">"NORTH-EASTERN ISLANDS"</span>)</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a><span class="co">#  also drop any biz points that lie in North-Eastern Islands,</span></span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a><span class="co"># or that didn’t pick up a planning area for any reason.</span></span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a>biz_pts_use <span class="ot">&lt;-</span> biz_pts <span class="sc">|&gt;</span></span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(PLN_AREA_N),</span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a>                PLN_AREA_N <span class="sc">!=</span> <span class="st">"NORTH-EASTERN ISLANDS"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="map-check" class="level4" data-number="4.8.1">
+<h4 data-number="4.8.1" class="anchored" data-anchor-id="map-check"><span class="header-section-number">4.8.1</span> Map Check</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(subzones_use) <span class="sc">+</span> <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"grey90"</span>, <span class="at">border.col =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(biz_pts) <span class="sc">+</span> <span class="fu">tm_dots</span>(<span class="at">size =</span> <span class="fl">0.02</span>, <span class="at">alpha =</span> <span class="fl">0.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex01_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
