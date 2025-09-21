@@ -14,19 +14,19 @@ execute:
   freeze: true
 ---
 
-## Overview 
+## Overview
 
 This take-home exercise investigates the **spatial** (“where”) and **spatio-temporal** (“where + when”) patterns of **new business registrations in Singapore** between **1 Jan 2024 and 30 Jun 2025**. Using the ACRA “Information on Corporate Entities” datasets and SSIC 2020 classifications, we select at least **three business types** (2- or 3-digit SSIC) and analyse how their locations and intensities evolve over time.
 
 Our workflow mirrors the point-pattern framework taught in class:
 
-- **Data wrangling & geocoding:** tidy ACRA records, standardise dates/SSIC codes, and geocode by postal code via OneMap; convert to `sf` with SVY21 (EPSG:3414).
-- **Exploratory mapping:** counts by subzone/planning area to establish baseline patterns.
-- **First-order analysis (intensity):** **Kernel Density Estimation (KDE)** to reveal spatial hot spots for each SSIC and period.
-- **Second-order analysis (dependence):** **Ripley’s K / CSR envelopes** to test whether registrations are clustered, random, or dispersed.
-- **Spatio-temporal analysis:** **STKDE** (monthly slices) to detect **emerging, persistent, and fading** clusters over the study window.
+-   **Data wrangling & geocoding:** tidy ACRA records, standardise dates/SSIC codes, and geocode by postal code via OneMap; convert to `sf` with SVY21 (EPSG:3414).
+-   **Exploratory mapping:** counts by subzone/planning area to establish baseline patterns.
+-   **First-order analysis (intensity):** **Kernel Density Estimation (KDE)** to reveal spatial hot spots for each SSIC and period.
+-   **Second-order analysis (dependence):** **Ripley’s K / CSR envelopes** to test whether registrations are clustered, random, or dispersed.
+-   **Spatio-temporal analysis:** **STKDE** (monthly slices) to detect **emerging, persistent, and fading** clusters over the study window.
 
-The results are communicated through cartographic maps and concise figure captions  words , followed by a synthesis translating findings into **urban land-use and economic development implications**—e.g., infrastructure readiness, zoning flexibility, activation of under-served subzones, and monitoring of over-concentration risks.
+The results are communicated through cartographic maps and concise figure captions words , followed by a synthesis translating findings into **urban land-use and economic development implications**—e.g., infrastructure readiness, zoning flexibility, activation of under-served subzones, and monitoring of over-concentration risks.
 
 ## The Data
 
@@ -35,7 +35,7 @@ This study uses ACRA corporate entity registrations combined with reference laye
 ### Data sources
 
 | Dataset Name | Description | Format | Provider | Notes |
-|---|---|---|---|---|
+|---------------|---------------|---------------|---------------|---------------|
 | **ACRA – Information on Corporate Entities (A–Z, Others)** | All entity registrations. Used to extract new businesses by SSIC and date. | CSV (27 files) | data.gov.sg / ACRA | Split alphabetically: A–Z plus a 27th file for names starting with digits/symbols. |
 | **SSIC 2020** | Singapore Standard Industrial Classification; used to choose business types (2-/3-/5-digit). | CSV/XLSX | SingStat | We derive `ssic2`, `ssic3` and use `primary_ssic_code`. |
 | **OneMap Search API** | Geocoding service to convert postal codes to coordinates. | Web API | SLA / OneMap | Returns WGS84 (lat/lon). We transform to SVY21 (EPSG:3414). |
@@ -44,7 +44,7 @@ This study uses ACRA corporate entity registrations combined with reference laye
 ### Fields used (ACRA)
 
 | Field | Meaning | Example |
-|---|---|---|
+|------------------------|------------------------|------------------------|
 | `uen` | Unique Entity Number (entity identifier) | 201912345K |
 | `entity_name` | Registered business name | ABC PTE. LTD. |
 | `registration_incorporation_date` | Registration date (YYYY-MM-DD) | 2025-03-14 |
@@ -56,41 +56,41 @@ This study uses ACRA corporate entity registrations combined with reference laye
 
 ### Study coverage
 
-- **Temporal window:** 1 Jan 2024 – 30 Jun 2025 (inclusive).  
-- **Spatial extent:** Singapore national boundary; mapping/aggregation by **subzone** and **planning area**.  
-- **Business scope:** At least **three** SSIC types (2- or 3-digit groups, or 5-digit subclasses), selected prior to analysis.
+-   **Temporal window:** 1 Jan 2024 – 30 Jun 2025 (inclusive).\
+-   **Spatial extent:** Singapore national boundary; mapping/aggregation by **subzone** and **planning area**.\
+-   **Business scope:** At least **three** SSIC types (2- or 3-digit groups, or 5-digit subclasses), selected prior to analysis.
 
 ### Pre-processing & wrangling (summary)
 
-- Read and row-bind **all 27 ACRA CSVs**; add `source_file` for provenance.  
-- Standardise fields: parse `registration_incorporation_date` as Date (UTC), derive `year`, `month`.  
-- **Postal code hygiene:** keep digits only, left-pad to 6; drop non-6-digit values before geocoding.  
-- **Deduplicate** by `uen` + `registration_incorporation_date` (if necessary).  
-- Filter to the target SSIC code set and to the study window.  
-- **Geocode** unique postal codes via OneMap; join `X`/`Y` back to ACRA records.  
-- Convert to `sf` (WGS84) → transform to **SVY21 (EPSG:3414)** for distance-based methods.  
-- Join subzone attributes; save intermediates as RDS for reproducibility.
+-   Read and row-bind **all 27 ACRA CSVs**; add `source_file` for provenance.\
+-   Standardise fields: parse `registration_incorporation_date` as Date (UTC), derive `year`, `month`.\
+-   **Postal code hygiene:** keep digits only, left-pad to 6; drop non-6-digit values before geocoding.\
+-   **Deduplicate** by `uen` + `registration_incorporation_date` (if necessary).\
+-   Filter to the target SSIC code set and to the study window.\
+-   **Geocode** unique postal codes via OneMap; join `X`/`Y` back to ACRA records.\
+-   Convert to `sf` (WGS84) → transform to **SVY21 (EPSG:3414)** for distance-based methods.\
+-   Join subzone attributes; save intermediates as RDS for reproducibility.
 
 ### Data quality & limitations
 
-- **Geocoding precision:** Postal codes resolve to building/entrance centroids, not unit-level; some industrial sites share codes.  
-- **Registration vs. operation:** Registration date ≠ opening date; counts reflect legal registrations.  
-- **Address anomalies:** Legacy/PO box or malformed postcodes may not geocode; these are excluded.  
-- **Classification drift:** SSIC codes can change over time; we use the recorded `primary_ssic_code` as-is.
+-   **Geocoding precision:** Postal codes resolve to building/entrance centroids, not unit-level; some industrial sites share codes.\
+-   **Registration vs. operation:** Registration date ≠ opening date; counts reflect legal registrations.\
+-   **Address anomalies:** Legacy/PO box or malformed postcodes may not geocode; these are excluded.\
+-   **Classification drift:** SSIC codes can change over time; we use the recorded `primary_ssic_code` as-is.
 
 ### Coordinate reference systems (CRS)
 
-- **Input:** WGS84 (EPSG:4326) from OneMap.  
-- **Analysis/Maps:** SVY21 / Singapore TM (EPSG:3414), metres, suitable for KDE and K-functions.
+-   **Input:** WGS84 (EPSG:4326) from OneMap.\
+-   **Analysis/Maps:** SVY21 / Singapore TM (EPSG:3414), metres, suitable for KDE and K-functions.
 
 ### Ethical/usage notes
 
-- ACRA data contains **entity names** (public corporate info), not personal data.  
-- Results are aggregated for planning insights; avoid singling out individual firms.
+-   ACRA data contains **entity names** (public corporate info), not personal data.\
+-   Results are aggregated for planning insights; avoid singling out individual firms.
 
 ## Load Packages
 
-Following code chunk is used to load neccessary packages 
+Following code chunk is used to load neccessary packages
 
 ```{r}
 pacman::p_load(
@@ -98,7 +98,7 @@ pacman::p_load(
   sf, tmap,    # geospatial + mapping
   httr,        # OneMap API calls
   lubridate,   # year(), month(), etc.
-  spatstat,    # KDE, K-function, CSR (monolithic ok)
+  spatstat, spatstat.geom, spatstat.explore,    # KDE, K-function, CSR (monolithic ok)
   spNetwork,   # network KDE (optional/bonus)
   sparr,       # relative risk (optional/bonus)
   plotly,      # interactive plots (optional)
@@ -110,14 +110,13 @@ pacman::p_load(
   purrr
 )
 ```
-## Data Wrangling 
+
+## Data Wrangling
+
 ### Preparing the Subzone Boundary (why & how)
 
-This chunk converts URA’s **Master Plan Subzone (No Sea)** GeoJSON into a clean, projected **GeoPackage** with consistent field names. We use it as:
-1) the **analysis window** for point-pattern methods, and  
-2) the **join layer** to aggregate new businesses by subzone/planning area.
-Extract data for planning 
-
+This chunk converts URA’s **Master Plan Subzone (No Sea)** GeoJSON into a clean, projected **GeoPackage** with consistent field names. We use it as: 1) the **analysis window** for point-pattern methods, and\
+2) the **join layer** to aggregate new businesses by subzone/planning area. Extract data for planning
 
 ```{r}
 sz_raw_path <- "data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson"
@@ -128,7 +127,8 @@ subzones <- st_read(sz_raw_path, quiet = TRUE) %>%
   st_transform(3414)                # SVY21 metres (needed for KDE/K-functions)
 ```
 
-Standardise key attribute names 
+Standardise key attribute names
+
 ```{r}
 # Helper: extract a field value from the HTML in `description`
 extract_field <- function(html, key){
@@ -159,7 +159,8 @@ subzones_std <- subzones %>%
 st_write(subzones_std, "data/geospatial/mpsz_subzones_2019_nosea.gpkg",
          layer = "subzones", delete_dsn = TRUE)
 ```
-### Load & Tidy Acra 
+
+### Load & Tidy Acra
 
 ```{r}
 aspatial_dir <- "data/aspatial"
@@ -193,22 +194,22 @@ acra_tidy <- acra_raw |>
          reg_date >= as.Date("2024-01-01"),
          reg_date <= as.Date("2025-06-30"))
 ```
-### Select the 3 Industries 
+
+### Select the 3 Industries
+
 Choosing the three industries
 
 The assignment requires at least three business types. We select broad, policy-relevant **2-digit SSIC** groups that span consumer, knowledge, and logistics activities:
 
-- **56 — Food & Beverage Service Activities** (restaurants, cafés, bars)  
-- **62 — Computer programming, IT consultancy & related activities**  
-- **52 — Warehousing & support activities for transportation**  
+-   **56 — Food & Beverage Service Activities** (restaurants, cafés, bars)\
+-   **62 — Computer programming, IT consultancy & related activities**\
+-   **52 — Warehousing & support activities for transportation**
 
 In the code below, we:
 
-1. **Build** a small lookup to attach readable sector labels to each 2-digit SSIC.  
-2. **Filter** the cleaned ACRA records to these codes.  
-3. **Produce** a quick *sector × year* table to sanity-check sample sizes for 2024 and 2025.  
-
-
+1.  **Build** a small lookup to attach readable sector labels to each 2-digit SSIC.\
+2.  **Filter** the cleaned ACRA records to these codes.\
+3.  **Produce** a quick *sector × year* table to sanity-check sample sizes for 2024 and 2025.
 
 ```{r}
 # 56 = Food & Beverage, 62 = Information Technology, 52 = Warehousing & support activities for transport
@@ -223,7 +224,8 @@ biz_sel <- acra_tidy |>
 
 table(biz_sel$sector, biz_sel$year)
 ```
-### Geocode unique postcodes with OneMap 
+
+### Geocode unique postcodes with OneMap
 
 ```{r}
 #| label: geo code chunk 
@@ -254,6 +256,7 @@ biz_geo <- biz_sel |>
 ```
 
 ### Convert to sf, project to SVY21, and join subzones
+
 ```{r}
 #| label: make-sf-and-join
 #| echo: true
@@ -266,7 +269,9 @@ biz_pts <- st_as_sf(biz_geo, coords = c("X","Y"), crs = 4326) |>
 write_rds(acra_tidy, file.path(rds_dir, "acra_tidy_2024H1_2025H1.rds"))
 write_rds(biz_pts,  file.path(rds_dir, "biz_points_geocoded.rds"))
 ```
+
 ### Load precomputed outputs
+
 ```{r}
 #| label: load-precomputed
 #| echo: true
@@ -279,8 +284,10 @@ biz_pts   <- readr::read_rds(file.path(rds_dir, "biz_points_geocoded.rds"))
 
 ```
 
-### Quick sanity check 
+### Quick sanity check
+
 #### counts, CRS, validity
+
 ```{r}
 #| label: qc-basic
 #| message: false
@@ -310,7 +317,9 @@ biz_pts |>
   count(sector, year, name = "n") |>
   arrange(sector, year)
 ```
+
 #### Are points inside Singapore subzones?
+
 ```{r}
 #| label: qc-coverage
 #| echo: true
@@ -318,10 +327,11 @@ biz_pts |>
 inside <- st_intersects(biz_pts, subzones_std, sparse = TRUE)
 mean(lengths(inside) > 0)   # share of points that fall in a subzone (expect ~1)
 ```
-we find that intersects results in 0 which means some thing went wrong somewhere
-therefore we rectify this in the next Sub section 
+
+we find that intersects results in 0 which means some thing went wrong somewhere therefore we rectify this in the next Sub section
 
 #### Rebuild the sf points with the correct CRS directly (no transform)
+
 ```{r}
 #| echo: true
 #| eval: false
@@ -338,6 +348,7 @@ write_rds(biz_pts, file.path(rds_dir, "biz_points_geocoded.rds"))
 ```
 
 #### Load precomputed outputs again
+
 ```{r}
 #| label: reload_load-precomputed
 #| echo: true
@@ -349,7 +360,9 @@ acra_tidy <- readr::read_rds(file.path(rds_dir, "acra_tidy_2024H1_2025H1.rds"))
 biz_pts   <- readr::read_rds(file.path(rds_dir, "biz_points_geocoded.rds"))
 
 ```
+
 #### Quick Check again
+
 ```{r}
 
 #| label: qc-rebuild-using-biz-pts
@@ -367,23 +380,25 @@ sum(is.na(coords[,2]))
 inside <- sf::st_intersects(biz_pts, subzones_std, sparse = TRUE)
 mean(lengths(inside) > 0)   # should be ~1
 ```
+
 Now intersects() does leave 1 which means all points are in Singapore
 
-#### Quick Map 
+#### Quick Map
+
 ```{r}
 tmap_mode("plot")
 tm_shape(subzones_std) + tm_polygons(col = "grey90", border.col = "white") +
 tm_shape(biz_pts) + tm_dots(size = 0.02, alpha = 0.5)
 ```
-### Removing unwanted planning areas
 
+### Removing unwanted planning areas
 
 To avoid empty polygons biasing our maps and point-pattern statistics, we trim the study area to places that actually have registrations. Specifically, we:
 
-- **Keep** planning areas with ≥ 1 geocoded point (computed from `biz_pts`).  
-- **Exclude** *NORTH-EASTERN ISLANDS* on purpose (offshore, no relevant activity for our scope).  
-- **Keep** *WESTERN ISLANDS* because logistics/port activity is plausible.  
-- **Filter** both the polygon layer (`subzones_std → subzones_use`) and the points (`biz_pts → biz_pts_use`) so subsequent joins and KDE/K-functions use a consistent window.  
+-   **Keep** planning areas with ≥ 1 geocoded point (computed from `biz_pts`).\
+-   **Exclude** *NORTH-EASTERN ISLANDS* on purpose (offshore, no relevant activity for our scope).\
+-   **Keep** *WESTERN ISLANDS* because logistics/port activity is plausible.\
+-   **Filter** both the polygon layer (`subzones_std → subzones_use`) and the points (`biz_pts → biz_pts_use`) so subsequent joins and KDE/K-functions use a consistent window.
 
 This reduces noise, speeds processing, and prevents intensity estimates from being diluted by large empty areas.
 
@@ -408,13 +423,16 @@ biz_pts_use <- biz_pts |>
                 PLN_AREA_N != "NORTH-EASTERN ISLANDS")
 ```
 
-#### Map Check 
+#### Map Check
+
 ```{r}
 tmap_mode("plot")
 tm_shape(subzones_use) + tm_polygons(col = "grey90", border.col = "white") +
 tm_shape(biz_pts) + tm_dots(size = 0.02, alpha = 0.5)
 ```
+
 ## EDA
+
 ```{r}
 # Sector x Year counts
 biz_pts_use |>
@@ -423,7 +441,8 @@ biz_pts_use |>
   arrange(sector, year)
 ```
 
-### Top Planning Areas per sector 
+### Top Planning Areas per sector
+
 ```{r}
 # Top Planning Areas per sector (top 10)
 top_pa <- biz_pts_use |>
@@ -437,6 +456,7 @@ top_pa
 ```
 
 ### Subzone coverage check: how many subzones have ≥1 registration (by sector)
+
 ```{r}
 # all sector × subzone combinations in your study window
 all_grid <- expand_grid(
@@ -460,14 +480,15 @@ subzone_cover <- biz_pts_use |>
 subzone_cover
 ```
 
-- **Headline:** IT and Logistics appear to “peak” in the CBD due to *registered-office addresses*; **Logistics relocates to industrial corridors** and IT to **business parks + town centres**.  
+-   **Headline:** IT and Logistics appear to “peak” in the CBD due to *registered-office addresses*; **Logistics relocates to industrial corridors** and IT to **business parks + town centres**.
 
-- **Policy insight:**  
-  - **F&B:** island-wide, population-following growth → watch **malls/transport nodes**.  
-  - **IT:** concentrates in **CBD + parks** → plan **flexible office stock** near transit.  
-  - **Logistics:** anchored to **port/airport/expressways** → reserve **industrial land** and manage **last-mile interfaces** with residential areas.  
+-   **Policy insight:**
 
-### Choropleth:counts By Planning Area and Subzone 
+    -   **F&B:** island-wide, population-following growth → watch **malls/transport nodes**.\
+    -   **IT:** concentrates in **CBD + parks** → plan **flexible office stock** near transit.\
+    -   **Logistics:** anchored to **port/airport/expressways** → reserve **industrial land** and manage **last-mile interfaces** with residential areas.
+
+### Choropleth:counts By Planning Area and Subzone
 
 ```{r}
 #Planning Area counts
@@ -504,14 +525,15 @@ tm_shape(subzones_pa) +
 
 ```
 
-Darker shades indicate planning areas with higher counts of registered businesses.  
-- The strongest concentrations appear in **Downtown Core, Geylang, and Kallang**, reflecting both genuine activity and the prevalence of registered office addresses in the CBD.  
-- Peripheral industrial/logistics corridors (e.g., **Jurong, Woodlands, Changi**) also show elevated counts.  
-- Many heartland towns register moderate F&B and IT entries, highlighting the **broad spatial reach of local services**.  
+Darker shades indicate planning areas with higher counts of registered businesses.\
+- The strongest concentrations appear in **Downtown Core, Geylang, and Kallang**, reflecting both genuine activity and the prevalence of registered office addresses in the CBD.\
+- Peripheral industrial/logistics corridors (e.g., **Jurong, Woodlands, Changi**) also show elevated counts.\
+- Many heartland towns register moderate F&B and IT entries, highlighting the **broad spatial reach of local services**.
 
 This baseline choropleth provides the starting point for intensity (KDE) and clustering (K/CSR) analyses in subsequent sections.
 
-## 1st Order Spatio Temporal Analysis 
+## 1st Order Spatio Temporal Analysis
+
 Convert sf → owin and ppp
 
 ```{r}
@@ -527,13 +549,12 @@ to_ppp <- function(pts_sf) {
 
 ### Clark–Evans test per sector
 
-The Clark–Evans nearest-neighbour test evaluates whether business registrations are **randomly distributed**, **clustered**, or **regularly spaced** relative to Complete Spatial Randomness (CSR).  
+The Clark–Evans nearest-neighbour test evaluates whether business registrations are **randomly distributed**, **clustered**, or **regularly spaced** relative to Complete Spatial Randomness (CSR).
 
-- **Null hypothesis (H₀):** The point pattern of business registrations follows **CSR** (i.e., randomly distributed).  
-- **Alternative hypothesis (H₁):** The point pattern is **more clustered than CSR** (R < 1).  
+-   **Null hypothesis (H₀):** The point pattern of business registrations follows **CSR** (i.e., randomly distributed).\
+-   **Alternative hypothesis (H₁):** The point pattern is **more clustered than CSR** (R \< 1).
 
 We test this hypothesis for each selected sector (F&B, IT, Logistics/Warehousing) using both the **asymptotic test** and the **Monte Carlo CSR simulation** (999 realisations).
-
 
 ```{r}
 #| label:  clark evans chunk
@@ -573,6 +594,7 @@ ce_results
 
 
 ```
+
 ```{r}
 #| eval: false
 #| include: false
@@ -591,21 +613,248 @@ ce_results <- readRDS("data/rds/clark_evans_results.rds")
 ```{r}
 ce_results
 ```
-**Clark–Evans nearest-neighbour test (window = Singapore outline, SVY21).**  
-Across all sectors the Clark–Evans statistic \(R\) is **below 1** and Monte-Carlo p-values are **significant** (\(\le 0.001\)), indicating **clustering relative to CSR** at nearest-neighbour scale.
 
-- **IT (62):** \(R \approx 0.249\), \(p \le 0.001\) → **strongest clustering**. Likely reflects CBD/fringe-CBD registered-office addresses and business-park nodes (one-north, CBP).  
-- **Logistics/Warehousing (52):** \(R \approx 0.318\), \(p \le 0.001\) → **clear clustering**, consistent with industrial land concentration near port/airport/expressways.  
-- **F&B (56):** \(R \approx 0.365\), \(p \le 0.001\) → **clustered but more diffuse** than IT/Logistics, aligning with town-centre/mall/transit nodes spread island-wide.
+**Clark–Evans nearest-neighbour test (window = Singapore outline, SVY21).**\
+Across all sectors the Clark–Evans statistic (R) is **below 1** and Monte-Carlo p-values are **significant** ((\le 0.001)), indicating **clustering relative to CSR** at nearest-neighbour scale.
 
-**Implications.**  
-Nearest-neighbour distances are **smaller than CSR expectations** ( \(R<1\) ), so new registrations tend to occur near one another rather than randomly. This justifies:
-1) mapping **first-order intensity** with KDE to locate hot spots, and  
+-   **IT (62):** (R \approx 0.249), (p \le 0.001) → **strongest clustering**. Likely reflects CBD/fringe-CBD registered-office addresses and business-park nodes (one-north, CBP).\
+-   **Logistics/Warehousing (52):** (R \approx 0.318), (p \le 0.001) → **clear clustering**, consistent with industrial land concentration near port/airport/expressways.\
+-   **F&B (56):** (R \approx 0.365), (p \le 0.001) → **clustered but more diffuse** than IT/Logistics, aligning with town-centre/mall/transit nodes spread island-wide.
+
+**Implications.**\
+Nearest-neighbour distances are **smaller than CSR expectations** ( (R\<1) ), so new registrations tend to occur near one another rather than randomly. This justifies: 1) mapping **first-order intensity** with KDE to locate hot spots, and\
 2) using **K/CSR envelopes** to see at which spatial ranges clustering persists beyond nearest neighbours.
 
-### F&B 
+### Spatial Intensity of F&B (SSIC 56) Business Registrations
+
+In this section, we compute and visualize the spatial intensity of F&B (SSIC 56) business registrations:
+
+1. Cache paths
+
+-   Create folders (`data/rds`, `data/rasters`) to store intermediate results.\
+-   This avoids re-running expensive computations every time the document is rendered.
+
+ 2. Data preparation
+
+-   F&B points are filtered from the master dataset (`biz_pts_use`).\
+-   Their coordinates are extracted and converted into a `ppp` object (planar point pattern) using **spatstat**.\
+-   The observation window `W` is already defined from the trimmed planning area polygons.
+
+3. Kernel Density Estimation (KDE)
+
+-   If a cached result exists, it is loaded.\
+-   Otherwise, a suitable bandwidth is estimated with `bw.diggle`, with safeguards (clamped between **300 m and 800 m**).\
+-   The KDE is then computed using a **Gaussian kernel**.\
+-   The result is saved as an `.rds` file for future use.
+
+4. Scaling and conversion
+
+-   The density is originally in units of **points per m²**.\
+-   Multiply by `1e6` to rescale into **points per km²**, a more interpretable measure.\
+-   Convert the raster into a `SpatRaster` with the correct CRS (**EPSG:3414**).
+
+5. Saving outputs
+
+-   Save the raster as a **GeoTIFF (.tif)** so it can be reused in GIS software.
+
+6. Mapping
+
+-   Using **tmap**, render a choropleth of F&B intensity.\
+-   Overlay planning area boundaries (thin white borders) and the outer municipal boundary (thicker black border).\
+-   The legend title clearly states that values represent **registrations per km²**.
+
+```{r}
+#| label: KDEF&B
+# --- Always-available constants (paths) ---
+rds_dir      <- "data/rds"
+rasters_dir  <- "data/rasters"
+dir.create(rds_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(rasters_dir, showWarnings = FALSE, recursive = TRUE)
+
+fnb_kde_rds <- file.path(rds_dir, "fnb_kde_im.rds")
+fnb_bw_rds  <- file.path(rds_dir, "fnb_bw.rds")
+fnb_kde_tif <- file.path(rasters_dir, "fnb_kde_per_km2.tif")
+
+# --- Ensure window and ppp exist (robust to earlier chunks being skipped) ---
+if (!exists("subzones_use")) stop("subzones_use is missing; load/build it before this chunk.")
+if (!exists("W")) {
+  W <- spatstat.geom::as.owin(sf::st_union(subzones_use))
+}
+if (!exists("biz_pts_use")) stop("biz_pts_use is missing; load/build it before this chunk.")
+
+fnb_sf  <- dplyr::filter(biz_pts_use, sector == "F&B (56)")
+xy      <- sf::st_coordinates(fnb_sf)
+fnb_ppp <- spatstat.geom::ppp(x = xy[,1], y = xy[,2], window = W, check = FALSE)
+
+# --- Load or compute KDE + bandwidth, and persist both ---
+fnb_bw <- NA_real_
+kde_im <- NULL
+
+if (file.exists(fnb_kde_rds)) {
+  kde_im <- readRDS(fnb_kde_rds)
+  if (file.exists(fnb_bw_rds)) fnb_bw <- readRDS(fnb_bw_rds)
+}
+
+if (is.null(kde_im) || !is.numeric(fnb_bw) || is.na(fnb_bw)) {
+  # estimate & clamp bandwidth
+  h_est <- tryCatch(spatstat.explore::bw.diggle(fnb_ppp), error = function(e) 400)
+  h_est <- as.numeric(h_est)
+  fnb_bw <- min(max(h_est, 300), 800)   # clamp 300–800 m
+
+  kde_im <- spatstat.explore::density.ppp(
+    fnb_ppp, sigma = fnb_bw, edge = TRUE, kernel = "gaussian"
+  )
+
+  saveRDS(kde_im, fnb_kde_rds)
+  saveRDS(fnb_bw, fnb_bw_rds)
+}
+
+# --- Scale to per km^2 and convert to SpatRaster with CRS ---
+kde_im_km2 <- kde_im * 1e6
+kde_r <- terra::rast(kde_im_km2)
+terra::crs(kde_r) <- "EPSG:3414"
+if (!file.exists(fnb_kde_tif)) terra::writeRaster(kde_r, fnb_kde_tif, overwrite = TRUE)
+
+# --- (Optional) map directly ---
+tmap_mode("plot")
+tm_shape(kde_r) +
+  tm_raster(
+    col.scale  = tm_scale_continuous(values = "Blues"),
+    col.legend = tm_legend(title = "F&B intensity\n(registrations per km²)")
+  ) +
+  tm_shape(subzones_use) + tm_borders(col = "white", lwd = 0.3) +
+  tm_shape(sf::st_as_sf(sf::st_make_valid(sf::st_union(subzones_use)))) +
+  tm_borders(col = "black", lwd = 1.1) +
+  tm_layout(frame = FALSE)
 
 
+```
+ Improving KDE Raster Interpretability
+
+To improve the interpretability of the KDE raster and ensure consistency across sectors, we perform the following steps:
+
+1. Clamp and winsorize values
+- Negative density values (possible from smoothing) are reset to **zero**.  
+- Extremely high values above the **99th percentile** are capped.  
+- This reduces the influence of outliers and makes the colour scale more readable.  
+
+2. Define consistent breaks
+- Using the **classInt** package, compute six **quantile-based breakpoints**.  
+- These can be reused across sectors (e.g., *IT services, Logistics*) to keep maps directly comparable.  
+
+3. Generate a cleaned raster
+- Create a new raster (`kde_rw`) with the adjusted values.  
+ 
+4. Thematic mapping
+- Plot the KDE with **fixed breaks** and a **blue sequential palette**.  
+- White borders show planning areas, and a thick black outline marks the overall study area.  
+- Place the legend **outside the map** for clarity.  
+
+```{r}
+# Clamp negatives, winsorize top tail for readability
+vals <- terra::values(kde_r, mat = FALSE)
+vals <- pmax(vals, 0)
+cap <- as.numeric(quantile(vals, 0.99, na.rm = TRUE))   # 99th percentile cap
+vals <- pmin(vals, cap)
+kde_rw <- kde_r
+terra::values(kde_rw) <- vals
+
+# Pretty breaks (same set you can reuse for IT/Logistics for comparability)
+library(classInt)
+brks <- classInt::classIntervals(vals, n = 6, style = "quantile")$brks
+
+tmap_mode("plot")
+tm_shape(kde_rw) +
+  tm_raster(
+    style = "fixed", breaks = brks,
+    col.scale = tm_scale_continuous(values = "Blues"),
+    col.legend = tm_legend(title = "F&B intensity\n(registrations per km²)")
+  ) +
+  tm_shape(subzones_use) + tm_borders(col = "white", lwd = 0.25) +
+  tm_shape(sf::st_as_sf(sf::st_make_valid(sf::st_union(subzones_use)))) +
+  tm_borders(col = "black", lwd = 1.0) +
+  tm_layout(frame = FALSE, component.autoscale = FALSE, legend.outside = TRUE)
+```
+
+**F&B business registrations, KDE (Jan 2024–Jun 2025).** Intensities shown as registrations per km².Bandwidth = `r if (exists("fnb_bw") && !is.na(fnb_bw)) round(fnb_bw) else "n/a"` m.. The surface is zero-clamped and capped at the 99th percentile to enhance mid-range readability. Hot spots cluster around CBD/fringe-CBD and town-centre nodes; diffuse background reflects island-wide service presence.
+
+```{r}
+#| eval: false
+#| include: false
+saveRDS(brks, "data/rds/kde_breaks_6.rds")
+```
+
+```{r}
+#| eval: false
+#| include: false
+brks <- readRDS("data/rds/kde_breaks_6.rds")
+```
+#### Descriptive Statistics for the F&B KDE Surface
+
+This section generates descriptive statistics for the F&B KDE surface:
+
+- **Bandwidth retrieval:**  
+  The smoothing bandwidth used in KDE (`fnb_bw`) is loaded from cache if available, otherwise recomputed with `bw.diggle` and clamped between **300–800 m** for stability.  
+
+- **Raster values:**  
+  Raw cell values from the KDE raster (`kde_r`, in registrations per km²) are extracted. Missing values are removed and any small negatives are clamped to zero.  
+
+- **Summary statistics:**  
+  From these values, we calculate:  
+  - total number of F&B points (`n`),  
+  - bandwidth (m),  
+  - mean and median intensity,  
+  - 90th and 99th percentile intensities,  
+  - maximum intensity.  
+
+- **Output table:**  
+  Results are organized into a tidy `tibble` with two columns (`metric`, `value`), making them easy to render in the report.  
+
+```{r}
+
+#| label: fnb-kde-stats
+# Uses the raster you mapped (kde_r = per km²). We clamp small negatives to 0.
+
+# bandwidth (prefer the cached fnb_bw; fall back to recompute & clamp)
+if (!exists("fnb_bw") || !is.numeric(fnb_bw) || is.na(fnb_bw)) {
+  fnb_bw_path <- file.path("data", "rds", "fnb_bw.rds")
+  if (file.exists(fnb_bw_path)) {
+    fnb_bw <- readRDS(fnb_bw_path)
+  } else {
+    h_est  <- tryCatch(spatstat.explore::bw.diggle(fnb_ppp), error = function(e) NA_real_)
+    fnb_bw <- if (is.na(h_est)) NA_real_ else min(max(as.numeric(h_est), 300), 800)
+  }
+}
+
+# raster values
+vals_raw <- terra::values(kde_r, mat = FALSE)
+vals <- vals_raw[!is.na(vals_raw)]
+vals <- pmax(vals, 0)  # clamp negatives
+
+# stats
+fnb_n      <- fnb_ppp$n
+fnb_mean   <- mean(vals)
+fnb_median <- median(vals)
+fnb_p90    <- as.numeric(quantile(vals, 0.90))
+fnb_p99    <- as.numeric(quantile(vals, 0.99))
+fnb_max    <- max(vals)
+
+# summary table
+tibble::tibble(
+  metric = c("Points (n)", "Bandwidth (m)", "Mean", "Median", "P90", "P99", "Max"),
+  value  = c(fnb_n,
+             ifelse(is.na(fnb_bw), NA, round(fnb_bw,0)),
+             round(fnb_mean,2),
+             round(fnb_median,2),
+             round(fnb_p90,2),
+             round(fnb_p99,2),
+             round(fnb_max,2))
+)
+
+```
+
+#### F&B (SSIC 56) – KDE Summary (Jan 2024–Jun 2025)
+The kernel density estimation (KDE) of F&B registrations (n = 5,755) reveals strong clustering around the CBD, fringe-CBD, and major town-centre nodes. The median intensity is 1.85 registrations/km², while the mean is higher (9.02/km²) due to concentrated hotspots. The upper tail is steep: the 90th percentile reaches 23.5/km², the 99th percentile 94.7/km², and the maximum exceeds 305/km². This indicates a few very dense commercial zones embedded within an otherwise broad, diffuse service distribution. The map highlights downtown areas (e.g., Raffles Place, Orchard, Bugis) alongside regional hubs such as Tampines and Jurong as consistent hotspots. In contrast, outer residential areas exhibit light, evenly spread presence, consistent with population-driven demand. Overall, the KDE confirms that F&B businesses form clustered yet island-wide patterns, with strong concentration in high-footfall districts and a long tail of moderate background service intensity across Singapore.
 
 
 

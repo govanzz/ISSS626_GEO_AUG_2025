@@ -237,7 +237,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#st-order-spatio-temporal-analysis" id="toc-st-order-spatio-temporal-analysis" class="nav-link" data-scroll-target="#st-order-spatio-temporal-analysis"><span class="header-section-number">6</span> 1st Order Spatio Temporal Analysis</a>
   <ul class="collapse">
   <li><a href="#clarkevans-test-per-sector" id="toc-clarkevans-test-per-sector" class="nav-link" data-scroll-target="#clarkevans-test-per-sector"><span class="header-section-number">6.1</span> Clark–Evans test per sector</a></li>
-  <li><a href="#fb" id="toc-fb" class="nav-link" data-scroll-target="#fb"><span class="header-section-number">6.2</span> F&amp;B</a></li>
+  <li><a href="#spatial-intensity-of-fb-ssic-56-business-registrations" id="toc-spatial-intensity-of-fb-ssic-56-business-registrations" class="nav-link" data-scroll-target="#spatial-intensity-of-fb-ssic-56-business-registrations"><span class="header-section-number">6.2</span> Spatial Intensity of F&amp;B (SSIC 56) Business Registrations</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -469,7 +469,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  sf, tmap,    <span class="co"># geospatial + mapping</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  httr,        <span class="co"># OneMap API calls</span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  lubridate,   <span class="co"># year(), month(), etc.</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  spatstat,    <span class="co"># KDE, K-function, CSR (monolithic ok)</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  spatstat, spatstat.geom, spatstat.explore,    <span class="co"># KDE, K-function, CSR (monolithic ok)</span></span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  spNetwork,   <span class="co"># network KDE (optional/bonus)</span></span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  sparr,       <span class="co"># relative risk (optional/bonus)</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  plotly,      <span class="co"># interactive plots (optional)</span></span>
@@ -1072,10 +1072,287 @@ Across all sectors the Clark–Evans statistic (R) is <strong>below 1</strong> a
 Nearest-neighbour distances are <strong>smaller than CSR expectations</strong> ( (R&lt;1) ), so new registrations tend to occur near one another rather than randomly. This justifies: 1) mapping <strong>first-order intensity</strong> with KDE to locate hot spots, and<br>
 2) using <strong>K/CSR envelopes</strong> to see at which spatial ranges clustering persists beyond nearest neighbours.</p>
 </section>
-<section id="fb" class="level3" data-number="6.2">
-<h3 data-number="6.2" class="anchored" data-anchor-id="fb"><span class="header-section-number">6.2</span> F&amp;B</h3>
+<section id="spatial-intensity-of-fb-ssic-56-business-registrations" class="level3" data-number="6.2">
+<h3 data-number="6.2" class="anchored" data-anchor-id="spatial-intensity-of-fb-ssic-56-business-registrations"><span class="header-section-number">6.2</span> Spatial Intensity of F&amp;B (SSIC 56) Business Registrations</h3>
+<p>In this section, we compute and visualize the spatial intensity of F&amp;B (SSIC 56) business registrations:</p>
+<ol type="1">
+<li>Cache paths</li>
+</ol>
+<ul>
+<li>Create folders (<code>data/rds</code>, <code>data/rasters</code>) to store intermediate results.<br>
+</li>
+<li>This avoids re-running expensive computations every time the document is rendered.</li>
+</ul>
+<ol start="2" type="1">
+<li>Data preparation</li>
+</ol>
+<ul>
+<li>F&amp;B points are filtered from the master dataset (<code>biz_pts_use</code>).<br>
+</li>
+<li>Their coordinates are extracted and converted into a <code>ppp</code> object (planar point pattern) using <strong>spatstat</strong>.<br>
+</li>
+<li>The observation window <code>W</code> is already defined from the trimmed planning area polygons.</li>
+</ul>
+<ol start="3" type="1">
+<li>Kernel Density Estimation (KDE)</li>
+</ol>
+<ul>
+<li>If a cached result exists, it is loaded.<br>
+</li>
+<li>Otherwise, a suitable bandwidth is estimated with <code>bw.diggle</code>, with safeguards (clamped between <strong>300 m and 800 m</strong>).<br>
+</li>
+<li>The KDE is then computed using a <strong>Gaussian kernel</strong>.<br>
+</li>
+<li>The result is saved as an <code>.rds</code> file for future use.</li>
+</ul>
+<ol start="4" type="1">
+<li>Scaling and conversion</li>
+</ol>
+<ul>
+<li>The density is originally in units of <strong>points per m²</strong>.<br>
+</li>
+<li>Multiply by <code>1e6</code> to rescale into <strong>points per km²</strong>, a more interpretable measure.<br>
+</li>
+<li>Convert the raster into a <code>SpatRaster</code> with the correct CRS (<strong>EPSG:3414</strong>).</li>
+</ul>
+<ol start="5" type="1">
+<li>Saving outputs</li>
+</ol>
+<ul>
+<li>Save the raster as a <strong>GeoTIFF (.tif)</strong> so it can be reused in GIS software.</li>
+</ul>
+<ol start="6" type="1">
+<li>Mapping</li>
+</ol>
+<ul>
+<li>Using <strong>tmap</strong>, render a choropleth of F&amp;B intensity.<br>
+</li>
+<li>Overlay planning area boundaries (thin white borders) and the outer municipal boundary (thicker black border).<br>
+</li>
+<li>The legend title clearly states that values represent <strong>registrations per km²</strong>.</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Always-available constants (paths) ---</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>rds_dir      <span class="ot">&lt;-</span> <span class="st">"data/rds"</span></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>rasters_dir  <span class="ot">&lt;-</span> <span class="st">"data/rasters"</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(rds_dir, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a><span class="fu">dir.create</span>(rasters_dir, <span class="at">showWarnings =</span> <span class="cn">FALSE</span>, <span class="at">recursive =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>fnb_kde_rds <span class="ot">&lt;-</span> <span class="fu">file.path</span>(rds_dir, <span class="st">"fnb_kde_im.rds"</span>)</span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>fnb_bw_rds  <span class="ot">&lt;-</span> <span class="fu">file.path</span>(rds_dir, <span class="st">"fnb_bw.rds"</span>)</span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a>fnb_kde_tif <span class="ot">&lt;-</span> <span class="fu">file.path</span>(rasters_dir, <span class="st">"fnb_kde_per_km2.tif"</span>)</span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Ensure window and ppp exist (robust to earlier chunks being skipped) ---</span></span>
+<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"subzones_use"</span>)) <span class="fu">stop</span>(<span class="st">"subzones_use is missing; load/build it before this chunk."</span>)</span>
+<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"W"</span>)) {</span>
+<span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a>  W <span class="ot">&lt;-</span> spatstat.geom<span class="sc">::</span><span class="fu">as.owin</span>(sf<span class="sc">::</span><span class="fu">st_union</span>(subzones_use))</span>
+<span id="cb55-15"><a href="#cb55-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb55-16"><a href="#cb55-16" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"biz_pts_use"</span>)) <span class="fu">stop</span>(<span class="st">"biz_pts_use is missing; load/build it before this chunk."</span>)</span>
+<span id="cb55-17"><a href="#cb55-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-18"><a href="#cb55-18" aria-hidden="true" tabindex="-1"></a>fnb_sf  <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(biz_pts_use, sector <span class="sc">==</span> <span class="st">"F&amp;B (56)"</span>)</span>
+<span id="cb55-19"><a href="#cb55-19" aria-hidden="true" tabindex="-1"></a>xy      <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_coordinates</span>(fnb_sf)</span>
+<span id="cb55-20"><a href="#cb55-20" aria-hidden="true" tabindex="-1"></a>fnb_ppp <span class="ot">&lt;-</span> spatstat.geom<span class="sc">::</span><span class="fu">ppp</span>(<span class="at">x =</span> xy[,<span class="dv">1</span>], <span class="at">y =</span> xy[,<span class="dv">2</span>], <span class="at">window =</span> W, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb55-21"><a href="#cb55-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-22"><a href="#cb55-22" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Load or compute KDE + bandwidth, and persist both ---</span></span>
+<span id="cb55-23"><a href="#cb55-23" aria-hidden="true" tabindex="-1"></a>fnb_bw <span class="ot">&lt;-</span> <span class="cn">NA_real_</span></span>
+<span id="cb55-24"><a href="#cb55-24" aria-hidden="true" tabindex="-1"></a>kde_im <span class="ot">&lt;-</span> <span class="cn">NULL</span></span>
+<span id="cb55-25"><a href="#cb55-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-26"><a href="#cb55-26" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">file.exists</span>(fnb_kde_rds)) {</span>
+<span id="cb55-27"><a href="#cb55-27" aria-hidden="true" tabindex="-1"></a>  kde_im <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(fnb_kde_rds)</span>
+<span id="cb55-28"><a href="#cb55-28" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">file.exists</span>(fnb_bw_rds)) fnb_bw <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(fnb_bw_rds)</span>
+<span id="cb55-29"><a href="#cb55-29" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb55-30"><a href="#cb55-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-31"><a href="#cb55-31" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="fu">is.null</span>(kde_im) <span class="sc">||</span> <span class="sc">!</span><span class="fu">is.numeric</span>(fnb_bw) <span class="sc">||</span> <span class="fu">is.na</span>(fnb_bw)) {</span>
+<span id="cb55-32"><a href="#cb55-32" aria-hidden="true" tabindex="-1"></a>  <span class="co"># estimate &amp; clamp bandwidth</span></span>
+<span id="cb55-33"><a href="#cb55-33" aria-hidden="true" tabindex="-1"></a>  h_est <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>(spatstat.explore<span class="sc">::</span><span class="fu">bw.diggle</span>(fnb_ppp), <span class="at">error =</span> <span class="cf">function</span>(e) <span class="dv">400</span>)</span>
+<span id="cb55-34"><a href="#cb55-34" aria-hidden="true" tabindex="-1"></a>  h_est <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(h_est)</span>
+<span id="cb55-35"><a href="#cb55-35" aria-hidden="true" tabindex="-1"></a>  fnb_bw <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="fu">max</span>(h_est, <span class="dv">300</span>), <span class="dv">800</span>)   <span class="co"># clamp 300–800 m</span></span>
+<span id="cb55-36"><a href="#cb55-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-37"><a href="#cb55-37" aria-hidden="true" tabindex="-1"></a>  kde_im <span class="ot">&lt;-</span> spatstat.explore<span class="sc">::</span><span class="fu">density.ppp</span>(</span>
+<span id="cb55-38"><a href="#cb55-38" aria-hidden="true" tabindex="-1"></a>    fnb_ppp, <span class="at">sigma =</span> fnb_bw, <span class="at">edge =</span> <span class="cn">TRUE</span>, <span class="at">kernel =</span> <span class="st">"gaussian"</span></span>
+<span id="cb55-39"><a href="#cb55-39" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb55-40"><a href="#cb55-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-41"><a href="#cb55-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">saveRDS</span>(kde_im, fnb_kde_rds)</span>
+<span id="cb55-42"><a href="#cb55-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">saveRDS</span>(fnb_bw, fnb_bw_rds)</span>
+<span id="cb55-43"><a href="#cb55-43" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb55-44"><a href="#cb55-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-45"><a href="#cb55-45" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Scale to per km^2 and convert to SpatRaster with CRS ---</span></span>
+<span id="cb55-46"><a href="#cb55-46" aria-hidden="true" tabindex="-1"></a>kde_im_km2 <span class="ot">&lt;-</span> kde_im <span class="sc">*</span> <span class="fl">1e6</span></span>
+<span id="cb55-47"><a href="#cb55-47" aria-hidden="true" tabindex="-1"></a>kde_r <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">rast</span>(kde_im_km2)</span>
+<span id="cb55-48"><a href="#cb55-48" aria-hidden="true" tabindex="-1"></a>terra<span class="sc">::</span><span class="fu">crs</span>(kde_r) <span class="ot">&lt;-</span> <span class="st">"EPSG:3414"</span></span>
+<span id="cb55-49"><a href="#cb55-49" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">file.exists</span>(fnb_kde_tif)) terra<span class="sc">::</span><span class="fu">writeRaster</span>(kde_r, fnb_kde_tif, <span class="at">overwrite =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb55-50"><a href="#cb55-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-51"><a href="#cb55-51" aria-hidden="true" tabindex="-1"></a><span class="co"># --- (Optional) map directly ---</span></span>
+<span id="cb55-52"><a href="#cb55-52" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb55-53"><a href="#cb55-53" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(kde_r) <span class="sc">+</span></span>
+<span id="cb55-54"><a href="#cb55-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_raster</span>(</span>
+<span id="cb55-55"><a href="#cb55-55" aria-hidden="true" tabindex="-1"></a>    <span class="at">col.scale  =</span> <span class="fu">tm_scale_continuous</span>(<span class="at">values =</span> <span class="st">"Blues"</span>),</span>
+<span id="cb55-56"><a href="#cb55-56" aria-hidden="true" tabindex="-1"></a>    <span class="at">col.legend =</span> <span class="fu">tm_legend</span>(<span class="at">title =</span> <span class="st">"F&amp;B intensity</span><span class="sc">\n</span><span class="st">(registrations per km²)"</span>)</span>
+<span id="cb55-57"><a href="#cb55-57" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb55-58"><a href="#cb55-58" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(subzones_use) <span class="sc">+</span> <span class="fu">tm_borders</span>(<span class="at">col =</span> <span class="st">"white"</span>, <span class="at">lwd =</span> <span class="fl">0.3</span>) <span class="sc">+</span></span>
+<span id="cb55-59"><a href="#cb55-59" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(sf<span class="sc">::</span><span class="fu">st_as_sf</span>(sf<span class="sc">::</span><span class="fu">st_make_valid</span>(sf<span class="sc">::</span><span class="fu">st_union</span>(subzones_use)))) <span class="sc">+</span></span>
+<span id="cb55-60"><a href="#cb55-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">col =</span> <span class="st">"black"</span>, <span class="at">lwd =</span> <span class="fl">1.1</span>) <span class="sc">+</span></span>
+<span id="cb55-61"><a href="#cb55-61" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">frame =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex01_files/figure-html/KDEF&amp;B-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Improving KDE Raster Interpretability</p>
+<p>To improve the interpretability of the KDE raster and ensure consistency across sectors, we perform the following steps:</p>
+<ol type="1">
+<li>Clamp and winsorize values</li>
+</ol>
+<ul>
+<li>Negative density values (possible from smoothing) are reset to <strong>zero</strong>.<br>
+</li>
+<li>Extremely high values above the <strong>99th percentile</strong> are capped.<br>
+</li>
+<li>This reduces the influence of outliers and makes the colour scale more readable.</li>
+</ul>
+<ol start="2" type="1">
+<li>Define consistent breaks</li>
+</ol>
+<ul>
+<li>Using the <strong>classInt</strong> package, compute six <strong>quantile-based breakpoints</strong>.<br>
+</li>
+<li>These can be reused across sectors (e.g., <em>IT services, Logistics</em>) to keep maps directly comparable.</li>
+</ul>
+<ol start="3" type="1">
+<li>Generate a cleaned raster</li>
+</ol>
+<ul>
+<li>Create a new raster (<code>kde_rw</code>) with the adjusted values.</li>
+</ul>
+<ol start="4" type="1">
+<li>Thematic mapping</li>
+</ol>
+<ul>
+<li>Plot the KDE with <strong>fixed breaks</strong> and a <strong>blue sequential palette</strong>.<br>
+</li>
+<li>White borders show planning areas, and a thick black outline marks the overall study area.<br>
+</li>
+<li>Place the legend <strong>outside the map</strong> for clarity.</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clamp negatives, winsorize top tail for readability</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>vals <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">values</span>(kde_r, <span class="at">mat =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>vals <span class="ot">&lt;-</span> <span class="fu">pmax</span>(vals, <span class="dv">0</span>)</span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a>cap <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">quantile</span>(vals, <span class="fl">0.99</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))   <span class="co"># 99th percentile cap</span></span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>vals <span class="ot">&lt;-</span> <span class="fu">pmin</span>(vals, cap)</span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>kde_rw <span class="ot">&lt;-</span> kde_r</span>
+<span id="cb56-7"><a href="#cb56-7" aria-hidden="true" tabindex="-1"></a>terra<span class="sc">::</span><span class="fu">values</span>(kde_rw) <span class="ot">&lt;-</span> vals</span>
+<span id="cb56-8"><a href="#cb56-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-9"><a href="#cb56-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Pretty breaks (same set you can reuse for IT/Logistics for comparability)</span></span>
+<span id="cb56-10"><a href="#cb56-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(classInt)</span>
+<span id="cb56-11"><a href="#cb56-11" aria-hidden="true" tabindex="-1"></a>brks <span class="ot">&lt;-</span> classInt<span class="sc">::</span><span class="fu">classIntervals</span>(vals, <span class="at">n =</span> <span class="dv">6</span>, <span class="at">style =</span> <span class="st">"quantile"</span>)<span class="sc">$</span>brks</span>
+<span id="cb56-12"><a href="#cb56-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-13"><a href="#cb56-13" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb56-14"><a href="#cb56-14" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(kde_rw) <span class="sc">+</span></span>
+<span id="cb56-15"><a href="#cb56-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_raster</span>(</span>
+<span id="cb56-16"><a href="#cb56-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">style =</span> <span class="st">"fixed"</span>, <span class="at">breaks =</span> brks,</span>
+<span id="cb56-17"><a href="#cb56-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">col.scale =</span> <span class="fu">tm_scale_continuous</span>(<span class="at">values =</span> <span class="st">"Blues"</span>),</span>
+<span id="cb56-18"><a href="#cb56-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">col.legend =</span> <span class="fu">tm_legend</span>(<span class="at">title =</span> <span class="st">"F&amp;B intensity</span><span class="sc">\n</span><span class="st">(registrations per km²)"</span>)</span>
+<span id="cb56-19"><a href="#cb56-19" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb56-20"><a href="#cb56-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(subzones_use) <span class="sc">+</span> <span class="fu">tm_borders</span>(<span class="at">col =</span> <span class="st">"white"</span>, <span class="at">lwd =</span> <span class="fl">0.25</span>) <span class="sc">+</span></span>
+<span id="cb56-21"><a href="#cb56-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(sf<span class="sc">::</span><span class="fu">st_as_sf</span>(sf<span class="sc">::</span><span class="fu">st_make_valid</span>(sf<span class="sc">::</span><span class="fu">st_union</span>(subzones_use)))) <span class="sc">+</span></span>
+<span id="cb56-22"><a href="#cb56-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">col =</span> <span class="st">"black"</span>, <span class="at">lwd =</span> <span class="fl">1.0</span>) <span class="sc">+</span></span>
+<span id="cb56-23"><a href="#cb56-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">frame =</span> <span class="cn">FALSE</span>, <span class="at">component.autoscale =</span> <span class="cn">FALSE</span>, <span class="at">legend.outside =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex01_files/figure-html/unnamed-chunk-18-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>F&amp;B business registrations, KDE (Jan 2024–Jun 2025).</strong> Intensities shown as registrations per km².Bandwidth = 300 m.. The surface is zero-clamped and capped at the 99th percentile to enhance mid-range readability. Hot spots cluster around CBD/fringe-CBD and town-centre nodes; diffuse background reflects island-wide service presence.</p>
+<section id="descriptive-statistics-for-the-fb-kde-surface" class="level4" data-number="6.2.1">
+<h4 data-number="6.2.1" class="anchored" data-anchor-id="descriptive-statistics-for-the-fb-kde-surface"><span class="header-section-number">6.2.1</span> Descriptive Statistics for the F&amp;B KDE Surface</h4>
+<p>This section generates descriptive statistics for the F&amp;B KDE surface:</p>
+<ul>
+<li><p><strong>Bandwidth retrieval:</strong><br>
+The smoothing bandwidth used in KDE (<code>fnb_bw</code>) is loaded from cache if available, otherwise recomputed with <code>bw.diggle</code> and clamped between <strong>300–800 m</strong> for stability.</p></li>
+<li><p><strong>Raster values:</strong><br>
+Raw cell values from the KDE raster (<code>kde_r</code>, in registrations per km²) are extracted. Missing values are removed and any small negatives are clamped to zero.</p></li>
+<li><p><strong>Summary statistics:</strong><br>
+From these values, we calculate:</p>
+<ul>
+<li>total number of F&amp;B points (<code>n</code>),<br>
+</li>
+<li>bandwidth (m),<br>
+</li>
+<li>mean and median intensity,<br>
+</li>
+<li>90th and 99th percentile intensities,<br>
+</li>
+<li>maximum intensity.</li>
+</ul></li>
+<li><p><strong>Output table:</strong><br>
+Results are organized into a tidy <code>tibble</code> with two columns (<code>metric</code>, <code>value</code>), making them easy to render in the report.</p></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fnb-kde-stats</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Uses the raster you mapped (kde_r = per km²). We clamp small negatives to 0.</span></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a><span class="co"># bandwidth (prefer the cached fnb_bw; fall back to recompute &amp; clamp)</span></span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"fnb_bw"</span>) <span class="sc">||</span> <span class="sc">!</span><span class="fu">is.numeric</span>(fnb_bw) <span class="sc">||</span> <span class="fu">is.na</span>(fnb_bw)) {</span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>  fnb_bw_path <span class="ot">&lt;-</span> <span class="fu">file.path</span>(<span class="st">"data"</span>, <span class="st">"rds"</span>, <span class="st">"fnb_bw.rds"</span>)</span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">file.exists</span>(fnb_bw_path)) {</span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>    fnb_bw <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(fnb_bw_path)</span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a>    h_est  <span class="ot">&lt;-</span> <span class="fu">tryCatch</span>(spatstat.explore<span class="sc">::</span><span class="fu">bw.diggle</span>(fnb_ppp), <span class="at">error =</span> <span class="cf">function</span>(e) <span class="cn">NA_real_</span>)</span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a>    fnb_bw <span class="ot">&lt;-</span> <span class="cf">if</span> (<span class="fu">is.na</span>(h_est)) <span class="cn">NA_real_</span> <span class="cf">else</span> <span class="fu">min</span>(<span class="fu">max</span>(<span class="fu">as.numeric</span>(h_est), <span class="dv">300</span>), <span class="dv">800</span>)</span>
+<span id="cb57-12"><a href="#cb57-12" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb57-13"><a href="#cb57-13" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb57-14"><a href="#cb57-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-15"><a href="#cb57-15" aria-hidden="true" tabindex="-1"></a><span class="co"># raster values</span></span>
+<span id="cb57-16"><a href="#cb57-16" aria-hidden="true" tabindex="-1"></a>vals_raw <span class="ot">&lt;-</span> terra<span class="sc">::</span><span class="fu">values</span>(kde_r, <span class="at">mat =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb57-17"><a href="#cb57-17" aria-hidden="true" tabindex="-1"></a>vals <span class="ot">&lt;-</span> vals_raw[<span class="sc">!</span><span class="fu">is.na</span>(vals_raw)]</span>
+<span id="cb57-18"><a href="#cb57-18" aria-hidden="true" tabindex="-1"></a>vals <span class="ot">&lt;-</span> <span class="fu">pmax</span>(vals, <span class="dv">0</span>)  <span class="co"># clamp negatives</span></span>
+<span id="cb57-19"><a href="#cb57-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-20"><a href="#cb57-20" aria-hidden="true" tabindex="-1"></a><span class="co"># stats</span></span>
+<span id="cb57-21"><a href="#cb57-21" aria-hidden="true" tabindex="-1"></a>fnb_n      <span class="ot">&lt;-</span> fnb_ppp<span class="sc">$</span>n</span>
+<span id="cb57-22"><a href="#cb57-22" aria-hidden="true" tabindex="-1"></a>fnb_mean   <span class="ot">&lt;-</span> <span class="fu">mean</span>(vals)</span>
+<span id="cb57-23"><a href="#cb57-23" aria-hidden="true" tabindex="-1"></a>fnb_median <span class="ot">&lt;-</span> <span class="fu">median</span>(vals)</span>
+<span id="cb57-24"><a href="#cb57-24" aria-hidden="true" tabindex="-1"></a>fnb_p90    <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">quantile</span>(vals, <span class="fl">0.90</span>))</span>
+<span id="cb57-25"><a href="#cb57-25" aria-hidden="true" tabindex="-1"></a>fnb_p99    <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">quantile</span>(vals, <span class="fl">0.99</span>))</span>
+<span id="cb57-26"><a href="#cb57-26" aria-hidden="true" tabindex="-1"></a>fnb_max    <span class="ot">&lt;-</span> <span class="fu">max</span>(vals)</span>
+<span id="cb57-27"><a href="#cb57-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-28"><a href="#cb57-28" aria-hidden="true" tabindex="-1"></a><span class="co"># summary table</span></span>
+<span id="cb57-29"><a href="#cb57-29" aria-hidden="true" tabindex="-1"></a>tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb57-30"><a href="#cb57-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">metric =</span> <span class="fu">c</span>(<span class="st">"Points (n)"</span>, <span class="st">"Bandwidth (m)"</span>, <span class="st">"Mean"</span>, <span class="st">"Median"</span>, <span class="st">"P90"</span>, <span class="st">"P99"</span>, <span class="st">"Max"</span>),</span>
+<span id="cb57-31"><a href="#cb57-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">value  =</span> <span class="fu">c</span>(fnb_n,</span>
+<span id="cb57-32"><a href="#cb57-32" aria-hidden="true" tabindex="-1"></a>             <span class="fu">ifelse</span>(<span class="fu">is.na</span>(fnb_bw), <span class="cn">NA</span>, <span class="fu">round</span>(fnb_bw,<span class="dv">0</span>)),</span>
+<span id="cb57-33"><a href="#cb57-33" aria-hidden="true" tabindex="-1"></a>             <span class="fu">round</span>(fnb_mean,<span class="dv">2</span>),</span>
+<span id="cb57-34"><a href="#cb57-34" aria-hidden="true" tabindex="-1"></a>             <span class="fu">round</span>(fnb_median,<span class="dv">2</span>),</span>
+<span id="cb57-35"><a href="#cb57-35" aria-hidden="true" tabindex="-1"></a>             <span class="fu">round</span>(fnb_p90,<span class="dv">2</span>),</span>
+<span id="cb57-36"><a href="#cb57-36" aria-hidden="true" tabindex="-1"></a>             <span class="fu">round</span>(fnb_p99,<span class="dv">2</span>),</span>
+<span id="cb57-37"><a href="#cb57-37" aria-hidden="true" tabindex="-1"></a>             <span class="fu">round</span>(fnb_max,<span class="dv">2</span>))</span>
+<span id="cb57-38"><a href="#cb57-38" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 7 × 2
+  metric          value
+  &lt;chr&gt;           &lt;dbl&gt;
+1 Points (n)    5755   
+2 Bandwidth (m)  300   
+3 Mean             9.02
+4 Median           1.85
+5 P90             23.4 
+6 P99             94.7 
+7 Max            306.  </code></pre>
+</div>
+</div>
+</section>
+<section id="fb-ssic-56-kde-summary-jan-2024jun-2025" class="level4" data-number="6.2.2">
+<h4 data-number="6.2.2" class="anchored" data-anchor-id="fb-ssic-56-kde-summary-jan-2024jun-2025"><span class="header-section-number">6.2.2</span> F&amp;B (SSIC 56) – KDE Summary (Jan 2024–Jun 2025)</h4>
+<p>The kernel density estimation (KDE) of F&amp;B registrations (n = 5,755) reveals strong clustering around the CBD, fringe-CBD, and major town-centre nodes. The median intensity is 1.85 registrations/km², while the mean is higher (9.02/km²) due to concentrated hotspots. The upper tail is steep: the 90th percentile reaches 23.5/km², the 99th percentile 94.7/km², and the maximum exceeds 305/km². This indicates a few very dense commercial zones embedded within an otherwise broad, diffuse service distribution. The map highlights downtown areas (e.g., Raffles Place, Orchard, Bugis) alongside regional hubs such as Tampines and Jurong as consistent hotspots. In contrast, outer residential areas exhibit light, evenly spread presence, consistent with population-driven demand. Overall, the KDE confirms that F&amp;B businesses form clustered yet island-wide patterns, with strong concentration in high-footfall districts and a long tail of moderate background service intensity across Singapore.</p>
 
 
+</section>
 </section>
 </section>
 
