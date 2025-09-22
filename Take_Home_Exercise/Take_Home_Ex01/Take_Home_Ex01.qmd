@@ -856,5 +856,294 @@ tibble::tibble(
 #### F&B (SSIC 56) – KDE Summary (Jan 2024–Jun 2025)
 The kernel density estimation (KDE) of F&B registrations (n = 5,755) reveals strong clustering around the CBD, fringe-CBD, and major town-centre nodes. The median intensity is 1.85 registrations/km², while the mean is higher (9.02/km²) due to concentrated hotspots. The upper tail is steep: the 90th percentile reaches 23.5/km², the 99th percentile 94.7/km², and the maximum exceeds 305/km². This indicates a few very dense commercial zones embedded within an otherwise broad, diffuse service distribution. The map highlights downtown areas (e.g., Raffles Place, Orchard, Bugis) alongside regional hubs such as Tampines and Jurong as consistent hotspots. In contrast, outer residential areas exhibit light, evenly spread presence, consistent with population-driven demand. Overall, the KDE confirms that F&B businesses form clustered yet island-wide patterns, with strong concentration in high-footfall districts and a long tail of moderate background service intensity across Singapore.
 
+### Spatial Intensity of IT Services (SSIC 62) Business Registrations
+
+This helper chunk sets up shared resources and utility functions for kernel density estimation (KDE):
+
+Directory setup:
+Defines data/rds and data/rasters as cache locations, creating them if they don’t exist. These folders store RDS objects (intermediate results) and raster files (GeoTIFFs).
+
+Analysis window:
+Ensures the spatial observation window W exists, created from the union of planning area polygons (subzones_use). This window defines the study area for point pattern analysis.
+
+Breakpoints for comparability:
+Loads a set of fixed class breaks (kde_breaks_6.rds) that were saved from the F&B analysis. These breaks will be reused across sectors so that KDE maps are directly comparable.
+
+Utility functions:
+
+make_ppp(sf_pts, W): converts an sf point object into a ppp (planar point pattern) object within the window W.
+
+compute_kde_cached(ppp_obj, rds_im, rds_bw): computes a Gaussian KDE for the given point pattern. If cached raster (im) and bandwidth (bw) exist, they are loaded; otherwise, a new bandwidth is estimated (bw.diggle, clamped between 300–800 m), KDE computed, and results saved.
+
+to_raster_km2(im): converts a spatstat image into a SpatRaster, scaling values from per m² to per km² and assigning the correct CRS (EPSG:3414).
+```{r}
+#| label: kde-shared-helpers
+rds_dir     <- "data/rds"
+rasters_dir <- "data/rasters"
+dir.create(rds_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(rasters_dir, showWarnings = FALSE, recursive = TRUE)
+
+# Ensure analysis window exists
+if (!exists("W")) W <- spatstat.geom::as.owin(sf::st_union(subzones_use))
+
+# Load the fixed breaks saved from the F&B map
+brks_path <- file.path(rds_dir, "kde_breaks_6.rds")
+stopifnot(file.exists(brks_path))  # ensure F&B saved these earlier
+brks <- readRDS(brks_path)
+
+# Small utilities
+make_ppp <- function(sf_pts, W){
+  xy <- sf::st_coordinates(sf_pts)
+  spatstat.geom::ppp(xy[,1], xy[,2], window = W, check = FALSE)
+}
+
+compute_kde_cached <- function(ppp_obj, rds_im, rds_bw, sigma_min = 300, sigma_max = 800){
+  if (file.exists(rds_im) && file.exists(rds_bw)) {
+    list(im = readRDS(rds_im), bw = readRDS(rds_bw))
+  } else {
+    h_est <- tryCatch(spatstat.explore::bw.diggle(ppp_obj), error = function(e) 400)
+    bw    <- min(max(as.numeric(h_est), sigma_min), sigma_max)
+    im    <- spatstat.explore::density.ppp(ppp_obj, sigma = bw, edge = TRUE, kernel = "gaussian")
+    saveRDS(im, rds_im); saveRDS(bw, rds_bw)
+    list(im = im, bw = bw)
+  }
+}
+
+to_raster_km2 <- function(im){
+  r <- terra::rast(im * 1e6)   # per m^2 -> per km^2
+  terra::crs(r) <- "EPSG:3414"
+  r
+}
+
+```
 
 
+This block reproduces the KDE workflow for the IT (SSIC 62) sector and plots it on the **same scale** as F&B for apples-to-apples comparison.
+
+- **File paths:**  
+  Sets RDS/GeoTIFF cache targets for the IT KDE image (`it_kde_im.rds`), bandwidth (`it_bw.rds`), and raster (`it_kde_per_km2.tif`).  
+
+- **Point pattern setup:**  
+  Filters IT registrations from `biz_pts_use`, converts them to a `ppp` object within the study window `W` via `make_ppp()`.  
+
+- **KDE with caching:**  
+  - `compute_kde_cached()` loads precomputed KDE + bandwidth if present; otherwise it estimates bandwidth (Diggle, clamped 300–800 m), computes a Gaussian KDE, and caches both.  
+  - `to_raster_km2()` converts the KDE image to a `SpatRaster` and rescales units to **registrations per km²**.  
+  - The raster is written once as a GeoTIFF for reuse.  
+
+- **Value cleaning (no winsorizing):**  
+  Negative cells are clamped to zero to remove smoothing artefacts. Unlike F&B, no top-tail winsorizing is applied here, because we will **reuse the fixed breaks** saved from F&B (`brks`) for strict comparability.  
+
+- **Mapping with shared breaks:**  
+  Plots the cleaned IT raster using `style = "fixed"` + `breaks = brks` (the exact class limits from F&B), a blue sequential scale, white subzone borders, and a black outer boundary.  
+  The legend sits outside for clarity.  
+  
+```{r}
+#| label: kde-it
+it_im_rds <- file.path(rds_dir, "it_kde_im.rds")
+it_bw_rds <- file.path(rds_dir, "it_bw.rds")
+it_tif    <- file.path(rasters_dir, "it_kde_per_km2.tif")
+
+# Build ppp
+it_sf  <- dplyr::filter(biz_pts_use, sector == "IT (62)")
+it_ppp <- make_ppp(it_sf, W)
+
+# KDE (load/compute), convert to per-km^2 raster, save GeoTIFF (first time)
+it_kde <- compute_kde_cached(it_ppp, it_im_rds, it_bw_rds)
+it_r   <- to_raster_km2(it_kde$im)
+if (!file.exists(it_tif)) terra::writeRaster(it_r, it_tif, overwrite = TRUE)
+
+# Clean negatives (don’t winsorize so we keep common breaks from F&B)
+vals  <- pmax(terra::values(it_r, mat = FALSE), 0)
+it_rw <- it_r; terra::values(it_rw) <- vals
+
+# Plot with the SAME breaks as F&B
+tmap_mode("plot")
+tm_shape(it_rw) +
+  tm_raster(
+    style = "fixed", breaks = brks,
+    col.scale  = tm_scale_continuous(values = "Blues"),
+    col.legend = tm_legend(title = "IT intensity\n(registrations per km²)")
+  ) +
+  tm_shape(subzones_use) + tm_borders(col = "white", lwd = 0.25) +
+  tm_shape(sf::st_as_sf(sf::st_make_valid(sf::st_union(subzones_use)))) +
+  tm_borders(col = "black", lwd = 1.0) +
+  tm_layout(frame = FALSE, component.autoscale = FALSE, legend.outside = TRUE)
+
+```
+#### Descriptive Statistics for the IT KDE Surface
+This block computes **summary statistics** for the IT (SSIC 62) KDE surface:
+
+- **Bandwidth retrieval:**  
+  Loads the cached bandwidth (`it_bw.rds`) if available; otherwise sets it to `NA`.  
+  This is the smoothing parameter used when computing the KDE.  
+
+- **Raster values:**  
+  Extracts intensity values (registrations per km²) from the IT raster (`it_r`).  
+  Missing values are removed, and small negative values (artefacts from smoothing) are clamped to zero.  
+
+- **Statistical measures:**  
+  From these cleaned values, the code computes:  
+  - **Points (`n`)**: number of IT registrations in the point pattern,  
+  - **Bandwidth (m)**: smoothing bandwidth,  
+  - **Mean** and **Median** intensity,  
+  - **P90** and **P99**: the 90th and 99th percentile intensities,  
+  - **Max**: maximum observed intensity value.  
+
+- **Tidy output:**  
+  Assembles all results into a `tibble` with three columns:  
+  - `sector` (always “IT (62)” here),  
+  - `metric` (name of the statistic),  
+  - `value` (calculated numeric result, rounded for readability).  
+
+```{r}
+# Bandwidth: use cached value if available
+it_bw_path <- file.path(rds_dir, "it_bw.rds")
+it_bw <- if (file.exists(it_bw_path)) readRDS(it_bw_path) else NA_real_
+
+# Raster values (per km^2); clamp tiny negatives to zero
+vals_raw <- terra::values(it_r, mat = FALSE)
+vals <- pmax(vals_raw[!is.na(vals_raw)], 0)
+
+# Stats
+it_n      <- it_ppp$n
+it_mean   <- mean(vals)
+it_median <- median(vals)
+it_p90    <- as.numeric(quantile(vals, 0.90))
+it_p99    <- as.numeric(quantile(vals, 0.99))
+it_max    <- max(vals)
+
+# Tidy table
+it_stats <- tibble::tibble(
+  sector = "IT (62)",
+  metric = c("Points (n)", "Bandwidth (m)", "Mean", "Median", "P90", "P99", "Max"),
+  value  = c(it_n,
+             ifelse(is.na(it_bw), NA, round(it_bw,0)),
+             round(it_mean,2),
+             round(it_median,2),
+             round(it_p90,2),
+             round(it_p99,2),
+             round(it_max,2))
+)
+it_stats
+```
+#### IT Services (SSIC 62) – KDE Summary (Jan 2024–Jun 2025)
+
+The kernel density estimation (KDE) of IT services registrations (n = 8,739) shows a broad and highly diffuse spatial footprint, with hotspots concentrated in business and mixed-use zones. The chosen bandwidth (300 m) highlights dense clusters while retaining local variation. The median intensity is low at 1.03 registrations/km², but the mean rises to 13.7/km², reflecting the influence of high-density nodes. The upper tail is heavy: the 90th percentile reaches 16.9/km², the 99th percentile surges to 219/km², and the maximum exceeds 2,350/km². These figures indicate that while most of the island experiences modest IT business presence, a few concentrated commercial zones (notably CBD, One-North, and regional hubs like Tampines and Jurong East) dominate the distribution. Compared to F&B, IT services exhibit wider dispersal across industrial estates and mixed-use clusters, consistent with the sector’s reliance on both centralised office hubs and distributed business parks.
+
+### Spatial Intensity of Logistics Services (SSIC 52) Business Registrations
+
+This block repeats the KDE workflow for **Logistics/Warehousing (SSIC 52)** and renders it on the **same scale** as F&B/IT for strict cross-sector comparison.
+
+- **Cache paths:**  
+  Defines where to store/load the KDE image (`log_kde_im.rds`), the chosen bandwidth (`log_bw.rds`), and the exported GeoTIFF (`log_kde_per_km2.tif`).  
+
+- **Point pattern:**  
+  Filters Logistics/Warehousing registrations from `biz_pts_use`, then converts them to a `ppp` object within the study window `W` using `make_ppp()`.  
+
+- **KDE with caching + export:**  
+  - `compute_kde_cached()` loads an existing KDE and bandwidth if present; otherwise it estimates bandwidth (Diggle, clamped 300–800 m), computes a Gaussian KDE, and saves both.  
+  - `to_raster_km2()` converts the KDE to a `SpatRaster` and rescales units to **registrations per km²**.  
+  - The raster is written once to GeoTIFF for reuse.  
+
+- **Value cleanup (no winsorizing):**  
+  Negative artefacts from smoothing are clamped to zero; no upper-tail capping here so we can directly reuse **common class breaks**.  
+
+- **Mapping with shared breaks:**  
+  Plots the cleaned Logistics raster using `style = "fixed"` + `breaks = brks` — the exact breakpoints saved from the F&B map.  
+  - Identical colours mean identical intensity ranges across sectors.  
+  - Adds white subzone borders, a black outer boundary, and an outside legend for readability.  
+  
+```{r}
+#| label: kde-logistics
+log_im_rds <- file.path(rds_dir, "log_kde_im.rds")
+log_bw_rds <- file.path(rds_dir, "log_bw.rds")
+log_tif    <- file.path(rasters_dir, "log_kde_per_km2.tif")
+
+# Build ppp
+log_sf  <- dplyr::filter(biz_pts_use, sector == "Logistics/Warehousing (52)")
+log_ppp <- make_ppp(log_sf, W)
+
+# KDE (load/compute), convert to per-km^2 raster, save GeoTIFF (first time)
+log_kde <- compute_kde_cached(log_ppp, log_im_rds, log_bw_rds)
+log_r   <- to_raster_km2(log_kde$im)
+if (!file.exists(log_tif)) terra::writeRaster(log_r, log_tif, overwrite = TRUE)
+
+# Clean negatives; keep common breaks from F&B
+vals   <- pmax(terra::values(log_r, mat = FALSE), 0)
+log_rw <- log_r; terra::values(log_rw) <- vals
+
+# Plot with the SAME breaks as F&B
+tmap_mode("plot")
+tm_shape(log_rw) +
+  tm_raster(
+    style = "fixed", breaks = brks,
+    col.scale  = tm_scale_continuous(values = "Blues"),
+    col.legend = tm_legend(title = "Logistics intensity\n(registrations per km²)")
+  ) +
+  tm_shape(subzones_use) + tm_borders(col = "white", lwd = 0.25) +
+  tm_shape(sf::st_as_sf(sf::st_make_valid(sf::st_union(subzones_use)))) +
+  tm_borders(col = "black", lwd = 1.0) +
+  tm_layout(frame = FALSE, component.autoscale = FALSE, legend.outside = TRUE)
+
+```
+
+#### Descriptive Statistics for the Logistics KDE Surface
+This chunk produces a **numerical summary** for the Logistics/Warehousing (SSIC 52) KDE:
+
+- **Bandwidth retrieval:**  
+  Looks for a cached KDE bandwidth at `data/rds/log_bw.rds`.  
+  If found, loads it into `log_bw`; otherwise sets `NA`.  
+  The bandwidth is the smoothing parameter used when computing the KDE.  
+
+- **Raster values (per km²):**  
+  Extracts cell values from the Logistics raster (`log_r`), drops `NA`s, and clamps any tiny negative artefacts to zero (`pmax`).  
+
+- **Summary statistics:**  
+  Computes:  
+  - **Points (`n`)**: number of Logistics points used (`log_ppp$n`),  
+  - **Bandwidth (m)**: cached/loaded bandwidth (rounded),  
+  - **Mean, Median** KDE intensity,  
+  - **P90, P99**: 90th and 99th percentile intensities,  
+  - **Max**: maximum intensity value.  
+
+- **Tidy table output:**  
+  Packs results into a `tibble` with columns:  
+  - `sector` = "Logistics/Warehousing (52)",  
+  - `metric` = statistic name,  
+  - `value` = numeric result (rounded for readability).  
+
+  Printing `log_stats` displays the table in the document.  
+```{r}
+# Bandwidth: use cached value if available
+log_bw_path <- file.path(rds_dir, "log_bw.rds")
+log_bw <- if (file.exists(log_bw_path)) readRDS(log_bw_path) else NA_real_
+
+# Raster values (per km^2); clamp tiny negatives to zero
+vals_raw <- terra::values(log_r, mat = FALSE)
+vals <- pmax(vals_raw[!is.na(vals_raw)], 0)
+
+# Stats
+log_n      <- log_ppp$n
+log_mean   <- mean(vals)
+log_median <- median(vals)
+log_p90    <- as.numeric(quantile(vals, 0.90))
+log_p99    <- as.numeric(quantile(vals, 0.99))
+log_max    <- max(vals)
+
+# Tidy table
+log_stats <- tibble::tibble(
+  sector = "Logistics/Warehousing (52)",
+  metric = c("Points (n)", "Bandwidth (m)", "Mean", "Median", "P90", "P99", "Max"),
+  value  = c(log_n,
+             ifelse(is.na(log_bw), NA, round(log_bw,0)),
+             round(log_mean,2),
+             round(log_median,2),
+             round(log_p90,2),
+             round(log_p99,2),
+             round(log_max,2))
+)
+log_stats
+```
+#### Logistics/Warehousing (SSIC 52) – KDE Summary (Jan 2024–Jun 2025)
+The KDE of Logistics/Warehousing registrations (n = 1,718) highlights a sparse but spatially meaningful distribution. The median intensity is just 0.14 registrations/km², while the mean is moderately higher at 2.69/km², indicating a long-tailed distribution. High-intensity clusters are rare but notable: the 90th percentile reaches 5.5/km², the 99th percentile 41.7/km², and the maximum exceeds 237/km², reflecting concentrated warehousing activity in specific industrial zones. Spatially, hotspots align with Singapore’s established logistics corridors — the western region around Jurong and Tuas, port-related areas, and select eastern nodes near Changi Airport. In contrast, residential and central business districts show minimal activity, consistent with land-use zoning. The map confirms a sector shaped strongly by infrastructure access and industrial planning, producing highly localized clusters of intense activity embedded within an otherwise low-density national backdrop.
