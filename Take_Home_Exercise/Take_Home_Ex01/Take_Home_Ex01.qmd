@@ -93,7 +93,7 @@ This study uses ACRA corporate entity registrations combined with reference laye
 Following code chunk is used to load neccessary packages
 
 ```{r}
-pacman::p_load(
+pacman::p_load(stpp,
   tidyverse,   # dplyr/readr/purrr/stringr
   sf, tmap,    # geospatial + mapping
   httr,        # OneMap API calls
@@ -1165,3 +1165,568 @@ This chunk produces a **numerical summary** for the Logistics/Warehousing (SSIC 
 
 #### Logistics/Warehousing (SSIC 52) – KDE Summary (Jan 2024–Jun 2025)
 The KDE of Logistics/Warehousing registrations (n = 1,718) highlights a sparse but spatially meaningful distribution. The median intensity is just 0.14 registrations/km², while the mean is moderately higher at 2.69/km², indicating a long-tailed distribution. High-intensity clusters are rare but notable: the 90th percentile reaches 5.5/km², the 99th percentile 41.7/km², and the maximum exceeds 237/km², reflecting concentrated warehousing activity in specific industrial zones. Spatially, hotspots align with Singapore’s established logistics corridors — the western region around Jurong and Tuas, port-related areas, and select eastern nodes near Changi Airport. In contrast, residential and central business districts show minimal activity, consistent with land-use zoning. The map confirms a sector shaped strongly by infrastructure access and industrial planning, producing highly localized clusters of intense activity embedded within an otherwise low-density national backdrop.
+
+## 2nd Order Spatio Temporal Analysis 
+
+While first-order analysis revealed density surfaces of business activity, it did not answer whether these businesses simply follow background intensity (CBD, industrial corridors, malls) or whether they also exhibit interaction effects — clustering in both space and time beyond random expectation. To address this, we employ second-order spatio-temporal analysis (Ripley’s K/L, pair correlation, Knox test, and space–time K-function). These methods allow us to quantify the scales at which new firms tend to emerge together, and whether such patterns differ across sectors (F&B, IT, Logistics). By identifying these interaction ranges, we can link firm behaviour to urban form, infrastructure readiness, and zoning policy — providing actionable spatial intelligence for planners.
+
+### Singapore-wide second-order space–time tests
+
+Parameters and Functions for Spatio-Temporal (ST) Point Pattern Analysis
+
+This helper block sets up the **parameters and functions** needed for spatio-temporal (ST) point pattern analysis.
+
+- **Time window:**  
+  Defines the period of study: from **1 Jan 2024 (`t0`) to 30 Jun 2025 (`t1`)**.  
+  All business registrations outside this range will be excluded from the analysis.  
+
+- **Study boundary:**  
+  Unions all planning subzones into one boundary polygon (`sg_union`), then converts it into a simple `(x,y)` coordinate matrix `bdry`.  
+  This format is required by `splancs::stkhat()` for ST K-function computation.  
+
+- **Point conversion function (`as_xyz`):**  
+  Converts an `sf` point layer into a numeric matrix with three columns:  
+  - `x, y`: planar coordinates (SVY21 metres),  
+  - `t`: registration time, expressed as days since `t0`.  
+
+  It ensures only points with registration dates inside the study window are included, and matches them by unique ID (`uen`) to keep attributes and geometry aligned.  
+
+- **Grid definitions:**  
+  - `r_vals`: spatial distance lags (metres) for the ST K-function, finer at short ranges (50 m steps up to 500 m) and coarser at larger ranges (up to 4 km).  
+  - `u_vals`: temporal lags (days) ranging from 1 week to ~6 months.  
+
+- **Simulation settings:**  
+  - `nsim = 199`: number of Monte Carlo simulations (199 for drafting, increase to 999 for final results).  
+  - `set.seed(626)`: ensures reproducibility of simulations.  
+  - Creates a cache directory `data/rds` to store results.  
+
+- **Sectors:**  
+  Declares the three business sectors for analysis: **F&B (56), IT (62), and Logistics/Warehousing (52).**  
+
+
+```{r}
+#| label: st-helpers
+#| eval: false
+
+
+# Study window & time bounds (already used earlier)
+t0 <- as.Date("2024-01-01"); t1 <- as.Date("2025-06-30")
+
+# Outer boundary as polygon matrix for splancs::stkhat
+sg_union <- sf::st_as_sf(sf::st_make_valid(sf::st_union(subzones_use)))
+bdry     <- sf::st_coordinates(sg_union)[,1:2]; colnames(bdry) <- c("x","y")
+
+# Convert sf points to [x,y,t] matrix (t=days since t0)
+as_xyz <- function(sf_pts) {
+  d  <- sf::st_drop_geometry(sf_pts) %>% filter(reg_date >= t0, reg_date <= t1)
+  xy <- sf::st_coordinates(sf_pts)
+  # keep only rows that have dates within window
+  xy <- xy[match(d$uen, sf::st_drop_geometry(sf_pts)$uen), , drop = FALSE]
+  cbind(x = xy[,1], y = xy[,2], t = as.numeric(d$reg_date - t0))
+}
+
+# Grids (SVY21 metres; days)
+r_vals <- c(seq(0, 500, 50), seq(600, 2000, 200), seq(2500, 4000, 500))
+u_vals <- c(7, 14, 30, 60, 90, 120, 180)
+
+nsim <- 199           # use 199 for speed while drafting; 999 for final
+set.seed(626)
+dir.create("data/rds", showWarnings = FALSE, recursive = TRUE)
+sectors <- c("F&B (56)", "IT (62)", "Logistics/Warehousing (52)")
+```
+
+Fast Mode Helper Block
+
+This is a **“fast mode” helper block** designed to let us run spatio-temporal K-function checks quickly without the full computational cost.
+
+- **Chunk options:**  
+  - `eval: false` → the code won’t run when knitting (you can toggle it on manually).  
+  - `include: false` → the code won’t appear in the rendered document (kept as a hidden utility).  
+
+- **Simplified grids:**  
+  - `r_vals <- seq(0, 1500, by = 250)` → defines a coarse set of 7 **spatial distances** (0, 250, …, 1500 metres).  
+  - `u_vals <- c(14, 30, 90)` → defines only 3 **temporal lags**: 2 weeks, 1 month, and 3 months.  
+
+- **Reduced simulations:**  
+  - `nsim <- 19` → runs just 19 Monte Carlo simulations (vs. 199 or 999 in the main analysis).  
+  - This makes it **much faster**, but less robust statistically.  
+
+- **Reproducibility:**  
+  - `set.seed(626)` ensures the quick test results are repeatable.  
+
+
+
+```{r}
+#| label: FAST_MODE
+#| eval: false
+#| include: false
+r_vals <- seq(0, 1500, by = 250)           # 0,250,...,1500  (7)
+u_vals <- c(14, 30, 90)                    # (3)
+nsim   <- 19                               # small, quick check
+set.seed(626)
+```
+
+
+Make a clean boundary (fixes NA rows / ensures closed ring)
+
+We create a clean boundary matrix for use with `splancs::stkhat()`:
+
+- **Function (`make_bdry_mat`):**  
+  - Unify polygons in `sf_poly`, validate with `st_make_valid()`.  
+  - Keep the **largest polygon** only (avoid offshore islands/artefacts).  
+  - Extract `(x,y)` coordinates, drop ring IDs, remove `NA` rows.  
+  - Ensure polygon is closed (append first coordinate if needed).  
+  - Convert to numeric matrix (`double`), required by `splancs`.  
+
+- **Sanity check:**  
+  - Run `make_bdry_mat(subzones_use)` to generate Singapore boundary.  
+  - Confirm output is a 2-column matrix with no `NA` values.  
+
+```{r}
+#| label: st-boundary-matrix
+#| eval: false
+make_bdry_mat <- function(sf_poly){
+  u  <- sf::st_make_valid(sf::st_union(sf_poly))
+  pg <- sf::st_cast(u, "POLYGON")
+  pg <- pg[which.max(sf::st_area(pg))]             # largest polygon
+  xy <- sf::st_coordinates(pg)[,1:2]               # drop ring cols
+  xy <- xy[stats::complete.cases(xy), , drop = FALSE]  # remove NA separators
+  if (!all(xy[1,] == xy[nrow(xy),])) xy <- rbind(xy, xy[1,])  # close ring
+  bd <- as.matrix(xy)
+  storage.mode(bd) <- "double"                     # <- crucial for splancs
+  bd
+}
+bdry <- make_bdry_mat(subzones_use)
+
+# quick sanity
+stopifnot(is.matrix(bdry), ncol(bdry) == 2, !any(is.na(bdry)))
+
+```
+
+Safer (x,y,t) converter (keeps rows aligned)
+
+This helper converts filtered sf points into a (x, y, t) matrix, where t is days since t0, stored in double precision for compatibility with splancs.
+
+```{r}
+#| label: st-as-xyz-double
+#| eval: false
+as_xyz <- function(sf_pts) {
+  sf_use <- dplyr::filter(sf_pts, reg_date >= t0, reg_date <= t1)
+  xy <- sf::st_coordinates(sf_use)
+  X  <- cbind(x = xy[,1], y = xy[,2], t = as.numeric(sf_use$reg_date - t0))
+  storage.mode(X) <- "double"                      # <- crucial for splancs
+  X
+}
+
+```
+
+Normalizing `stkhat()` Output with `fix_dims()`
+
+We define `fix_dims()` to reshape results from `splancs::stkhat()` into a consistent `ns × nu` matrix:
+
+- If a **list** → `unlist()` and reshape to `ns × nu`.  
+- If a **vector** →  
+  - `length == ns*nu`: reshape directly.  
+  - `length == ns` or `nu`: stop with clear error.  
+  - Else: try `as.matrix(K)` and adjust:  
+    - If already `ns × nu`, use.  
+    - If `nu × ns`, transpose.  
+    - Otherwise, throw informative error.  
+- Force **double precision** (`storage.mode(M) <- "double"`) for compatibility.  
+
+
+```{r}
+#| label: shape_normalizer
+#| eval: false
+fix_dims <- function(K, ns, nu){
+  # splancs::stkhat() can return:
+  # - a matrix (ns x nu), or
+  # - a list (often length ns, each element length nu), or
+  # - a vector (ns*nu)
+  if (is.list(K)) {
+    v <- unlist(K, use.names = FALSE)     # flatten list to numeric
+    M <- matrix(v, nrow = ns, ncol = nu, byrow = TRUE)
+  } else {
+    v <- as.numeric(K)
+    if (length(v) == ns * nu) {
+      M <- matrix(v, nrow = ns, ncol = nu)
+    } else if (length(v) == ns || length(v) == nu) {
+      stop("stkhat() returned a length-", length(v),
+           " vector; expected ns*nu = ", ns*nu, ".")
+    } else {
+      # try to coerce if it's a 2D object with swapped dims
+      M0 <- try(as.matrix(K), silent = TRUE)
+      if (inherits(M0, "try-error")) {
+        stop("stkhat() returned unexpected type/shape.")
+      }
+      if (all(dim(M0) == c(ns, nu))) {
+        M <- M0
+      } else if (all(dim(M0) == c(nu, ns))) {
+        M <- t(M0)
+      } else {
+        stop("stkhat() returned matrix with dims ",
+             paste(dim(M0), collapse="x"),
+             " but expected ", ns, "x", nu, ".")
+      }
+    }
+  }
+  storage.mode(M) <- "double"
+  M
+}
+
+```
+
+Run space–time K with time-permutation envelopes (all sectors)
+```{r}
+#| label: st-run-sg
+#| eval: false
+#| include: false
+# pts: matrix [n x 3] with cols x,y,t (all doubles)
+compute_st_env <- function(X_xyz, s_vals, u_vals, poly, nsim = 19) {
+  xy    <- X_xyz[, 1:2, drop = FALSE]
+  times <- as.double(X_xyz[, 3])
+  tlim  <- range(times, finite = TRUE)
+
+  ns <- length(s_vals); nu <- length(u_vals)
+
+  # observed
+  K_obs_raw <- splancs::stkhat(pts = xy, times = times,
+                               s = s_vals, tm = u_vals,
+                               poly = poly, tlim = tlim)
+  K_obs <- fix_dims(K_obs_raw, ns, nu)
+
+  # permutation null: shuffle times only
+  perm_once <- function(){
+    tp <- sample(times, replace = FALSE)
+    Kp <- splancs::stkhat(pts = xy, times = tp,
+                          s = s_vals, tm = u_vals,
+                          poly = poly, tlim = tlim)
+    fix_dims(Kp, ns, nu)
+  }
+
+  K_sim <- array(NA_real_, dim = c(ns, nu, nsim))
+  for (i in seq_len(nsim)) K_sim[,,i] <- perm_once()
+
+  lo  <- apply(K_sim, c(1,2), quantile, probs = 0.025, na.rm = TRUE)
+  hi  <- apply(K_sim, c(1,2), quantile, probs = 0.975, na.rm = TRUE)
+  med <- apply(K_sim, c(1,2), median,   na.rm = TRUE)
+
+  list(K_obs = K_obs, K_lo = lo, K_hi = hi, K_med = med,
+       s = s_vals, u = u_vals)
+}
+st_sg <- list()
+for (sec in sectors) {
+  pts <- dplyr::filter(biz_pts_use, sector == sec,
+                       reg_date >= t0, reg_date <= t1)
+  xyz <- as_xyz(pts)
+  if (nrow(xyz) < 30) { message("Skipping sparse: ", sec); next }
+
+  cache_name <- paste0("stk_env_SG_", gsub("\\W","_",sec),
+                       "_ns", length(r_vals), "_nu", length(u_vals),
+                       "_nsim", nsim, ".rds")
+  rds <- file.path("data/rds", cache_name)
+
+  force_recompute <- TRUE  # <- set TRUE now
+
+  st_sg[[sec]] <- if (!force_recompute && file.exists(rds)) {
+    readRDS(rds)
+  } else {
+    res <- compute_st_env(xyz, r_vals, u_vals, bdry, nsim = nsim)
+    saveRDS(res, rds); res
+  }
+}
+
+```
+
+```{r}
+#| eval: false
+#| include: false
+
+str(bdry)                 # matrix [N x 2] num
+head(bdry); tail(bdry)
+is.double(bdry)
+
+str(xyz)                  # matrix [n x 3] num with cols x,y,t
+head(xyz)
+is.double(xyz)
+
+is.double(r_vals); is.double(u_vals)
+```
+Spatio-Temporal K-Function Envelopes with Monte Carlo Simulations
+
+This chunk defines a workflow to compute **spatio-temporal K-function envelopes** for all business sectors in Singapore, using Monte Carlo simulations.
+
+Function `compute_st_env()`
+
+- **Inputs:**  
+  - `X_xyz`: point events as an `n × 3` matrix (`x, y, t` in double precision).  
+  - `s_vals`: vector of spatial distances (metres).  
+  - `u_vals`: vector of temporal lags (days).  
+  - `poly`: study boundary polygon matrix.  
+  - `nsim`: number of random permutations for simulation.  
+
+- **Observed K-function:**  
+  Calls `splancs::stkhat()` to compute the observed spatio-temporal K-function (`K_obs_raw`), then normalizes its shape with `fix_dims()` into an `ns × nu` matrix.  
+
+- **Null model (permutation test):**  
+  - A helper `perm_once()` shuffles the time values while keeping spatial locations fixed.  
+  - This simulates the null hypothesis: *no space-time interaction*.  
+  - Each shuffled dataset is passed to `stkhat()` and reshaped with `fix_dims()`.  
+
+- **Monte Carlo simulations:**  
+  Repeats the permutation `nsim` times, storing results in a 3D array (`ns × nu × nsim`).  
+
+- **Envelopes:**  
+  For each spatial–temporal grid cell, calculates:  
+  - `lo`: 2.5% quantile (lower bound),  
+  - `hi`: 97.5% quantile (upper bound),  
+  - `med`: median across simulations.  
+
+- **Output:**  
+  Returns a list with observed K, envelope bounds, median, and the `s` and `u` grids.  
+
+```{r}
+#| label: st-run-sg2
+#| eval: false
+# pts: matrix [n x 3] with cols x,y,t (all doubles)
+compute_st_env <- function(X_xyz, s_vals, u_vals, poly, nsim = 99) {
+  xy    <- X_xyz[, 1:2, drop = FALSE]
+  times <- as.double(X_xyz[, 3])
+  tlim  <- range(times, finite = TRUE)
+
+  ns <- length(s_vals); nu <- length(u_vals)
+
+  # observed
+  K_obs_raw <- splancs::stkhat(pts = xy, times = times,
+                               s = s_vals, tm = u_vals,
+                               poly = poly, tlim = tlim)
+  K_obs <- fix_dims(K_obs_raw, ns, nu)
+
+  # permutation null: shuffle times only
+  perm_once <- function(){
+    tp <- sample(times, replace = FALSE)
+    Kp <- splancs::stkhat(pts = xy, times = tp,
+                          s = s_vals, tm = u_vals,
+                          poly = poly, tlim = tlim)
+    fix_dims(Kp, ns, nu)
+  }
+
+  K_sim <- array(NA_real_, dim = c(ns, nu, nsim))
+  for (i in seq_len(nsim)) K_sim[,,i] <- perm_once()
+
+  lo  <- apply(K_sim, c(1,2), quantile, probs = 0.025, na.rm = TRUE)
+  hi  <- apply(K_sim, c(1,2), quantile, probs = 0.975, na.rm = TRUE)
+  med <- apply(K_sim, c(1,2), median,   na.rm = TRUE)
+
+  list(K_obs = K_obs, K_lo = lo, K_hi = hi, K_med = med,
+       s = s_vals, u = u_vals)
+}
+st_sg <- list()
+for (sec in sectors) {
+  pts <- dplyr::filter(biz_pts_use, sector == sec,
+                       reg_date >= t0, reg_date <= t1)
+  xyz <- as_xyz(pts)
+  if (nrow(xyz) < 30) { message("Skipping sparse: ", sec); next }
+
+  cache_name <- paste0("stk_env_SG_", gsub("\\W","_",sec),
+                       "_ns", length(r_vals), "_nu", length(u_vals),
+                       "_nsim", nsim, ".rds")
+  rds <- file.path("data/rds", cache_name)
+
+  force_recompute <- TRUE  # <- set TRUE now
+
+  st_sg[[sec]] <- if (!force_recompute && file.exists(rds)) {
+    readRDS(rds)
+  } else {
+    res <- compute_st_env(xyz, r_vals, u_vals, bdry, nsim = nsim)
+    saveRDS(res, rds); res
+  }
+}
+
+```
+
+Loading and Standardizing Spatio-Temporal K-Function Results
+
+This chunk **loads and standardizes** a previously saved spatio-temporal K-function result:
+
+1. **Load result:**  
+   Reads an RDS file containing simulation outputs (`res`).  
+
+2. **Rebuild grids:**  
+   Reconstructs spatial (`r_vals_fast`) and temporal (`u_vals_fast`) lags based on the filename (`ns7`, `nu3`).  
+   Adds them to `res` if missing.  
+
+3. **Coercion helper:**  
+   Defines `to_mat()` to ensure all K-function outputs (`K_obs`, `K_med`, `K_lo`, `K_hi`) are converted into consistent `ns × nu` matrices, regardless of whether they were stored as vectors, lists, or swapped-dimension matrices.  
+
+4. **Apply normalization:**  
+   Converts each stored surface to a proper matrix and checks dimensions (should be `7 × 3`).  
+
+5. **Diagnostics:**  
+   Prints matrix dimensions and the spatial/temporal lag values used.  
+
+
+```{r}
+# 1) Load the saved result
+res <- readRDS("data/rds/stk_env_SG_F_B__56__ns7_nu3_nsim19.rds")
+names(res); str(res, max.level = 1)
+
+# 2) Rebuild the s/u grids used for this file (ns7, nu3 in the filename)
+r_vals_fast <- seq(0, 1500, by = 250)   # length 7
+u_vals_fast <- c(14, 30, 90)            # length 3
+
+# If s/u are missing in the RDS, add them
+if (is.null(res$s)) res$s <- r_vals_fast
+if (is.null(res$u)) res$u <- u_vals_fast
+
+# 3) Coercion helpers (handle vector/list/matrix shapes from splancs::stkhat)
+to_mat <- function(K, ns, nu){
+  if (is.list(K) && !is.null(K$khat)) K <- K$khat
+  if (is.matrix(K)) {
+    if (all(dim(K) == c(ns, nu))) return(K)
+    if (all(dim(K) == c(nu, ns))) return(t(K))
+  }
+  v <- if (is.list(K)) unlist(K, use.names = FALSE) else as.numeric(K)
+  stopifnot(length(v) == ns * nu)
+  matrix(v, nrow = ns, ncol = nu, byrow = TRUE)
+}
+
+ns <- length(res$s); nu <- length(res$u)
+res$K_obs <- to_mat(res$K_obs, ns, nu)
+res$K_med <- to_mat(res$K_med, ns, nu)
+res$K_lo  <- to_mat(res$K_lo,  ns, nu)
+res$K_hi  <- to_mat(res$K_hi,  ns, nu)
+
+# Quick diagnostic: should all be 7 x 3
+lapply(list(obs=res$K_obs, med=res$K_med, lo=res$K_lo, hi=res$K_hi), dim)
+res$s; res$u
+```
+Heatmap Plot for Spatio-Temporal K-Function (`plot_st_heat_tile()`)
+
+Helper function to visualize spatio-temporal K-function results as a heatmap.
+
+- **Inputs:**  
+  - `res`: list with `K_obs`, `K_med`, `K_lo`, `K_hi`, grids `s` (space) and `u` (time).  
+  - `title`: string for plot title.  
+
+- **Data prep:**  
+  - Compute deviation: `D = K_obs - K_med`.  
+  - Encode significance: `+1` if above `K_hi`, `-1` if below `K_lo`, else `0`.  
+  - Build tidy `df` with space × time lags, deviation (`excess`), significance (`sig`).  
+
+- **Tile dimensions:**  
+  - Derive tile width/height from spacing of `s` and `u`.  
+
+- **Plot (ggplot2):**  
+  1. Grey tiles for missing cells (`NA`).  
+  2. Colour tiles by deviation (`excess`, viridis scale).  
+  3. Significance markers:  
+     - `✱` (shape 8) for `K_obs > K_hi` (clustering).  
+     - `x` (shape 4) for `K_obs < K_lo` (inhibition).  
+  4. Show full lag ranges, no expansion.  
+  5. Clear labels + legend.  
+  6. Minimal theme.  
+
+```{r}
+library(ggplot2)
+
+plot_st_heat_tile <- function(res, title){
+  ns <- length(res$s); nu <- length(res$u)
+  D   <- res$K_obs - res$K_med
+  sig <- (res$K_obs > res$K_hi) - (res$K_obs < res$K_lo)
+
+  df <- expand.grid(ir = seq_len(ns), iu = seq_len(nu))
+  df$r <- res$s[df$ir]
+  df$u <- res$u[df$iu]
+  df$excess <- as.vector(D)
+  df$sig    <- as.vector(sig)
+  df$is_na  <- !is.finite(df$excess)
+
+  # cell width/height from grid spacing (robust)
+  dr <- diff(sort(unique(res$s))); w <- if (length(dr)) median(dr) else 1
+  du <- diff(sort(unique(res$u))); h <- if (length(du)) median(du) else 1
+
+  ggplot() +
+    # draw NA tiles first so the row/column is visible
+    geom_tile(
+      data = subset(df, is_na),
+      aes(r, u), width = w, height = h, fill = "grey95", color = NA
+    ) +
+    # draw finite tiles with colour scale
+    geom_tile(
+      data = subset(df, !is_na),
+      aes(r, u, fill = excess), width = w, height = h, color = NA
+    ) +
+    # significance markers (✳ = above band, × = below)
+    geom_point(
+      data = subset(df, sig != 0 & !is_na),
+      aes(r, u, shape = factor(sig)), size = 2, color = "black"
+    ) +
+    scale_shape_manual(values = c("-1" = 4, "1" = 8), guide = "none") +
+    scale_fill_viridis_c(option = "C") +
+    scale_x_continuous(breaks = res$s, expand = c(0,0)) +
+    scale_y_continuous(breaks = res$u, expand = c(0,0)) +
+    labs(x = "Space lag r (m)", y = "Time lag u (days)",
+         fill = "K_obs − median", title = title) +
+    theme_minimal() +
+    theme(panel.grid.minor = element_blank())
+}
+
+
+
+```
+
+```{r}
+# (Optional in your qmd chunk) #| fig.width: 7
+#                               #| fig.height: 4
+print(plot_st_heat_tile(res, "F&B (56) — ST-K excess"))
+```
+F&B (SSIC 56) – Space–time K excess (Jan 2024–Jun 2025)
+
+Heat map shows \(K_{\text{obs}}\) – median under a time-permutation null (spatial pattern held fixed).  
+- **Blue cells** indicate values near expectation;  
+- **Yellow cells** indicate excess pairs.  
+
+A significant excess (✱) occurs only at \(r \approx 1.5 \, \text{km}, \, u \approx 90 \, \text{days}\), implying **quarter-year pulses at city–neighbourhood scale**.  
+
+No significant excess at 14–30 days across radii suggests **no short-term space–time clustering** beyond background intensity.  
+
+This supports the view that F&B registrations move in **periodic, broad-area waves** (e.g., leasing/fit-out cycles) rather than immediate local contagion.  
+
+
+```{r}
+res_it  <- readRDS("data/rds/stk_env_SG_IT__62__ns7_nu3_nsim19.rds")
+print(plot_st_heat_tile(res_it,  "IT (62) — ST-K excess"))
+```
+IT (SSIC 62) – Space–time K excess (Fast diagnostics)
+
+Heatmap shows \(K_{\text{obs}} - \text{median(null)}\) for space lag \(r\) and time lag \(u\).  
+The null preserves locations but **shuffles times**, so any signal indicates **space–time interaction** beyond the static spatial pattern.  
+
+The surface is near zero across most lags, implying timing is largely independent of place at small–moderate scales.  
+
+A **positive, significant** cell appears at ~**1.5 km** and ~**90 days**, consistent with **quarterly bursts** of IT registrations within large office clusters (e.g., CBD, one-north, CBP).  
+
+This suggests **programme- or lease-driven batch registrations** rather than rapid week-to-week imitation.  
+
+*(FAST run: coarse grid, nsim = 19; used for screening. We complement this with kernel maps and first-order tests.)*  
+
+
+```{r}
+res_log <- readRDS("data/rds/stk_env_SG_Logistics_Warehousing__52__ns7_nu3_nsim19.rds")
+print(plot_st_heat_tile(res_log, "Logistics (52) — ST-K excess"))
+
+```
+Logistics (52) — ST-K diagnostic
+This heatmap maps \( K_{obs} - \text{median(null)} \) over space lags \( r \) and time lags \( u \).  
+The null holds locations fixed and **shuffles dates**, so any signal reflects **space–time interaction** beyond baseline spatial clustering.  
+
+Results are flat (≈0) at most scales, indicating that—once we account for industrial-estate geography—the **timing** of new logistics firms is generally independent of **place**.  
+
+A single **positive, significant** cell appears at ~1.5 km × ~90 days (✱).  
+
+**Interpretation:** occasional **quarterly bursts** of registrations within estate-sized catchments (e.g., phased openings, coordinated leases, operator batch filings), rather than rapid, short-range contagion.  
+
+**Planning takeaway:** prioritize **estate-level capacity and permitting cycles** on a quarterly cadence; short-term reactive measures (≤30 days, ≤750 m) are less relevant for this sector.  
+
+
