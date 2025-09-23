@@ -1730,3 +1730,209 @@ A single **positive, significant** cell appears at ~1.5 km × ~90 days (✱).
 **Planning takeaway:** prioritize **estate-level capacity and permitting cycles** on a quarterly cadence; short-term reactive measures (≤30 days, ≤750 m) are less relevant for this sector.  
 
 
+### Special look at Suzone Level (Geylang East)
+
+Ripley’s L(r) – r for Subzone Spatial Clustering
+
+This chunk computes and plots **Ripley’s L(r) – r** for the **second most active subzone** of a chosen sector (default: IT (62)), to assess **within-subzone spatial clustering**.
+
+- **Pick target subzone:**  
+  Count points by `SUBZONE_N` for the sector, sort by frequency, and select the **2nd highest (`sz2`)**.  
+  This avoids an over-dominant hotspot while still analysing a busy area.  
+
+- **Build point pattern in that subzone:**  
+  - `to_ppp_in()` converts the subzone polygon to an `owin` window.  
+  - The sector’s points in that subzone are converted to a `ppp` object `x`.  
+
+- **Choose analysis range:**  
+  - Set `rmax` to the **smaller** of 1200 m or **half the subzone diameter** (guard against edge artefacts).  
+  - Create `r_seq` every 25 m.  
+
+- **Compute L-function:**  
+  - Use `spatstat.explore::Lest()` with Ripley’s correction.  
+  - Build a dataframe with \( L(r) - r \), where 0 indicates CSR (Complete Spatial Randomness).  
+
+- **Plot:**  
+  - Line plot of \( L(r) - r \) vs \( r \) with a dashed 0-line.  
+  - Title includes the sector and subzone.  
+
+```{r}
+# sector to analyse (change if needed), or loop over your `sectors`
+sec <- "IT (62)"
+
+# find the 2nd most active subzone for this sector
+sz_counts <- biz_pts_use |>
+  sf::st_drop_geometry() |>
+  dplyr::filter(sector == sec) |>
+  dplyr::count(SUBZONE_N, name = "n") |>
+  dplyr::arrange(dplyr::desc(n))
+
+stopifnot(nrow(sz_counts) >= 2)
+sz2 <- sz_counts$SUBZONE_N[2]; n2 <- sz_counts$n[2]
+message("Sector: ", sec, " | 2nd subzone: ", sz2, " (n=", n2, ")")
+
+# build ppp in that subzone
+to_ppp_in <- function(pts_sf, poly_sf){
+  Wsz <- spatstat.geom::as.owin(poly_sf)
+  xy  <- sf::st_coordinates(pts_sf)
+  spatstat.geom::ppp(xy[,1], xy[,2], window = Wsz, check = FALSE)
+}
+pts_sz <- dplyr::filter(biz_pts_use, sector == sec, SUBZONE_N == sz2)
+poly_sz <- dplyr::filter(subzones_use, SUBZONE_N == sz2)
+X <- to_ppp_in(pts_sz, poly_sz)
+
+# L(r)-r (cap range to half the subzone diameter, max 1200 m)
+rmax <- min(1200, spatstat.geom::diameter.owin(spatstat.geom::Window(X))/2)
+r_seq <- seq(0, rmax, by = 25)
+L     <- spatstat.explore::Lest(X, r = r_seq, correction = "Ripley")
+dfL   <- as.data.frame(L) |>
+  dplyr::transmute(r = r, LminusR = iso - r)
+
+ggplot2::ggplot(dfL, ggplot2::aes(r, LminusR)) +
+  ggplot2::geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.4) +
+  ggplot2::geom_line(color = "steelblue", linewidth = 0.8) +
+  ggplot2::labs(
+    title = paste0(sec, " — ", sz2, " (2nd most active)"),
+    subtitle = "Ripley L(r) − r within subzone window",
+    x = "r (m)", y = "L(r) − r"
+  ) +
+  ggplot2::theme_minimal()
+```
+Thematic Map of the 2nd Most Active Subzone (IT 62)
+
+This block creates a **thematic map** of the 2nd most active subzone for the IT (62) sector, highlighting the subzone polygon and the business registration points inside it.
+
+- **Data prep:**  
+  - `pts_sz`: all IT registrations within the chosen subzone (`sz2`).  
+  - `poly_sz`: polygon geometry for that subzone.  
+  - `bbox_sz`: bounding box padded (≈400 m) around the subzone for map spacing.  
+
+- **Mapping steps with `tmap`:**  
+  1. **Background:** plot all planning subzones (`subzones_use`) within the bounding box, filled light grey (`grey95`) with thin white borders.  
+  2. **Highlight subzone:** overlay the target polygon in light yellow (`#FFE082`), semi-transparent, with an orange border (`#F57F17`). Label with `SUBZONE_N`.  
+  3. **Points:** overlay all IT registrations (`pts_sz`) as small steel-blue dots, semi-transparent for clarity.  
+  4. **Layout:** add a title showing sector, subzone name, and registration count; hide legend; remove frame; fix scaling for a clean appearance.  
+
+
+```{r}
+library(tmap)
+
+# Sector + 2nd most active subzone (you already computed sz2)
+sec    <- "IT (62)"
+pts_sz <- dplyr::filter(biz_pts_use, sector == sec, SUBZONE_N == sz2)
+poly_sz <- dplyr::filter(subzones_use, SUBZONE_N == sz2)
+
+# a slightly padded bbox so the subzone has breathing room
+bbox_sz <- sf::st_bbox(sf::st_buffer(sf::st_as_sfc(sf::st_bbox(poly_sz)), 400))
+
+tmap_mode("plot")
+
+tm_shape(subzones_use, bbox = bbox_sz) +
+  tm_polygons(col = "grey95", border.col = "white") +
+tm_shape(poly_sz) +
+  tm_polygons(col = "#FFE082", alpha = 0.6, border.col = "#F57F17", lwd = 1.2) +
+  tm_text("SUBZONE_N", size = 0.9, col = "black", auto.placement = TRUE) +  # <-- on polygon
+tm_shape(pts_sz) +
+  tm_dots(col = "steelblue", size = 0.2, alpha = 0.55) +
+tm_layout(
+  title = sprintf("%s — %s (%d registrations)", sec, sz2, nrow(pts_sz)),
+  legend.show = FALSE, frame = FALSE, component.autoscale = FALSE
+)
+```
+The L(r) − r curve is strongly above 0 at short distances, peaking within ~50–250 m, then declines and crosses 0 around ~850 m. Interpretation: IT registrations are clustered at block–neighbourhood scales (tens to a few hundred metres). Beyond ~0.8 km the pattern is no longer more clustered than CSR; the slight negatives likely reflect edge effects/land-use gaps rather than true repulsion.
+
+The map shows many points concentrated within the subzone, forming several tight mini-clusters rather than a uniform spread—consistent with co-location in business buildings, coworking floors, or along commercial corridors.
+
+Planning takeaway: support small-footprint, flexible office space and amenities within walkable (≤800 m) catchments; monitoring should focus on these local nodes rather than wider-area interventions.
+
+
+
+For other sectors
+This code defines reusable helpers to analyze and visualize business clustering within a chosen subzone.
+plot_Lr_for_subzone() builds a point pattern inside the subzone and plots Ripley’s L(r) − r to assess clustering vs. CSR, while map_sector_subzone() produces a clean thematic map highlighting the subzone and its business registration points.
+
+```{r}
+# build ppp inside a subzone polygon
+to_ppp_in <- function(pts_sf, poly_sf){
+  Wsz <- spatstat.geom::as.owin(poly_sf)
+  xy  <- sf::st_coordinates(pts_sf)
+  spatstat.geom::ppp(xy[,1], xy[,2], window = Wsz, check = FALSE)
+}
+
+# L(r) - r plot inside a subzone
+plot_Lr_for_subzone <- function(sec, sz_name, by = 25, r_cap = 1200){
+  pts_sz  <- dplyr::filter(biz_pts_use, sector == sec, SUBZONE_N == sz_name)
+  poly_sz <- dplyr::filter(subzones_use,  SUBZONE_N == sz_name)
+  stopifnot(nrow(poly_sz) == 1, nrow(pts_sz) > 0)
+
+  X <- to_ppp_in(pts_sz, poly_sz)
+  rmax <- min(r_cap, spatstat.geom::diameter.owin(spatstat.geom::Window(X))/2)
+  L    <- spatstat.explore::Lest(X, r = seq(0, rmax, by = by), correction = "Ripley")
+  dfL  <- as.data.frame(L) |> dplyr::transmute(r = r, LminusR = iso - r)
+
+  ggplot2::ggplot(dfL, ggplot2::aes(r, LminusR)) +
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.4) +
+    ggplot2::geom_line(color = "steelblue", linewidth = 0.8) +
+    ggplot2::labs(
+      title = sprintf("%s — %s", sec, sz_name),
+      subtitle = "Ripley L(r) − r within subzone window",
+      x = "r (m)", y = "L(r) − r"
+    ) +
+    ggplot2::theme_minimal()
+}
+
+# clean subzone map with points
+map_sector_subzone <- function(sec, sz_name){
+  pts_sz  <- dplyr::filter(biz_pts_use, sector == sec, SUBZONE_N == sz_name)
+  poly_sz <- dplyr::filter(subzones_use,  SUBZONE_N == sz_name)
+  bbox_sz <- sf::st_bbox(sf::st_buffer(sf::st_as_sfc(sf::st_bbox(poly_sz)), 400))
+
+  tmap_mode("plot")
+  tm_shape(subzones_use, bbox = bbox_sz) + tm_polygons(col = "grey95", border.col = "white") +
+  tm_shape(poly_sz) + tm_polygons(col = "#FFE082", alpha = 0.6, border.col = "#F57F17", lwd = 1.2) +
+  tm_text("SUBZONE_N", size = 0.9, col = "black", auto.placement = TRUE) +
+  tm_shape(pts_sz) + tm_dots(col = "steelblue", size = 0.2, alpha = 0.55) +
+  tm_layout(
+    title = sprintf("%s — %s (%d registrations)", sec, sz_name, nrow(pts_sz)),
+    legend.show = FALSE, frame = FALSE, component.autoscale = FALSE
+  )
+}
+```
+
+```{r}
+sz_name <- "GEYLANG EAST"
+
+# F&B (56)
+print(plot_Lr_for_subzone("F&B (56)", sz_name))
+print(map_sector_subzone("F&B (56)", sz_name))
+```
+ F&B (56) — Geylang East (subzone)
+
+The subzone K-function \( L(r) - r \) is strongly **positive from 0–~750 m**, peaking at very short ranges (tens of metres) and tapering steadily.  
+
+This means new F&B registrations are **clustered at block–neighbourhood scales**, consistent with mall/market streets and MRT-proximate shopfronts.  
+
+The curve crosses ~0 around **0.75–0.8 km**, indicating that beyond this radius the pattern is no more clustered than random within the subzone.  
+
+The mild **negative tail** after ~900–1100 m is typical of **edge effects** as distances approach the subzone’s diameter, not true repulsion. The map corroborates several micro-clusters spread across GEYLANG EAST rather than a single node.  
+
+**Planning note:** street-management and licensing hotspots are likely within **≤500–800 m corridors**; improvements to pedestrian flow and cleaning/enforcement should prioritise these clusters.  
+
+
+
+```{r}
+# Logistics/Warehousing (52)
+print(plot_Lr_for_subzone("Logistics/Warehousing (52)", sz_name))
+print(map_sector_subzone("Logistics/Warehousing (52)", sz_name))
+```
+Ripley’s \( L(r) - r \) inside the subzone is strongly **positive at very small radii** (peak < 50 m), meaning registrations tend to co-locate in the same or adjacent buildings—typical of multi-tenant warehouses or repeated use of a few addresses.  
+
+The curve declines steadily and crosses ~0 at ~0.85–0.9 km, then becomes **negative** out to ~1.2 km, indicating spacing between clusters at estate scale (i.e., once you move ~1 km away, new firms are less likely than random to appear there, given the subzone window).  
+
+The dot map (≈**105 registrations**) shows few, tight nodes along main corridors and very little presence elsewhere, consistent with zoning and frontage access needs.  
+
+**Planning takeaways:**  
+- Focus servicing/curb and loading management around those micro-clusters.  
+- Preserve small-parcel/strata industrial supply.  
+- Interpret cautiously since registrations may reflect office/registered addresses rather than operational sites.  
+

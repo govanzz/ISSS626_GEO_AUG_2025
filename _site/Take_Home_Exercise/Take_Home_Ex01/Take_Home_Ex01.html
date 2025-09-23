@@ -244,6 +244,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#nd-order-spatio-temporal-analysis" id="toc-nd-order-spatio-temporal-analysis" class="nav-link" data-scroll-target="#nd-order-spatio-temporal-analysis"><span class="header-section-number">7</span> 2nd Order Spatio Temporal Analysis</a>
   <ul class="collapse">
   <li><a href="#singapore-wide-second-order-spacetime-tests" id="toc-singapore-wide-second-order-spacetime-tests" class="nav-link" data-scroll-target="#singapore-wide-second-order-spacetime-tests"><span class="header-section-number">7.1</span> Singapore-wide second-order space–time tests</a></li>
+  <li><a href="#special-look-at-suzone-level-geylang-east" id="toc-special-look-at-suzone-level-geylang-east" class="nav-link" data-scroll-target="#special-look-at-suzone-level-geylang-east"><span class="header-section-number">7.2</span> Special look at Suzone Level (Geylang East)</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -277,7 +278,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">September 23, 2025</p>
+      <p class="date-modified">September 24, 2025</p>
     </div>
   </div>
     
@@ -2212,6 +2213,247 @@ The null holds locations fixed and <strong>shuffles dates</strong>, so any signa
 <p>A single <strong>positive, significant</strong> cell appears at ~1.5 km × ~90 days (✱).</p>
 <p><strong>Interpretation:</strong> occasional <strong>quarterly bursts</strong> of registrations within estate-sized catchments (e.g., phased openings, coordinated leases, operator batch filings), rather than rapid, short-range contagion.</p>
 <p><strong>Planning takeaway:</strong> prioritize <strong>estate-level capacity and permitting cycles</strong> on a quarterly cadence; short-term reactive measures (≤30 days, ≤750 m) are less relevant for this sector.</p>
+</section>
+<section id="special-look-at-suzone-level-geylang-east" class="level3" data-number="7.2">
+<h3 data-number="7.2" class="anchored" data-anchor-id="special-look-at-suzone-level-geylang-east"><span class="header-section-number">7.2</span> Special look at Suzone Level (Geylang East)</h3>
+<p>Ripley’s L(r) – r for Subzone Spatial Clustering</p>
+<p>This chunk computes and plots <strong>Ripley’s L(r) – r</strong> for the <strong>second most active subzone</strong> of a chosen sector (default: IT (62)), to assess <strong>within-subzone spatial clustering</strong>.</p>
+<ul>
+<li><p><strong>Pick target subzone:</strong><br>
+Count points by <code>SUBZONE_N</code> for the sector, sort by frequency, and select the <strong>2nd highest (<code>sz2</code>)</strong>.<br>
+This avoids an over-dominant hotspot while still analysing a busy area.</p></li>
+<li><p><strong>Build point pattern in that subzone:</strong></p>
+<ul>
+<li><code>to_ppp_in()</code> converts the subzone polygon to an <code>owin</code> window.<br>
+</li>
+<li>The sector’s points in that subzone are converted to a <code>ppp</code> object <code>x</code>.</li>
+</ul></li>
+<li><p><strong>Choose analysis range:</strong></p>
+<ul>
+<li>Set <code>rmax</code> to the <strong>smaller</strong> of 1200 m or <strong>half the subzone diameter</strong> (guard against edge artefacts).<br>
+</li>
+<li>Create <code>r_seq</code> every 25 m.</li>
+</ul></li>
+<li><p><strong>Compute L-function:</strong></p>
+<ul>
+<li>Use <code>spatstat.explore::Lest()</code> with Ripley’s correction.<br>
+</li>
+<li>Build a dataframe with ( L(r) - r ), where 0 indicates CSR (Complete Spatial Randomness).</li>
+</ul></li>
+<li><p><strong>Plot:</strong></p>
+<ul>
+<li>Line plot of ( L(r) - r ) vs ( r ) with a dashed 0-line.<br>
+</li>
+<li>Title includes the sector and subzone.</li>
+</ul></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a><span class="co"># sector to analyse (change if needed), or loop over your `sectors`</span></span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>sec <span class="ot">&lt;-</span> <span class="st">"IT (62)"</span></span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a><span class="co"># find the 2nd most active subzone for this sector</span></span>
+<span id="cb83-5"><a href="#cb83-5" aria-hidden="true" tabindex="-1"></a>sz_counts <span class="ot">&lt;-</span> biz_pts_use <span class="sc">|&gt;</span></span>
+<span id="cb83-6"><a href="#cb83-6" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>() <span class="sc">|&gt;</span></span>
+<span id="cb83-7"><a href="#cb83-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(sector <span class="sc">==</span> sec) <span class="sc">|&gt;</span></span>
+<span id="cb83-8"><a href="#cb83-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">count</span>(SUBZONE_N, <span class="at">name =</span> <span class="st">"n"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb83-9"><a href="#cb83-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">arrange</span>(dplyr<span class="sc">::</span><span class="fu">desc</span>(n))</span>
+<span id="cb83-10"><a href="#cb83-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-11"><a href="#cb83-11" aria-hidden="true" tabindex="-1"></a><span class="fu">stopifnot</span>(<span class="fu">nrow</span>(sz_counts) <span class="sc">&gt;=</span> <span class="dv">2</span>)</span>
+<span id="cb83-12"><a href="#cb83-12" aria-hidden="true" tabindex="-1"></a>sz2 <span class="ot">&lt;-</span> sz_counts<span class="sc">$</span>SUBZONE_N[<span class="dv">2</span>]; n2 <span class="ot">&lt;-</span> sz_counts<span class="sc">$</span>n[<span class="dv">2</span>]</span>
+<span id="cb83-13"><a href="#cb83-13" aria-hidden="true" tabindex="-1"></a><span class="fu">message</span>(<span class="st">"Sector: "</span>, sec, <span class="st">" | 2nd subzone: "</span>, sz2, <span class="st">" (n="</span>, n2, <span class="st">")"</span>)</span>
+<span id="cb83-14"><a href="#cb83-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-15"><a href="#cb83-15" aria-hidden="true" tabindex="-1"></a><span class="co"># build ppp in that subzone</span></span>
+<span id="cb83-16"><a href="#cb83-16" aria-hidden="true" tabindex="-1"></a>to_ppp_in <span class="ot">&lt;-</span> <span class="cf">function</span>(pts_sf, poly_sf){</span>
+<span id="cb83-17"><a href="#cb83-17" aria-hidden="true" tabindex="-1"></a>  Wsz <span class="ot">&lt;-</span> spatstat.geom<span class="sc">::</span><span class="fu">as.owin</span>(poly_sf)</span>
+<span id="cb83-18"><a href="#cb83-18" aria-hidden="true" tabindex="-1"></a>  xy  <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_coordinates</span>(pts_sf)</span>
+<span id="cb83-19"><a href="#cb83-19" aria-hidden="true" tabindex="-1"></a>  spatstat.geom<span class="sc">::</span><span class="fu">ppp</span>(xy[,<span class="dv">1</span>], xy[,<span class="dv">2</span>], <span class="at">window =</span> Wsz, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb83-20"><a href="#cb83-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb83-21"><a href="#cb83-21" aria-hidden="true" tabindex="-1"></a>pts_sz <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(biz_pts_use, sector <span class="sc">==</span> sec, SUBZONE_N <span class="sc">==</span> sz2)</span>
+<span id="cb83-22"><a href="#cb83-22" aria-hidden="true" tabindex="-1"></a>poly_sz <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(subzones_use, SUBZONE_N <span class="sc">==</span> sz2)</span>
+<span id="cb83-23"><a href="#cb83-23" aria-hidden="true" tabindex="-1"></a>X <span class="ot">&lt;-</span> <span class="fu">to_ppp_in</span>(pts_sz, poly_sz)</span>
+<span id="cb83-24"><a href="#cb83-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-25"><a href="#cb83-25" aria-hidden="true" tabindex="-1"></a><span class="co"># L(r)-r (cap range to half the subzone diameter, max 1200 m)</span></span>
+<span id="cb83-26"><a href="#cb83-26" aria-hidden="true" tabindex="-1"></a>rmax <span class="ot">&lt;-</span> <span class="fu">min</span>(<span class="dv">1200</span>, spatstat.geom<span class="sc">::</span><span class="fu">diameter.owin</span>(spatstat.geom<span class="sc">::</span><span class="fu">Window</span>(X))<span class="sc">/</span><span class="dv">2</span>)</span>
+<span id="cb83-27"><a href="#cb83-27" aria-hidden="true" tabindex="-1"></a>r_seq <span class="ot">&lt;-</span> <span class="fu">seq</span>(<span class="dv">0</span>, rmax, <span class="at">by =</span> <span class="dv">25</span>)</span>
+<span id="cb83-28"><a href="#cb83-28" aria-hidden="true" tabindex="-1"></a>L     <span class="ot">&lt;-</span> spatstat.explore<span class="sc">::</span><span class="fu">Lest</span>(X, <span class="at">r =</span> r_seq, <span class="at">correction =</span> <span class="st">"Ripley"</span>)</span>
+<span id="cb83-29"><a href="#cb83-29" aria-hidden="true" tabindex="-1"></a>dfL   <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(L) <span class="sc">|&gt;</span></span>
+<span id="cb83-30"><a href="#cb83-30" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">transmute</span>(<span class="at">r =</span> r, <span class="at">LminusR =</span> iso <span class="sc">-</span> r)</span>
+<span id="cb83-31"><a href="#cb83-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb83-32"><a href="#cb83-32" aria-hidden="true" tabindex="-1"></a>ggplot2<span class="sc">::</span><span class="fu">ggplot</span>(dfL, ggplot2<span class="sc">::</span><span class="fu">aes</span>(r, LminusR)) <span class="sc">+</span></span>
+<span id="cb83-33"><a href="#cb83-33" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">linewidth =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb83-34"><a href="#cb83-34" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"steelblue"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb83-35"><a href="#cb83-35" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">labs</span>(</span>
+<span id="cb83-36"><a href="#cb83-36" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="fu">paste0</span>(sec, <span class="st">" — "</span>, sz2, <span class="st">" (2nd most active)"</span>),</span>
+<span id="cb83-37"><a href="#cb83-37" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Ripley L(r) − r within subzone window"</span>,</span>
+<span id="cb83-38"><a href="#cb83-38" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"r (m)"</span>, <span class="at">y =</span> <span class="st">"L(r) − r"</span></span>
+<span id="cb83-39"><a href="#cb83-39" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb83-40"><a href="#cb83-40" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex01_files/figure-html/unnamed-chunk-30-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Thematic Map of the 2nd Most Active Subzone (IT 62)</p>
+<p>This block creates a <strong>thematic map</strong> of the 2nd most active subzone for the IT (62) sector, highlighting the subzone polygon and the business registration points inside it.</p>
+<ul>
+<li><strong>Data prep:</strong>
+<ul>
+<li><code>pts_sz</code>: all IT registrations within the chosen subzone (<code>sz2</code>).<br>
+</li>
+<li><code>poly_sz</code>: polygon geometry for that subzone.<br>
+</li>
+<li><code>bbox_sz</code>: bounding box padded (≈400 m) around the subzone for map spacing.</li>
+</ul></li>
+<li><strong>Mapping steps with <code>tmap</code>:</strong>
+<ol type="1">
+<li><strong>Background:</strong> plot all planning subzones (<code>subzones_use</code>) within the bounding box, filled light grey (<code>grey95</code>) with thin white borders.<br>
+</li>
+<li><strong>Highlight subzone:</strong> overlay the target polygon in light yellow (<code>#FFE082</code>), semi-transparent, with an orange border (<code>#F57F17</code>). Label with <code>SUBZONE_N</code>.<br>
+</li>
+<li><strong>Points:</strong> overlay all IT registrations (<code>pts_sz</code>) as small steel-blue dots, semi-transparent for clarity.<br>
+</li>
+<li><strong>Layout:</strong> add a title showing sector, subzone name, and registration count; hide legend; remove frame; fix scaling for a clean appearance.</li>
+</ol></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tmap)</span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Sector + 2nd most active subzone (you already computed sz2)</span></span>
+<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a>sec    <span class="ot">&lt;-</span> <span class="st">"IT (62)"</span></span>
+<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a>pts_sz <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(biz_pts_use, sector <span class="sc">==</span> sec, SUBZONE_N <span class="sc">==</span> sz2)</span>
+<span id="cb84-6"><a href="#cb84-6" aria-hidden="true" tabindex="-1"></a>poly_sz <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(subzones_use, SUBZONE_N <span class="sc">==</span> sz2)</span>
+<span id="cb84-7"><a href="#cb84-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-8"><a href="#cb84-8" aria-hidden="true" tabindex="-1"></a><span class="co"># a slightly padded bbox so the subzone has breathing room</span></span>
+<span id="cb84-9"><a href="#cb84-9" aria-hidden="true" tabindex="-1"></a>bbox_sz <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_bbox</span>(sf<span class="sc">::</span><span class="fu">st_buffer</span>(sf<span class="sc">::</span><span class="fu">st_as_sfc</span>(sf<span class="sc">::</span><span class="fu">st_bbox</span>(poly_sz)), <span class="dv">400</span>))</span>
+<span id="cb84-10"><a href="#cb84-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-11"><a href="#cb84-11" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb84-12"><a href="#cb84-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-13"><a href="#cb84-13" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(subzones_use, <span class="at">bbox =</span> bbox_sz) <span class="sc">+</span></span>
+<span id="cb84-14"><a href="#cb84-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"grey95"</span>, <span class="at">border.col =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb84-15"><a href="#cb84-15" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(poly_sz) <span class="sc">+</span></span>
+<span id="cb84-16"><a href="#cb84-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"#FFE082"</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>, <span class="at">border.col =</span> <span class="st">"#F57F17"</span>, <span class="at">lwd =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
+<span id="cb84-17"><a href="#cb84-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_text</span>(<span class="st">"SUBZONE_N"</span>, <span class="at">size =</span> <span class="fl">0.9</span>, <span class="at">col =</span> <span class="st">"black"</span>, <span class="at">auto.placement =</span> <span class="cn">TRUE</span>) <span class="sc">+</span>  <span class="co"># &lt;-- on polygon</span></span>
+<span id="cb84-18"><a href="#cb84-18" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(pts_sz) <span class="sc">+</span></span>
+<span id="cb84-19"><a href="#cb84-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"steelblue"</span>, <span class="at">size =</span> <span class="fl">0.2</span>, <span class="at">alpha =</span> <span class="fl">0.55</span>) <span class="sc">+</span></span>
+<span id="cb84-20"><a href="#cb84-20" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_layout</span>(</span>
+<span id="cb84-21"><a href="#cb84-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">title =</span> <span class="fu">sprintf</span>(<span class="st">"%s — %s (%d registrations)"</span>, sec, sz2, <span class="fu">nrow</span>(pts_sz)),</span>
+<span id="cb84-22"><a href="#cb84-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">legend.show =</span> <span class="cn">FALSE</span>, <span class="at">frame =</span> <span class="cn">FALSE</span>, <span class="at">component.autoscale =</span> <span class="cn">FALSE</span></span>
+<span id="cb84-23"><a href="#cb84-23" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex01_files/figure-html/unnamed-chunk-31-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The L(r) − r curve is strongly above 0 at short distances, peaking within ~50–250 m, then declines and crosses 0 around ~850 m. Interpretation: IT registrations are clustered at block–neighbourhood scales (tens to a few hundred metres). Beyond ~0.8 km the pattern is no longer more clustered than CSR; the slight negatives likely reflect edge effects/land-use gaps rather than true repulsion.</p>
+<p>The map shows many points concentrated within the subzone, forming several tight mini-clusters rather than a uniform spread—consistent with co-location in business buildings, coworking floors, or along commercial corridors.</p>
+<p>Planning takeaway: support small-footprint, flexible office space and amenities within walkable (≤800 m) catchments; monitoring should focus on these local nodes rather than wider-area interventions.</p>
+<p>For other sectors This code defines reusable helpers to analyze and visualize business clustering within a chosen subzone. plot_Lr_for_subzone() builds a point pattern inside the subzone and plots Ripley’s L(r) − r to assess clustering vs.&nbsp;CSR, while map_sector_subzone() produces a clean thematic map highlighting the subzone and its business registration points.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="co"># build ppp inside a subzone polygon</span></span>
+<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a>to_ppp_in <span class="ot">&lt;-</span> <span class="cf">function</span>(pts_sf, poly_sf){</span>
+<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a>  Wsz <span class="ot">&lt;-</span> spatstat.geom<span class="sc">::</span><span class="fu">as.owin</span>(poly_sf)</span>
+<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>  xy  <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_coordinates</span>(pts_sf)</span>
+<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a>  spatstat.geom<span class="sc">::</span><span class="fu">ppp</span>(xy[,<span class="dv">1</span>], xy[,<span class="dv">2</span>], <span class="at">window =</span> Wsz, <span class="at">check =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a><span class="co"># L(r) - r plot inside a subzone</span></span>
+<span id="cb85-9"><a href="#cb85-9" aria-hidden="true" tabindex="-1"></a>plot_Lr_for_subzone <span class="ot">&lt;-</span> <span class="cf">function</span>(sec, sz_name, <span class="at">by =</span> <span class="dv">25</span>, <span class="at">r_cap =</span> <span class="dv">1200</span>){</span>
+<span id="cb85-10"><a href="#cb85-10" aria-hidden="true" tabindex="-1"></a>  pts_sz  <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(biz_pts_use, sector <span class="sc">==</span> sec, SUBZONE_N <span class="sc">==</span> sz_name)</span>
+<span id="cb85-11"><a href="#cb85-11" aria-hidden="true" tabindex="-1"></a>  poly_sz <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(subzones_use,  SUBZONE_N <span class="sc">==</span> sz_name)</span>
+<span id="cb85-12"><a href="#cb85-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stopifnot</span>(<span class="fu">nrow</span>(poly_sz) <span class="sc">==</span> <span class="dv">1</span>, <span class="fu">nrow</span>(pts_sz) <span class="sc">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb85-13"><a href="#cb85-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-14"><a href="#cb85-14" aria-hidden="true" tabindex="-1"></a>  X <span class="ot">&lt;-</span> <span class="fu">to_ppp_in</span>(pts_sz, poly_sz)</span>
+<span id="cb85-15"><a href="#cb85-15" aria-hidden="true" tabindex="-1"></a>  rmax <span class="ot">&lt;-</span> <span class="fu">min</span>(r_cap, spatstat.geom<span class="sc">::</span><span class="fu">diameter.owin</span>(spatstat.geom<span class="sc">::</span><span class="fu">Window</span>(X))<span class="sc">/</span><span class="dv">2</span>)</span>
+<span id="cb85-16"><a href="#cb85-16" aria-hidden="true" tabindex="-1"></a>  L    <span class="ot">&lt;-</span> spatstat.explore<span class="sc">::</span><span class="fu">Lest</span>(X, <span class="at">r =</span> <span class="fu">seq</span>(<span class="dv">0</span>, rmax, <span class="at">by =</span> by), <span class="at">correction =</span> <span class="st">"Ripley"</span>)</span>
+<span id="cb85-17"><a href="#cb85-17" aria-hidden="true" tabindex="-1"></a>  dfL  <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(L) <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">transmute</span>(<span class="at">r =</span> r, <span class="at">LminusR =</span> iso <span class="sc">-</span> r)</span>
+<span id="cb85-18"><a href="#cb85-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-19"><a href="#cb85-19" aria-hidden="true" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">ggplot</span>(dfL, ggplot2<span class="sc">::</span><span class="fu">aes</span>(r, LminusR)) <span class="sc">+</span></span>
+<span id="cb85-20"><a href="#cb85-20" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">linewidth =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb85-21"><a href="#cb85-21" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"steelblue"</span>, <span class="at">linewidth =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb85-22"><a href="#cb85-22" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">labs</span>(</span>
+<span id="cb85-23"><a href="#cb85-23" aria-hidden="true" tabindex="-1"></a>      <span class="at">title =</span> <span class="fu">sprintf</span>(<span class="st">"%s — %s"</span>, sec, sz_name),</span>
+<span id="cb85-24"><a href="#cb85-24" aria-hidden="true" tabindex="-1"></a>      <span class="at">subtitle =</span> <span class="st">"Ripley L(r) − r within subzone window"</span>,</span>
+<span id="cb85-25"><a href="#cb85-25" aria-hidden="true" tabindex="-1"></a>      <span class="at">x =</span> <span class="st">"r (m)"</span>, <span class="at">y =</span> <span class="st">"L(r) − r"</span></span>
+<span id="cb85-26"><a href="#cb85-26" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">+</span></span>
+<span id="cb85-27"><a href="#cb85-27" aria-hidden="true" tabindex="-1"></a>    ggplot2<span class="sc">::</span><span class="fu">theme_minimal</span>()</span>
+<span id="cb85-28"><a href="#cb85-28" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb85-29"><a href="#cb85-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-30"><a href="#cb85-30" aria-hidden="true" tabindex="-1"></a><span class="co"># clean subzone map with points</span></span>
+<span id="cb85-31"><a href="#cb85-31" aria-hidden="true" tabindex="-1"></a>map_sector_subzone <span class="ot">&lt;-</span> <span class="cf">function</span>(sec, sz_name){</span>
+<span id="cb85-32"><a href="#cb85-32" aria-hidden="true" tabindex="-1"></a>  pts_sz  <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(biz_pts_use, sector <span class="sc">==</span> sec, SUBZONE_N <span class="sc">==</span> sz_name)</span>
+<span id="cb85-33"><a href="#cb85-33" aria-hidden="true" tabindex="-1"></a>  poly_sz <span class="ot">&lt;-</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(subzones_use,  SUBZONE_N <span class="sc">==</span> sz_name)</span>
+<span id="cb85-34"><a href="#cb85-34" aria-hidden="true" tabindex="-1"></a>  bbox_sz <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_bbox</span>(sf<span class="sc">::</span><span class="fu">st_buffer</span>(sf<span class="sc">::</span><span class="fu">st_as_sfc</span>(sf<span class="sc">::</span><span class="fu">st_bbox</span>(poly_sz)), <span class="dv">400</span>))</span>
+<span id="cb85-35"><a href="#cb85-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-36"><a href="#cb85-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb85-37"><a href="#cb85-37" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(subzones_use, <span class="at">bbox =</span> bbox_sz) <span class="sc">+</span> <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"grey95"</span>, <span class="at">border.col =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb85-38"><a href="#cb85-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(poly_sz) <span class="sc">+</span> <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"#FFE082"</span>, <span class="at">alpha =</span> <span class="fl">0.6</span>, <span class="at">border.col =</span> <span class="st">"#F57F17"</span>, <span class="at">lwd =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
+<span id="cb85-39"><a href="#cb85-39" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_text</span>(<span class="st">"SUBZONE_N"</span>, <span class="at">size =</span> <span class="fl">0.9</span>, <span class="at">col =</span> <span class="st">"black"</span>, <span class="at">auto.placement =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb85-40"><a href="#cb85-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(pts_sz) <span class="sc">+</span> <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"steelblue"</span>, <span class="at">size =</span> <span class="fl">0.2</span>, <span class="at">alpha =</span> <span class="fl">0.55</span>) <span class="sc">+</span></span>
+<span id="cb85-41"><a href="#cb85-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(</span>
+<span id="cb85-42"><a href="#cb85-42" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="fu">sprintf</span>(<span class="st">"%s — %s (%d registrations)"</span>, sec, sz_name, <span class="fu">nrow</span>(pts_sz)),</span>
+<span id="cb85-43"><a href="#cb85-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.show =</span> <span class="cn">FALSE</span>, <span class="at">frame =</span> <span class="cn">FALSE</span>, <span class="at">component.autoscale =</span> <span class="cn">FALSE</span></span>
+<span id="cb85-44"><a href="#cb85-44" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb85-45"><a href="#cb85-45" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a>sz_name <span class="ot">&lt;-</span> <span class="st">"GEYLANG EAST"</span></span>
+<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a><span class="co"># F&amp;B (56)</span></span>
+<span id="cb86-4"><a href="#cb86-4" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">plot_Lr_for_subzone</span>(<span class="st">"F&amp;B (56)"</span>, sz_name))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex01_files/figure-html/unnamed-chunk-33-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">map_sector_subzone</span>(<span class="st">"F&amp;B (56)"</span>, sz_name))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex01_files/figure-html/unnamed-chunk-33-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>F&amp;B (56) — Geylang East (subzone)</p>
+<p>The subzone K-function ( L(r) - r ) is strongly <strong>positive from 0–~750 m</strong>, peaking at very short ranges (tens of metres) and tapering steadily.</p>
+<p>This means new F&amp;B registrations are <strong>clustered at block–neighbourhood scales</strong>, consistent with mall/market streets and MRT-proximate shopfronts.</p>
+<p>The curve crosses ~0 around <strong>0.75–0.8 km</strong>, indicating that beyond this radius the pattern is no more clustered than random within the subzone.</p>
+<p>The mild <strong>negative tail</strong> after ~900–1100 m is typical of <strong>edge effects</strong> as distances approach the subzone’s diameter, not true repulsion. The map corroborates several micro-clusters spread across GEYLANG EAST rather than a single node.</p>
+<p><strong>Planning note:</strong> street-management and licensing hotspots are likely within <strong>≤500–800 m corridors</strong>; improvements to pedestrian flow and cleaning/enforcement should prioritise these clusters.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Logistics/Warehousing (52)</span></span>
+<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">plot_Lr_for_subzone</span>(<span class="st">"Logistics/Warehousing (52)"</span>, sz_name))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex01_files/figure-html/unnamed-chunk-34-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">map_sector_subzone</span>(<span class="st">"Logistics/Warehousing (52)"</span>, sz_name))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex01_files/figure-html/unnamed-chunk-34-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Ripley’s ( L(r) - r ) inside the subzone is strongly <strong>positive at very small radii</strong> (peak &lt; 50 m), meaning registrations tend to co-locate in the same or adjacent buildings—typical of multi-tenant warehouses or repeated use of a few addresses.</p>
+<p>The curve declines steadily and crosses ~0 at ~0.85–0.9 km, then becomes <strong>negative</strong> out to ~1.2 km, indicating spacing between clusters at estate scale (i.e., once you move ~1 km away, new firms are less likely than random to appear there, given the subzone window).</p>
+<p>The dot map (≈<strong>105 registrations</strong>) shows few, tight nodes along main corridors and very little presence elsewhere, consistent with zoning and frontage access needs.</p>
+<p><strong>Planning takeaways:</strong><br>
+- Focus servicing/curb and loading management around those micro-clusters.<br>
+- Preserve small-parcel/strata industrial supply.<br>
+- Interpret cautiously since registrations may reflect office/registered addresses rather than operational sites.</p>
 
 
 </section>
