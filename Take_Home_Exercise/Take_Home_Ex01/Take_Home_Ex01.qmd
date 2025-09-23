@@ -1166,6 +1166,261 @@ This chunk produces a **numerical summary** for the Logistics/Warehousing (SSIC 
 #### Logistics/Warehousing (SSIC 52) – KDE Summary (Jan 2024–Jun 2025)
 The KDE of Logistics/Warehousing registrations (n = 1,718) highlights a sparse but spatially meaningful distribution. The median intensity is just 0.14 registrations/km², while the mean is moderately higher at 2.69/km², indicating a long-tailed distribution. High-intensity clusters are rare but notable: the 90th percentile reaches 5.5/km², the 99th percentile 41.7/km², and the maximum exceeds 237/km², reflecting concentrated warehousing activity in specific industrial zones. Spatially, hotspots align with Singapore’s established logistics corridors — the western region around Jurong and Tuas, port-related areas, and select eastern nodes near Changi Airport. In contrast, residential and central business districts show minimal activity, consistent with land-use zoning. The map confirms a sector shaped strongly by infrastructure access and industrial planning, producing highly localized clusters of intense activity embedded within an otherwise low-density national backdrop.
 
+### Spatio Temporal KDE
+#### Helpers (bandwidths, weights, KDE + caching)
+This block sets up monthly spatio-temporal KDE helpers that produce per-sector rasters with spatial smoothing (meters) and temporal Gaussian weights (days), with caching.
+ Bandwidth & Weights
+- `get_sigma_m(ppp_obj, clamp=c(300,800))`: estimates spatial KDE bandwidth via `bw.diggle`; coerces to numeric, defaults to 400 if failed, then clamps to **300–800 m** for stability.  
+- `time_weights(dates, t_center, tau_days=60)`: computes **Gaussian temporal weights** around a month center; normalizes weights to mean 1 so KDE magnitudes are comparable across months.  
+
+ Building Inputs
+- `ppp_for_sector(sector_name)`: filters `biz_pts_use` by sector, converts to `ppp` within `w`, and attaches `reg_date` as an attribute (used to derive temporal weights).  
+
+Monthly ST-KDE with Caching
+- `stkde_month_slice(sector_name, t_center, sigma_m, tau_days=60, overwrite_tif=FALSE)`:  
+  - Creates a month tag (`YYYY-MM`), derives cache file paths (`stkde_<sector>_<YYYY-MM>.rds/.tif`).  
+  - **Loads cached** GeoTIFF/RDS if present (unless `overwrite_tif=TRUE`).  
+  - Otherwise:  
+    - Builds `X` (`ppp`) and pulls attached `reg_date`.  
+    - Computes temporal weights for that month (`tau_days` = temporal bandwidth).  
+    - Runs weighted spatial KDE:  
+      ```r
+      density.ppp(X, sigma=sigma_m, edge=TRUE, kernel="gaussian", weights=w)
+      ```
+    - Saves the `im` (spatstat image) as RDS.  
+  - Converts to **per km² `SpatRaster` (* 1e6)**, clamps negatives to 0, sets CRS EPSG:3414, writes GeoTIFF, and returns the raster.  
+
+```{r}
+#| label: stkde-monthly-helpers
+
+# Ensure folders
+rds_dir     <- "data/rds"
+rasters_dir <- "data/rasters"
+dir.create(rds_dir, showWarnings = FALSE, recursive = TRUE)
+dir.create(rasters_dir, showWarnings = FALSE, recursive = TRUE)
+
+# Ensure window W
+if (!exists("W")) W <- spatstat.geom::as.owin(sf::st_union(subzones_use))
+
+# Sectors you already defined
+targets <- tibble::tibble(
+  ssic2 = c("56", "62", "52"),
+  sector = c("F&B (56)", "IT (62)", "Logistics/Warehousing (52)")
+)
+
+# -------- Spatial bandwidth (per sector) with clamps --------
+get_sigma_m <- function(ppp_obj, clamp = c(300, 800)){
+  h <- tryCatch(spatstat.explore::bw.diggle(ppp_obj), error = function(e) NA_real_)
+  h <- suppressWarnings(as.numeric(h))
+  if (!is.finite(h)) h <- 400
+  pmax(clamp[1], pmin(h, clamp[2]))
+}
+
+# -------- Temporal Gaussian weights (days) --------
+# tau_days = temporal bandwidth (std dev) in days, e.g. 45–60
+time_weights <- function(dates, t_center, tau_days = 60){
+  dt <- as.numeric(dates - t_center)
+  w  <- exp(-0.5 * (dt / tau_days)^2)
+  # Normalize to mean 1 (keeps magnitudes comparable across months)
+  if (mean(w) > 0) w <- w / mean(w)
+  w
+}
+
+# -------- Build sector ppp with attributes --------
+ppp_for_sector <- function(sector_name){
+  pts <- dplyr::filter(biz_pts_use, sector == sector_name)
+  xy  <- sf::st_coordinates(pts)
+  X   <- spatstat.geom::ppp(xy[,1], xy[,2], window = W, check = FALSE)
+  # Attach attributes for time weights
+  attr(X, "reg_date") <- pts$reg_date
+  X
+}
+
+# -------- Spatial KDE with temporal smoothing (weighted) + caching --------
+# Returns a SpatRaster in registrations per km^2
+stkde_month_slice <- function(sector_name, t_center, sigma_m, tau_days = 60,
+                              overwrite_tif = FALSE){
+  mon_tag <- format(t_center, "%Y-%m")  # YYYY-MM
+  base    <- paste0(gsub("\\W","_", sector_name), "_", mon_tag)
+  r_rds   <- file.path(rds_dir,     paste0("stkde_", base, ".rds"))
+  r_tif   <- file.path(rasters_dir, paste0("stkde_", base, ".tif"))
+
+  # If cached raster exists, load & return
+  if (file.exists(r_tif) && !overwrite_tif) {
+    r <- terra::rast(r_tif); return(r)
+  }
+  if (file.exists(r_rds) && !overwrite_tif) {
+    im <- readRDS(r_rds)
+  } else {
+    X <- ppp_for_sector(sector_name)
+    dates <- attr(X, "reg_date")
+    stopifnot(inherits(dates, "Date"))
+
+    # Temporal weights for this month
+    w <- time_weights(dates, t_center = t_center, tau_days = tau_days)
+
+    # Spatial KDE with Gaussian kernel + edge correction + weights
+    im <- spatstat.explore::density.ppp(
+      X, sigma = sigma_m, edge = TRUE, kernel = "gaussian", weights = w
+    )
+    saveRDS(im, r_rds)
+  }
+
+  # Convert to per km^2 raster, clamp small negatives to 0
+  r <- terra::rast(im * 1e6); terra::crs(r) <- "EPSG:3414"
+  vals <- terra::values(r, mat = FALSE)
+  vals <- pmax(vals, 0)
+  terra::values(r) <- vals
+
+  terra::writeRaster(r, r_tif, overwrite = TRUE)
+  r
+}
+```
+
+
+#### Define the month grid and sector bandwidths
+The code chunk below helps us define the following
+**Month centers**  
+- `months_vec`: mid-month dates from **15 Jan 2024 → 15 Jun 2025** (interval = 1 month).  
+- Used as temporal centers for Gaussian time weights.  
+
+**Sector point patterns & bandwidths**  
+- `sector_ppp`: list to store sector-wise `ppp` objects (F&B, IT, Logistics).  
+- `sector_bw`: numeric vector to store each sector’s **optimal spatial bandwidth**.  
+
+**Loop over sectors (`targets$sector`)**  
+1. `ppp_for_sector(sec)` → builds point pattern with registration dates.  
+2. Store in `sector_ppp`.  
+3. `get_sigma_m(X, clamp=c(300,800))` → computes Diggle bandwidth (300–800 m), stored in `sector_bw`.  
+
+**Output**  
+- `sector_bw` = chosen bandwidths per sector, reused across all monthly KDE runs.  
+
+```{r}
+#| label: stkde-month-grid
+# Month centers (use mid-month for smoothing target)
+months_vec <- seq(as.Date("2024-01-15"), as.Date("2025-06-15"), by = "1 month")
+
+# Build ppp for each sector once, get spatial bandwidths
+sector_ppp <- setNames(vector("list", length(targets$sector)), targets$sector)
+sector_bw  <- setNames(numeric(length(targets$sector)), targets$sector)
+
+for (sec in targets$sector) {
+  X <- ppp_for_sector(sec)
+  sector_ppp[[sec]] <- X
+  sector_bw[[sec]]  <- get_sigma_m(X, clamp = c(300, 800))
+}
+sector_bw
+```
+#### Run ST-KDE (monthly slices) for all sectors
+This block runs the monthly spatio-temporal KDE for each sector.
+It loops over all sectors and months, applying stkde_month_slice() with sector-specific bandwidths and a temporal smoothing window (tau_days = 60), returning cached SpatRaster intensity maps for each sector–month combination.
+```{r}
+#| label: stkde-month-run
+# Choose temporal bandwidth (days). 60 ~ two months std dev → smooths but keeps seasonality.
+tau_days <- 60
+
+# Compute & cache every sector × month; returns list of lists of SpatRasters
+stkde_all <- lapply(targets$sector, function(sec){
+  sigma_m <- sector_bw[[sec]]
+  lapply(months_vec, function(t0){
+    stkde_month_slice(sec, t_center = t0, sigma_m = sigma_m, tau_days = tau_days)
+  })
+})
+names(stkde_all) <- targets$sector
+```
+
+#### Shared breaks for comparability (derive once, reuse)
+This block samples raster values from a chosen period (e.g., 2025-H1 across all sectors) to derive quantile-based class breaks.
+It pools values, clamps negatives to zero, computes 6 quantile breaks, and saves them for consistent color scaling across all monthly maps.
+```{r}
+#| label: stkde-month-breaks
+# Sample a subset of rasters (e.g., 2025-H1 across all sectors) to define fixed breaks
+sel_idx <- which(months_vec >= as.Date("2025-01-01") & months_vec <= as.Date("2025-06-30"))
+
+vals_sample <- c()
+for (sec in targets$sector) {
+  for (i in sel_idx) {
+    v <- terra::values(stkde_all[[sec]][[i]], mat = FALSE)
+    vals_sample <- c(vals_sample, v[is.finite(v)])
+  }
+}
+vals_sample <- pmax(vals_sample, 0)
+brks6 <- classInt::classIntervals(vals_sample, n = 6, style = "quantile")$brks
+saveRDS(brks6, file.path(rds_dir, "stkde_month_breaks6.rds"))
+```
+
+#### Faceted map for a chosen semester (e.g., 2025-Jan → 2025-Jun)
+Helper function to create **faceted monthly maps** of spatio-temporal KDE intensity for a chosen semester (default: Jan–Jun 2025).  
+
+**Process**  
+- **Inputs**: sector name, start and end dates.  
+- **Subset months**: select indices of `months_vec` within the semester, extract KDE rasters from `stkde_all`.  
+- **Singapore outline**: build boundary polygon for clean framing.  
+- **Map creation (per month)**  
+  - Plot raster with **fixed breaks (`brks6`)** → ensures comparability across months.  
+  - Add subzone borders (thin white) + outer boundary (black).  
+  - Title with sector + month; legend only on first map.  
+- **Faceting**: combine monthly maps side-by-side using `tmap_arrange()` (3 columns).  
+```{r}
+#| label: stkde-month-plot-sem1-2025
+brks6 <- readRDS(file.path(rds_dir, "stkde_month_breaks6.rds"))
+
+plot_semester <- function(sec, start = as.Date("2025-01-01"), end = as.Date("2025-06-30")){
+  idx <- which(months_vec >= start & months_vec <= end)
+  rlist <- stkde_all[[sec]][idx]
+  # Build a small sf outline for nice border
+  sg_outline <- subzones_use |> sf::st_union() |> sf::st_make_valid() |> sf::st_as_sf()
+
+  # tmap: one facet per month
+  tmaps <- lapply(seq_along(rlist), function(i){
+    mon_lab <- format(months_vec[idx][i], "%b %Y")
+    tm_shape(rlist[[i]]) +
+      tm_raster(
+        style = "fixed", breaks = brks6,
+        col.scale  = tm_scale_continuous(values = "Blues"),
+        col.legend = tm_legend(title = "Intensity\n(registrations per km²)")
+      ) +
+      tm_shape(subzones_use) + tm_borders(col = "white", lwd = 0.25) +
+      tm_shape(sg_outline)   + tm_borders(col = "black", lwd = 1.0) +
+      tm_layout(title = paste0(sec, " — ", mon_lab),
+                legend.show = i == 1,  # show once
+                frame = FALSE)
+  })
+  tmap::tmap_arrange(plotlist = tmaps, ncol = 3)
+}
+```
+
+#### F&B
+```{r}
+# produce 2x3 panels for each sector (Jan–Jun 2025)
+tmap_mode("plot")
+plot_semester("F&B (56)")
+#plot_semester("IT (62)")
+#plot_semester("Logistics/Warehousing (52)")
+```
+Hotspots are stable and transit-anchored: CBD/fringe-CBD, Orchard–River Valley, Bugis/Kallang, and eastern mall corridors persist across months. Secondary clusters recur around Tampines, Jurong East/West, and Woodlands, consistent with regional centres. Month-to-month variation is modest; February–March show broader, lighter halos (holiday/lease effects), while Apr–Jun tighten around core retail strips, suggesting post-holiday normalization. The north-east (Hougang–Sengkang–Punggol) shows a thin, steady band—diffuse neighbourhood demand rather than single nodes. Western industrial edges remain comparatively cool except at mixed-use interfaces. Overall, F&B registrations behave as neighbourhood-scale agglomerations that track malls/MRT interchanges: intensity breathes slightly by month but the urban structure dominates. Planning focus: manage curb/servicing and pedestrian flow within ≤800 m of these recurring nodes; monitor saturation in CBD and major town centres, while supporting micro-clusters in heartlands to maintain accessibility.
+
+#### IT
+```{r}
+# produce 2x3 panels for each sector (Jan–Jun 2025)
+tmap_mode("plot")
+#plot_semester("F&B (56)")
+plot_semester("IT (62)")
+#plot_semester("Logistics/Warehousing (52)")
+```
+IT registrations show a stable core–fringe pattern anchored on the CBD with persistent secondary peaks at one-north/Buona Vista, Changi Business Park, and regional hubs (Tampines, Jurong East). A thin, island-wide “film” indicates diffuse, small intensities along mixed-use corridors; hotspots consistently hug MRT-served office estates. Month-to-month changes are modest: Feb–Mar display slightly broader halos (batch incorporations/lease cycles), while Apr–Jun tighten around estate nuclei, suggesting post-cycle consolidation rather than spread. North-east new towns show light, continuous presence (home-office/SME addresses) but no dominant node. The spatial structure is therefore ecosystem-driven (towers, parks, coworking) more than neighbourhood retail. Planning notes: safeguard flexible office stock and grade-A/B1 spaces near rapid transit; streamline fit-out/ICT permits on a quarterly cadence; and factor the registered-office effect when interpreting CBD intensity versus true operational footprints.
+
+#### Logistics
+```{r}
+# produce 2x3 panels for each sector (Jan–Jun 2025)
+tmap_mode("plot")
+#plot_semester("F&B (56)")
+#plot_semester("IT (62)")
+plot_semester("Logistics/Warehousing (52)")
+```
+Intensity is estate-anchored and highly stable. Recurring hotspots align with the western logistics corridor (Jurong/Tuas–Pioneer along AYE/PIE), northern estates (Sungei Kadut/Woodlands), and the Changi axis (Airport Logistics Park, Loyang/Changi North). Thin ribbons trace expressway spurs and freight approaches; residential cores remain cool, confirming zoning separation. Month-to-month change is limited: Feb–Mar show slightly broader halos (batch incorporations/lease phases), while Apr–Jun reconcentrate within key estates, indicating capacity is absorbed inside existing parks rather than spreading outward. Compared with F&B/IT, the registered-office effect is smaller; intensities mirror operational sites. Planning actions: preserve and phase industrial land near high-access nodes; safeguard loading/queuing capacity and truck routing; strengthen buffers at residential interfaces; and align permitting/estate services to quarterly cycles that match observed pulses.
+
 ## 2nd Order Spatio Temporal Analysis 
 
 While first-order analysis revealed density surfaces of business activity, it did not answer whether these businesses simply follow background intensity (CBD, industrial corridors, malls) or whether they also exhibit interaction effects — clustering in both space and time beyond random expectation. To address this, we employ second-order spatio-temporal analysis (Ripley’s K/L, pair correlation, Knox test, and space–time K-function). These methods allow us to quantify the scales at which new firms tend to emerge together, and whether such patterns differ across sectors (F&B, IT, Logistics). By identifying these interaction ranges, we can link firm behaviour to urban form, infrastructure readiness, and zoning policy — providing actionable spatial intelligence for planners.
@@ -1935,4 +2190,15 @@ The dot map (≈**105 registrations**) shows few, tight nodes along main corrido
 - Focus servicing/curb and loading management around those micro-clusters.  
 - Preserve small-parcel/strata industrial supply.  
 - Interpret cautiously since registrations may reflect office/registered addresses rather than operational sites.  
+
+## Final Planning Summary 
+New business registrations in Singapore during 2025-H1 (with 2024 as baseline) reveal distinct spatial logics by sector and common temporal rhythms that matter for planning, infrastructure and place management. F&B (SSIC 56) exhibits an island-wide footprint with dense, walk-scale clusters in the CBD/fringe-CBD and town-centre/MRT nodes. KDE peaks around transit-rich malls and mixed-use corridors; subzone L(r)–r curves are positive up to ~750–800 m, indicating neighbourhood-scale agglomeration. Policy levers here are placemaking and curb/servicing management rather than land-supply: concentrate cleaning, licensing and pedestrian flow improvements in ≤800 m corridors around the highest-intensity nodes; monitor saturation to avoid nuisance spillovers into residential streets.
+
+IT services (SSIC 62) are both widely dispersed and highly concentrated at a few office ecosystems—CBD, one-north, Changi Business Park, Tampines/Jurong regional hubs. The nearest-neighbour test shows the strongest clustering among the three sectors, consistent with co-location in towers, business parks and coworking floors. Yet the space–time K surfaces are largely flat at short lags, with significance appearing at ~1.5 km / ~90 days, suggesting quarterly, estate-scale bursts (lease cycles, batch incorporations) rather than week-to-week contagion. Planning actions: ensure flexible office stock and grade-A to flexible B1 spaces near rapid transit; streamline fit-out and data/telecom permitting on a quarterly cadence; and enhance last-mile public transport between parks and MRT to widen the catchment of talent and services.
+
+Logistics/Warehousing (SSIC 52) is sparse but decisive, tracking industrial corridors and gateways (Jurong/Tuas, port-proximity zones, and the Changi axis). KDE shows a long-tailed distribution: large low-intensity background with few, very high-intensity estate nodes. Subzone L(r)–r indicates micro-co-location (<50 m peaks) inside multi-tenant warehouses and a decline beyond ~0.85–0.9 km, implying estate-scale spacing. Space–time K again flags quarter-year pulses at ~1.5 km, consistent with phased openings and coordinated leases. Implications: preserve a pipeline of industrial parcels with good expressway access, protect loading/servicing capacity, and manage last-mile interfaces where estates abut residential areas (noise, heavy-vehicle routing, staging).
+
+Cross-cutting, three themes emerge. First, registered-office effects inflate CBD counts; planners should triangulate KDE hotspots with operational land-use (e.g., mall/food clusters vs. office-mailing addresses) to calibrate interventions. Second, the space–time signal at ~quarterly intervals argues for batch-oriented permitting and monitoring—monthly dashboards are useful but quarterly capacity checks better match market rhythm. Third, transit adjacency consistently underpins intensity across sectors: prioritising walkability and MRT connectivity around mixed-use hubs yields the broadest spillovers (jobs, services, footfall).
+
+In short, F&B needs fine-grain, street-scale management; IT requires flexible, transit-served office ecosystems; and Logistics depends on protected industrial estates with robust access. Aligning licensing, infrastructure, and space supply to these scales—and reviewing them on a quarterly cycle—will sustain growth while mitigating over-concentration risks.
 
