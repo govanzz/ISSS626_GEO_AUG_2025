@@ -16,7 +16,7 @@ execute:
 
 ## Overview
 
-This take-home exercise investigates the **spatial** (“where”) and **spatio-temporal** (“where + when”) patterns of **new business registrations in Singapore** between **1 Jan 2024 and 30 Jun 2025**. Using the ACRA “Information on Corporate Entities” datasets and SSIC 2020 classifications, we select at least **three business types** (2- or 3-digit SSIC) and analyse how their locations and intensities evolve over time.
+This take-home exercise investigates the spatial (“where”) and spatio-temporal (“where + when”) patterns of new business registrations in Singapore between 1 Jan 2024 and 30 Jun 2025. Using the ACRA “Information on Corporate Entities” datasets and SSIC 2020 classifications, we select at least three business types (2- or 3-digit SSIC) and analyse how their locations and intensities evolve over time.
 
 Our workflow mirrors the point-pattern framework taught in class:
 
@@ -24,9 +24,9 @@ Our workflow mirrors the point-pattern framework taught in class:
 -   **Exploratory mapping:** counts by subzone/planning area to establish baseline patterns.
 -   **First-order analysis (intensity):** **Kernel Density Estimation (KDE)** to reveal spatial hot spots for each SSIC and period.
 -   **Second-order analysis (dependence):** **Ripley’s K / CSR envelopes** to test whether registrations are clustered, random, or dispersed.
--   **Spatio-temporal analysis:** **STKDE** (monthly slices) to detect **emerging, persistent, and fading** clusters over the study window.
+-   **Spatio-temporal analysis:** **STKDE** (monthly slices) to detect emerging, persistent, and fading clusters over the study window.
 
-The results are communicated through cartographic maps and concise figure captions words , followed by a synthesis translating findings into **urban land-use and economic development implications**—e.g., infrastructure readiness, zoning flexibility, activation of under-served subzones, and monitoring of over-concentration risks.
+The results are communicated through cartographic maps and concise figure captions words , followed by a synthesis translating findings into urban land-use and economic development implications**—e.g., infrastructure readiness, zoning flexibility, activation of under-served subzones, and monitoring of over-concentration risks.
 
 ## The Data
 
@@ -62,7 +62,7 @@ This study uses ACRA corporate entity registrations combined with reference laye
 
 ### Pre-processing & wrangling (summary)
 
--   Read and row-bind **all 27 ACRA CSVs**; add `source_file` for provenance.\
+-   Read and row-bind all 27 ACRA CSVs; add `source_file` for provenance.\
 -   Standardise fields: parse `registration_incorporation_date` as Date (UTC), derive `year`, `month`.\
 -   **Postal code hygiene:** keep digits only, left-pad to 6; drop non-6-digit values before geocoding.\
 -   **Deduplicate** by `uen` + `registration_incorporation_date` (if necessary).\
@@ -85,7 +85,7 @@ This study uses ACRA corporate entity registrations combined with reference laye
 
 ### Ethical/usage notes
 
--   ACRA data contains **entity names** (public corporate info), not personal data.\
+-   ACRA data contains entity names (public corporate info), not personal data.\
 -   Results are aggregated for planning insights; avoid singling out individual firms.
 
 ## Load Packages
@@ -115,8 +115,8 @@ pacman::p_load(stpp,
 
 ### Preparing the Subzone Boundary (why & how)
 
-This chunk converts URA’s **Master Plan Subzone (No Sea)** GeoJSON into a clean, projected **GeoPackage** with consistent field names. We use it as: 1) the **analysis window** for point-pattern methods, and\
-2) the **join layer** to aggregate new businesses by subzone/planning area. Extract data for planning
+This chunk converts URA’s **Master Plan Subzone (No Sea)** GeoJSON into a clean, projected **GeoPackage** with consistent field names. We use it as: 1) the analysis window for point-pattern methods, and\
+2) the join layer to aggregate new businesses by subzone/planning area. Extract data for planning
 
 ```{r}
 sz_raw_path <- "data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson"
@@ -1492,19 +1492,19 @@ sectors <- c("F&B (56)", "IT (62)", "Logistics/Warehousing (52)")
 
 Fast Mode Helper Block
 
-This is a **“fast mode” helper block** designed to let us run spatio-temporal K-function checks quickly without the full computational cost.
+This is a “fast mode” helper block designed to let us run spatio-temporal K-function checks quickly without the full computational cost.
 
 - **Chunk options:**  
   - `eval: false` → the code won’t run when knitting (you can toggle it on manually).  
   - `include: false` → the code won’t appear in the rendered document (kept as a hidden utility).  
 
 - **Simplified grids:**  
-  - `r_vals <- seq(0, 1500, by = 250)` → defines a coarse set of 7 **spatial distances** (0, 250, …, 1500 metres).  
-  - `u_vals <- c(14, 30, 90)` → defines only 3 **temporal lags**: 2 weeks, 1 month, and 3 months.  
+  - `r_vals <- seq(0, 1500, by = 250)` → defines a coarse set of 7 spatial distances (0, 250, …, 1500 metres).  
+  - `u_vals <- c(14, 30, 90)` → defines only 3 temporal lags: 2 weeks, 1 month, and 3 months.  
 
 - **Reduced simulations:**  
   - `nsim <- 19` → runs just 19 Monte Carlo simulations (vs. 199 or 999 in the main analysis).  
-  - This makes it **much faster**, but less robust statistically.  
+  - This makes it much faster, but less robust statistically.  
 
 - **Reproducibility:**  
   - `set.seed(626)` ensures the quick test results are repeatable.  
@@ -1976,7 +1976,7 @@ Logistics (52) — ST-K diagnostic
 This heatmap maps \( K_{obs} - \text{median(null)} \) over space lags \( r \) and time lags \( u \).  
 The null holds locations fixed and **shuffles dates**, so any signal reflects **space–time interaction** beyond baseline spatial clustering.  
 
-Results are flat (≈0) at most scales, indicating that—once we account for industrial-estate geography—the **timing** of new logistics firms is generally independent of **place**.  
+Results are flat (≈0) at most scales, indicating that—once we account for industrial-estate geography—the timing of new logistics firms is generally independent of **place**.  
 
 A single **positive, significant** cell appears at ~1.5 km × ~90 days (✱).  
 

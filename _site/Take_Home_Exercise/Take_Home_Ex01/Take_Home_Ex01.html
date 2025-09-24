@@ -293,16 +293,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="overview" class="level2" data-number="1">
 <h2 data-number="1" class="anchored" data-anchor-id="overview"><span class="header-section-number">1</span> Overview</h2>
-<p>This take-home exercise investigates the <strong>spatial</strong> (“where”) and <strong>spatio-temporal</strong> (“where + when”) patterns of <strong>new business registrations in Singapore</strong> between <strong>1 Jan 2024 and 30 Jun 2025</strong>. Using the ACRA “Information on Corporate Entities” datasets and SSIC 2020 classifications, we select at least <strong>three business types</strong> (2- or 3-digit SSIC) and analyse how their locations and intensities evolve over time.</p>
+<p>This take-home exercise investigates the spatial (“where”) and spatio-temporal (“where + when”) patterns of new business registrations in Singapore between 1 Jan 2024 and 30 Jun 2025. Using the ACRA “Information on Corporate Entities” datasets and SSIC 2020 classifications, we select at least three business types (2- or 3-digit SSIC) and analyse how their locations and intensities evolve over time.</p>
 <p>Our workflow mirrors the point-pattern framework taught in class:</p>
 <ul>
 <li><strong>Data wrangling &amp; geocoding:</strong> tidy ACRA records, standardise dates/SSIC codes, and geocode by postal code via OneMap; convert to <code>sf</code> with SVY21 (EPSG:3414).</li>
 <li><strong>Exploratory mapping:</strong> counts by subzone/planning area to establish baseline patterns.</li>
 <li><strong>First-order analysis (intensity):</strong> <strong>Kernel Density Estimation (KDE)</strong> to reveal spatial hot spots for each SSIC and period.</li>
 <li><strong>Second-order analysis (dependence):</strong> <strong>Ripley’s K / CSR envelopes</strong> to test whether registrations are clustered, random, or dispersed.</li>
-<li><strong>Spatio-temporal analysis:</strong> <strong>STKDE</strong> (monthly slices) to detect <strong>emerging, persistent, and fading</strong> clusters over the study window.</li>
+<li><strong>Spatio-temporal analysis:</strong> <strong>STKDE</strong> (monthly slices) to detect emerging, persistent, and fading clusters over the study window.</li>
 </ul>
-<p>The results are communicated through cartographic maps and concise figure captions words , followed by a synthesis translating findings into <strong>urban land-use and economic development implications</strong>—e.g., infrastructure readiness, zoning flexibility, activation of under-served subzones, and monitoring of over-concentration risks.</p>
+<p>The results are communicated through cartographic maps and concise figure captions words , followed by a synthesis translating findings into urban land-use and economic development implications**—e.g., infrastructure readiness, zoning flexibility, activation of under-served subzones, and monitoring of over-concentration risks.</p>
 </section>
 <section id="the-data" class="level2" data-number="2">
 <h2 data-number="2" class="anchored" data-anchor-id="the-data"><span class="header-section-number">2</span> The Data</h2>
@@ -423,7 +423,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="pre-processing-wrangling-summary" class="level3" data-number="2.4">
 <h3 data-number="2.4" class="anchored" data-anchor-id="pre-processing-wrangling-summary"><span class="header-section-number">2.4</span> Pre-processing &amp; wrangling (summary)</h3>
 <ul>
-<li>Read and row-bind <strong>all 27 ACRA CSVs</strong>; add <code>source_file</code> for provenance.<br>
+<li>Read and row-bind all 27 ACRA CSVs; add <code>source_file</code> for provenance.<br>
 </li>
 <li>Standardise fields: parse <code>registration_incorporation_date</code> as Date (UTC), derive <code>year</code>, <code>month</code>.<br>
 </li>
@@ -463,7 +463,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="ethicalusage-notes" class="level3" data-number="2.7">
 <h3 data-number="2.7" class="anchored" data-anchor-id="ethicalusage-notes"><span class="header-section-number">2.7</span> Ethical/usage notes</h3>
 <ul>
-<li>ACRA data contains <strong>entity names</strong> (public corporate info), not personal data.<br>
+<li>ACRA data contains entity names (public corporate info), not personal data.<br>
 </li>
 <li>Results are aggregated for planning insights; avoid singling out individual firms.</li>
 </ul>
@@ -495,8 +495,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 data-number="4" class="anchored" data-anchor-id="data-wrangling"><span class="header-section-number">4</span> Data Wrangling</h2>
 <section id="preparing-the-subzone-boundary-why-how" class="level3" data-number="4.1">
 <h3 data-number="4.1" class="anchored" data-anchor-id="preparing-the-subzone-boundary-why-how"><span class="header-section-number">4.1</span> Preparing the Subzone Boundary (why &amp; how)</h3>
-<p>This chunk converts URA’s <strong>Master Plan Subzone (No Sea)</strong> GeoJSON into a clean, projected <strong>GeoPackage</strong> with consistent field names. We use it as: 1) the <strong>analysis window</strong> for point-pattern methods, and<br>
-2) the <strong>join layer</strong> to aggregate new businesses by subzone/planning area. Extract data for planning</p>
+<p>This chunk converts URA’s <strong>Master Plan Subzone (No Sea)</strong> GeoJSON into a clean, projected <strong>GeoPackage</strong> with consistent field names. We use it as: 1) the analysis window for point-pattern methods, and<br>
+2) the join layer to aggregate new businesses by subzone/planning area. Extract data for planning</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>sz_raw_path <span class="ot">&lt;-</span> <span class="st">"data/geospatial/MasterPlan2019SubzoneBoundaryNoSeaGEOJSON.geojson"</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -2031,7 +2031,7 @@ Declares the three business sectors for analysis: <strong>F&amp;B (56), IT (62),
 <span id="cb77-24"><a href="#cb77-24" aria-hidden="true" tabindex="-1"></a>sectors <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"F&amp;B (56)"</span>, <span class="st">"IT (62)"</span>, <span class="st">"Logistics/Warehousing (52)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Fast Mode Helper Block</p>
-<p>This is a <strong>“fast mode” helper block</strong> designed to let us run spatio-temporal K-function checks quickly without the full computational cost.</p>
+<p>This is a “fast mode” helper block designed to let us run spatio-temporal K-function checks quickly without the full computational cost.</p>
 <ul>
 <li><strong>Chunk options:</strong>
 <ul>
@@ -2041,15 +2041,15 @@ Declares the three business sectors for analysis: <strong>F&amp;B (56), IT (62),
 </ul></li>
 <li><strong>Simplified grids:</strong>
 <ul>
-<li><code>r_vals &lt;- seq(0, 1500, by = 250)</code> → defines a coarse set of 7 <strong>spatial distances</strong> (0, 250, …, 1500 metres).<br>
+<li><code>r_vals &lt;- seq(0, 1500, by = 250)</code> → defines a coarse set of 7 spatial distances (0, 250, …, 1500 metres).<br>
 </li>
-<li><code>u_vals &lt;- c(14, 30, 90)</code> → defines only 3 <strong>temporal lags</strong>: 2 weeks, 1 month, and 3 months.</li>
+<li><code>u_vals &lt;- c(14, 30, 90)</code> → defines only 3 temporal lags: 2 weeks, 1 month, and 3 months.</li>
 </ul></li>
 <li><strong>Reduced simulations:</strong>
 <ul>
 <li><code>nsim &lt;- 19</code> → runs just 19 Monte Carlo simulations (vs.&nbsp;199 or 999 in the main analysis).<br>
 </li>
-<li>This makes it <strong>much faster</strong>, but less robust statistically.</li>
+<li>This makes it much faster, but less robust statistically.</li>
 </ul></li>
 <li><strong>Reproducibility:</strong>
 <ul>
@@ -2479,7 +2479,7 @@ The null preserves locations but <strong>shuffles times</strong>, so any signal 
 </div>
 <p>Logistics (52) — ST-K diagnostic This heatmap maps ( K_{obs} - ) over space lags ( r ) and time lags ( u ).<br>
 The null holds locations fixed and <strong>shuffles dates</strong>, so any signal reflects <strong>space–time interaction</strong> beyond baseline spatial clustering.</p>
-<p>Results are flat (≈0) at most scales, indicating that—once we account for industrial-estate geography—the <strong>timing</strong> of new logistics firms is generally independent of <strong>place</strong>.</p>
+<p>Results are flat (≈0) at most scales, indicating that—once we account for industrial-estate geography—the timing of new logistics firms is generally independent of <strong>place</strong>.</p>
 <p>A single <strong>positive, significant</strong> cell appears at ~1.5 km × ~90 days (✱).</p>
 <p><strong>Interpretation:</strong> occasional <strong>quarterly bursts</strong> of registrations within estate-sized catchments (e.g., phased openings, coordinated leases, operator batch filings), rather than rapid, short-range contagion.</p>
 <p><strong>Planning takeaway:</strong> prioritize <strong>estate-level capacity and permitting cycles</strong> on a quarterly cadence; short-term reactive measures (≤30 days, ≤750 m) are less relevant for this sector.</p>
