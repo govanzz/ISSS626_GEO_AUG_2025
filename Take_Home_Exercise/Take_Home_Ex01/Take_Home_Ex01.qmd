@@ -129,6 +129,30 @@ subzones <- st_read(sz_raw_path, quiet = TRUE) %>%
 
 Standardise key attribute names
 
+
+Cleaning & Standardizing URA Subzone Shapefile  
+
+This block extracts metadata fields from the HTML in the `description` column.  
+
+**Helper function – `extract_field()`**  
+- Uses regex to find the value of a field (`key`) inside HTML `<th>…</th><td>…</td>`.  
+- Returns a cleaned string; missing/empty values → `NA_character_`.  
+
+**Standardize subzones (`subzones_std`)**  
+- Applies `mutate()` to create clean columns from the HTML description:  
+  - `SUBZONE_NO`, `SUBZONE_N`, `SUBZONE_C`  
+  - `CA_IND` (planning area indicator)  
+  - `PLN_AREA_N`, `PLN_AREA_C`  
+  - `REGION_N`, `REGION_C`  
+  - `FMEL_UPD_D` (last update date)  
+- Keeps only standardized fields + geometry.  
+- Ensures valid geometries (`st_make_valid()`).  
+- Transforms to **EPSG:3414** (Singapore SVY21 / meters).  
+
+**Export**  
+- Saves cleaned dataset as a **GeoPackage** (`mpsz_subzones_2019_nosea.gpkg`) in `data/geospatial/`.  
+- Overwrites the `subzones` layer if it already exists (`delete_dsn = TRUE`).  
+
 ```{r}
 # Helper: extract a field value from the HTML in `description`
 extract_field <- function(html, key){
@@ -161,7 +185,25 @@ st_write(subzones_std, "data/geospatial/mpsz_subzones_2019_nosea.gpkg",
 ```
 
 ### Load & Tidy Acra
+This code chunk loads and cleans **ACRA business registration data** for analysis.  
 
+1. **File setup**  
+   - Defines input/output directories (`aspatial_dir`, `rds_dir`), ensures RDS folder exists.  
+   - Lists all ACRA CSV files in `data/aspatial` matching the pattern `ACRA*.csv`.  
+
+2. **Load raw data**  
+   - Reads all CSVs into one dataframe with `map_dfr()`.  
+   - Applies `clean_names()` to standardize column names (snake_case).  
+
+3. **Tidy & transform**  
+   - Converts `registration_incorporation_date` into proper `Date` (`reg_date`).  
+   - Derives year, month number, and labelled month.  
+   - Cleans `postal_code`: keeps only digits, pads to 6 digits (left-padded with 0s).  
+   - Normalises `primary_ssic_code`: ensures 5-character format (padded with 0s).  
+   - Extracts `ssic2` (2-digit) and `ssic3` (3-digit) industry prefixes.  
+
+4. **Filter study window**  
+   - Keeps only records with valid `reg_date` between **1 Jan 2024** and **30 Jun 2025**.
 ```{r}
 aspatial_dir <- "data/aspatial"
 rds_dir      <- "data/rds"
@@ -227,6 +269,27 @@ table(biz_sel$sector, biz_sel$year)
 
 ### Geocode unique postcodes with OneMap
 
+
+This chunk defines a helper to **geocode postal codes** using the **OneMap Singapore API** and attach coordinates to business records.  
+
+ 1. Helper function `onemap_lookup(pc)`  
+- Sends a GET request to OneMap’s API with a given postal code.  
+- If a match is found:  
+  - Extracts postal code, X (longitude), Y (latitude).  
+  - Returns as a `tibble`.  
+- If no match:  
+  - Returns postal code with `NA` for coordinates.  
+
+ 2. Geocode unique postcodes  
+- Collects unique postal codes from `biz_sel`.  
+- Loops with `map_dfr()`, calling `onemap_lookup()` for each.  
+- Uses `tryCatch()` to handle API errors (returns NA if failure).  
+- Produces `geo_tbl`, a lookup table of postal codes with coordinates.  
+
+ 3. Join back to businesses  
+- Joins `geo_tbl` back to business dataset (`biz_sel`) using postal code as key.  
+- Filters out rows where geocoding failed (`NA` X/Y).  
+- **Final output**: `biz_geo`, a table of businesses with valid geocoded coordinates.
 ```{r}
 #| label: geo code chunk 
 #| echo: true

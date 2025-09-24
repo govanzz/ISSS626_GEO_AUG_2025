@@ -506,6 +506,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="dv">3414</span>)                <span class="co"># SVY21 metres (needed for KDE/K-functions)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Standardise key attribute names</p>
+<p>Cleaning &amp; Standardizing URA Subzone Shapefile</p>
+<p>This block extracts metadata fields from the HTML in the <code>description</code> column.</p>
+<p><strong>Helper function – <code>extract_field()</code></strong><br>
+- Uses regex to find the value of a field (<code>key</code>) inside HTML <code>&lt;th&gt;…&lt;/th&gt;&lt;td&gt;…&lt;/td&gt;</code>.<br>
+- Returns a cleaned string; missing/empty values → <code>NA_character_</code>.</p>
+<p><strong>Standardize subzones (<code>subzones_std</code>)</strong><br>
+- Applies <code>mutate()</code> to create clean columns from the HTML description:<br>
+- <code>SUBZONE_NO</code>, <code>SUBZONE_N</code>, <code>SUBZONE_C</code><br>
+- <code>CA_IND</code> (planning area indicator)<br>
+- <code>PLN_AREA_N</code>, <code>PLN_AREA_C</code><br>
+- <code>REGION_N</code>, <code>REGION_C</code><br>
+- <code>FMEL_UPD_D</code> (last update date)<br>
+- Keeps only standardized fields + geometry.<br>
+- Ensures valid geometries (<code>st_make_valid()</code>).<br>
+- Transforms to <strong>EPSG:3414</strong> (Singapore SVY21 / meters).</p>
+<p><strong>Export</strong><br>
+- Saves cleaned dataset as a <strong>GeoPackage</strong> (<code>mpsz_subzones_2019_nosea.gpkg</code>) in <code>data/geospatial/</code>.<br>
+- Overwrites the <code>subzones</code> layer if it already exists (<code>delete_dsn = TRUE</code>).</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Helper: extract a field value from the HTML in `description`</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>extract_field <span class="ot">&lt;-</span> <span class="cf">function</span>(html, key){</span>
@@ -545,6 +563,37 @@ Writing 332 features with 9 fields and geometry type Unknown (any).</code></pre>
 </section>
 <section id="load-tidy-acra" class="level3" data-number="4.2">
 <h3 data-number="4.2" class="anchored" data-anchor-id="load-tidy-acra"><span class="header-section-number">4.2</span> Load &amp; Tidy Acra</h3>
+<p>This code chunk loads and cleans <strong>ACRA business registration data</strong> for analysis.</p>
+<ol type="1">
+<li><strong>File setup</strong>
+<ul>
+<li>Defines input/output directories (<code>aspatial_dir</code>, <code>rds_dir</code>), ensures RDS folder exists.<br>
+</li>
+<li>Lists all ACRA CSV files in <code>data/aspatial</code> matching the pattern <code>ACRA*.csv</code>.</li>
+</ul></li>
+<li><strong>Load raw data</strong>
+<ul>
+<li>Reads all CSVs into one dataframe with <code>map_dfr()</code>.<br>
+</li>
+<li>Applies <code>clean_names()</code> to standardize column names (snake_case).</li>
+</ul></li>
+<li><strong>Tidy &amp; transform</strong>
+<ul>
+<li>Converts <code>registration_incorporation_date</code> into proper <code>Date</code> (<code>reg_date</code>).<br>
+</li>
+<li>Derives year, month number, and labelled month.<br>
+</li>
+<li>Cleans <code>postal_code</code>: keeps only digits, pads to 6 digits (left-padded with 0s).<br>
+</li>
+<li>Normalises <code>primary_ssic_code</code>: ensures 5-character format (padded with 0s).<br>
+</li>
+<li>Extracts <code>ssic2</code> (2-digit) and <code>ssic3</code> (3-digit) industry prefixes.</li>
+</ul></li>
+<li><strong>Filter study window</strong>
+<ul>
+<li>Keeps only records with valid <code>reg_date</code> between <strong>1 Jan 2024</strong> and <strong>30 Jun 2025</strong>.</li>
+</ul></li>
+</ol>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>aspatial_dir <span class="ot">&lt;-</span> <span class="st">"data/aspatial"</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>rds_dir      <span class="ot">&lt;-</span> <span class="st">"data/rds"</span></span>
@@ -620,6 +669,50 @@ Writing 332 features with 9 fields and geometry type Unknown (any).</code></pre>
 </section>
 <section id="geocode-unique-postcodes-with-onemap" class="level3" data-number="4.4">
 <h3 data-number="4.4" class="anchored" data-anchor-id="geocode-unique-postcodes-with-onemap"><span class="header-section-number">4.4</span> Geocode unique postcodes with OneMap</h3>
+<p>This chunk defines a helper to <strong>geocode postal codes</strong> using the <strong>OneMap Singapore API</strong> and attach coordinates to business records.</p>
+<ol type="1">
+<li>Helper function <code>onemap_lookup(pc)</code><br>
+</li>
+</ol>
+<ul>
+<li>Sends a GET request to OneMap’s API with a given postal code.<br>
+</li>
+<li>If a match is found:
+<ul>
+<li>Extracts postal code, X (longitude), Y (latitude).<br>
+</li>
+<li>Returns as a <code>tibble</code>.<br>
+</li>
+</ul></li>
+<li>If no match:
+<ul>
+<li>Returns postal code with <code>NA</code> for coordinates.</li>
+</ul></li>
+</ul>
+<ol start="2" type="1">
+<li>Geocode unique postcodes<br>
+</li>
+</ol>
+<ul>
+<li>Collects unique postal codes from <code>biz_sel</code>.<br>
+</li>
+<li>Loops with <code>map_dfr()</code>, calling <code>onemap_lookup()</code> for each.<br>
+</li>
+<li>Uses <code>tryCatch()</code> to handle API errors (returns NA if failure).<br>
+</li>
+<li>Produces <code>geo_tbl</code>, a lookup table of postal codes with coordinates.</li>
+</ul>
+<ol start="3" type="1">
+<li>Join back to businesses<br>
+</li>
+</ol>
+<ul>
+<li>Joins <code>geo_tbl</code> back to business dataset (<code>biz_sel</code>) using postal code as key.<br>
+</li>
+<li>Filters out rows where geocoding failed (<code>NA</code> X/Y).<br>
+</li>
+<li><strong>Final output</strong>: <code>biz_geo</code>, a table of businesses with valid geocoded coordinates.</li>
+</ul>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Helper that hits OneMap Search API for one postcode</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>onemap_lookup <span class="ot">&lt;-</span> <span class="cf">function</span>(pc){</span>
