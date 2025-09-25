@@ -30,5 +30,59 @@ By the end of this exercise, you will be able to:
 
 ### Getting Started
 
-#### The analytical 
+#### The analytical question
+In spatial policy, one of the main development objective of the local government and planners is to ensure equal distribution of development in the province. Our task in this study, hence, is to apply appropriate spatial statistical methods to discover if development are even distributed geographically. If the answer is No. Then, our next question will be “is there sign of spatial clustering?”. And, if the answer for this question is yes, then our next question will be “where are these clusters?”
 
+In this case study, we are interested to examine the spatial pattern of a selected development indicator (i.e. GDP per capita) of Hunan Provice, People Republic of China.
+
+#### The Study Area
+Two data sets will be used in this hands-on exercise, they are:
+
+- Hunan province administrative boundary layer at county level. This is a geospatial data set in ESRI shapefile format.
+- Hunan_2012.csv: This csv file contains selected Hunan’s local development indicators in 2012.
+
+#### Setting the Analytical Tools
+
+Before we get started, we need to ensure that the **spdep**, **sf**, **tmap**, and **tidyverse** packages of R are installed in your environment.
+
+- **sf**: for importing and handling geospatial data in R.  
+- **tidyverse**: for wrangling attribute data in R.  
+- **spdep**: for computing spatial weights and performing global and local spatial autocorrelation analysis.  
+- **tmap**: for preparing cartographic-quality choropleth maps.
+
+The following code chunk will:
+
+- Create a package list containing the required R packages.
+- Check whether the packages in the list are installed:
+  - If not installed, RStudio will install the missing packages automatically.
+- Load the packages into the R environment.
+
+```{r}
+pacman::p_load(sf, spdep, tmap, tidyverse)
+```
+
+### Getting the Data Into R Environment
+In this section, you will learn how to bring a geospatial data and its associated attribute table into R environment. The geospatial data is in ESRI shapefile format and the attribute table is in csv fomat.
+
+####  Import shapefile into r environment
+
+The code chunk below uses st_read() of sf package to import Hunan shapefile into R. The imported shapefile will be simple features Object of sf.
+
+```{r}
+hunan <- st_read(dsn = "data/geospatial", 
+                 layer = "Hunan")
+```
+#### Import csv file into r environment
+
+Next, we will import Hunan_2012.csv into R by using read_csv() of readr package. The output is R data frame class.
+```{r}
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+#### Performing relational join
+The code chunk below will be used to update the attribute table of hunan’s SpatialPolygonsDataFrame with the attribute fields of hunan2012 dataframe. This is performed by using left_join() of dplyr package.
+
+```{r}
+hunan <- left_join(hunan,hunan2012) %>%
+  select(1:4, 7, 15)
+```
