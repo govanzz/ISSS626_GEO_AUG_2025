@@ -6,7 +6,9 @@ date-modified: "last-modified"
 format: 
   html:
     toc: true
+    toc-depth: 4 
     number-sections: true
+    
 execute: 
   echo: true
   eval: true
@@ -85,4 +87,32 @@ The code chunk below will be used to update the attribute table of hunan’s Spa
 ```{r}
 hunan <- left_join(hunan,hunan2012) %>%
   select(1:4, 7, 15)
+```
+#### Visualising Regional Development Indicator
+Now, we are going to prepare a basemap and a choropleth map showing the distribution of GDPPC 2012 by using qtm() of tmap package.
+
+```{r}
+equal <- tm_shape(hunan) +
+  tm_polygons(fill = "GDPPC",
+              fill.scale = tm_scale_intervals(
+                style = "equal",
+                n = 5,
+                values = "brewer.blues")) +
+  tm_borders(fiil_alpha = 0.5) + 
+  tm_layout(legend.position = c("left", "bottom"), 
+            main.title = "Equal interval classification")
+
+quantile <- tm_shape(hunan) +
+  tm_polygons(fill = "GDPPC",
+              fill.scale = tm_scale_intervals(
+                style = "quantile",
+                n = 5)) +
+  tm_borders(fiil_alpha = 0.5) + 
+  tm_layout(legend.position = c("left", "bottom"), 
+            main.title = "Quantile classification")
+
+tmap_arrange(equal, 
+             quantile, 
+             asp=1, 
+             ncol=2)
 ```
