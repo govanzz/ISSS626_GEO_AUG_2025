@@ -222,6 +222,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#global-measures-of-spatial-association" id="toc-global-measures-of-spatial-association" class="nav-link" data-scroll-target="#global-measures-of-spatial-association"><span class="header-section-number">1.2</span> Global Measures of Spatial Association</a>
   <ul class="collapse">
   <li><a href="#deriving-queens-contiguity" id="toc-deriving-queens-contiguity" class="nav-link" data-scroll-target="#deriving-queens-contiguity"><span class="header-section-number">1.2.1</span> Deriving queens’ contiguity</a></li>
+  <li><a href="#performing-global-morani-permutation-test" id="toc-performing-global-morani-permutation-test" class="nav-link" data-scroll-target="#performing-global-morani-permutation-test"><span class="header-section-number">1.2.2</span> Performing Global Moran’I permutation test</a></li>
   </ul></li>
   </ul></li>
   </ul>
@@ -312,6 +313,27 @@ Geodetic CRS:  WGS 84</code></pre>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.before =</span> <span class="dv">1</span></span>
 <span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="performing-global-morani-permutation-test" class="level3" data-number="1.2.2">
+<h3 data-number="1.2.2" class="anchored" data-anchor-id="performing-global-morani-permutation-test"><span class="header-section-number">1.2.2</span> Performing Global Moran’I permutation test</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">1234</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">global_moran_perm</span>(wm_q<span class="sc">$</span>GDPPC,wm_q<span class="sc">$</span>nb,wm_q<span class="sc">$</span>wt,<span class="at">nsim=</span><span class="dv">99</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Monte-Carlo simulation of Moran I
+
+data:  x 
+weights: listw  
+number of simulations + 1: 100 
+
+statistic = 0.30075, observed rank = 100, p-value &lt; 2.2e-16
+alternative hypothesis: two.sided</code></pre>
+</div>
+</div>
+<p>Reject null hypothesis</p>
+<p>They are spatially correlated</p>
+<p>In conclusion the GDP per capita per county level shows spatial clustering</p>
 
 
 </section>

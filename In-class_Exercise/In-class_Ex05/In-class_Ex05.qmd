@@ -52,4 +52,18 @@ wm_q <- hunan %>%
   )
 ```
 
+### Performing Global Moran'I permutation test
+
+```{r}
+set.seed(1234)
+global_moran_perm(wm_q$GDPPC,wm_q$nb,wm_q$wt,nsim=99)
+```
+Reject null hypothesis 
+
+They are spatially correlated 
+
+In conclusion the GDP per capita per county level shows  spatial clustering 
+
+
+
 
