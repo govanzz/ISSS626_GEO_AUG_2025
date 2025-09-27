@@ -15,3 +15,41 @@ execute:
   warning: false
   freeze: true 
 ---
+
+# In class Exercise 5: Global and Local Measures of Spatial Autocorrelation: sfdep methods
+
+## Load Packages
+```{r}
+pacman::p_load(sf, sfdep, tmap, tidyverse)
+```
+
+### The data
+
+
+```{r}
+hunan <- st_read(dsn = "data/geospatial", 
+                 layer = "Hunan") %>% 
+  st_transform(crs = 32650)
+```
+
+```{r}
+
+hunan2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+```{r}
+hunan <- left_join(hunan,hunan2012) %>%
+  select(1:4, 7, 15)
+```
+## Global Measures of Spatial Association
+### Deriving queens' contiguity
+```{r}
+wm_q <- hunan %>%
+  mutate(
+    nb = st_contiguity(geometry),
+    wt = st_weights(nb, style = "W"),
+    .before = 1
+  )
+```
+
+

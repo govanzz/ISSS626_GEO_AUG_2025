@@ -1,0 +1,15 @@
+{
+  "hash": "401cdc09216b8adeb1c9c506c891afdd",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"In class Exercise 5\"\nauthor: \"Gautamgovan\"\ndate: \"Sep 27, 2025\"\ndate-modified: \"last-modified\"\nformat: \n  html:\n    toc: true\n    toc-depth: 4 \n    number-sections: true\n    \nexecute: \n  echo: true\n  eval: true\n  warning: false\n  freeze: true \n---\n\n# In class Exercise 5: Global and Local Measures of Spatial Autocorrelation: sfdep methods\n\n## Load Packages\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(sf, sfdep, tmap, tidyverse)\n```\n:::\n\n\n### The data\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nhunan <- st_read(dsn = \"data/geospatial\", \n                 layer = \"Hunan\") %>% \n  st_transform(crs = 32650)\n```\n\n::: {.cell-output .cell-output-stdout}\n\n```\nReading layer `Hunan' from data source \n  `C:\\govanzz\\ISSS626_GEO_AUG_2025\\In-class_Exercise\\In-class_Ex05\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84\n```\n\n\n:::\n:::\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nhunan2012 <- read_csv(\"data/aspatial/Hunan_2012.csv\")\n```\n:::\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nhunan <- left_join(hunan,hunan2012) %>%\n  select(1:4, 7, 15)\n```\n:::\n\n## Global Measures of Spatial Association\n### Deriving queens' contiguity\n\n::: {.cell}\n\n```{.r .cell-code}\nwm_q <- hunan %>%\n  mutate(\n    nb = st_contiguity(geometry),\n    wt = st_weights(nb, style = \"W\"),\n    .before = 1\n  )\n```\n:::\n\n\n\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
