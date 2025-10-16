@@ -684,7 +684,7 @@ summary(gwr.adaptive$SDF$yhat)
 ### Visualising local R2
 The code chunks below is used to create an interactive point symbol map.
 ```{r}
-tmap_mode("view")
+tmap_mode("plot")
 tm_shape(mpsz_svy21)+
   tm_polygons(fill_alpha = 0.1) +
 tm_shape(condo_resale.sf.adaptive) +  
@@ -692,14 +692,16 @@ tm_shape(condo_resale.sf.adaptive) +
           border.col = "gray60",
           border.lwd = 1) +
   tm_view(set.zoom.limits = c(11,14))
+```
 
+```{r}
 tmap_mode("plot")
 ```
 ### Visualising coefficient estimates
 The code chunks below is used to create an interactive point symbol map.
 
 ```{r}
-tmap_mode("view")
+tmap_mode("plot")
 AREA_SQM_SE <- tm_shape(mpsz_svy21)+
   tm_polygons(alpha = 0.1) +
 tm_shape(condo_resale.sf.adaptive) +  
@@ -719,7 +721,8 @@ tm_shape(condo_resale.sf.adaptive) +
 tmap_arrange(AREA_SQM_SE, AREA_SQM_TV, 
              asp=1, ncol=2,
              sync = TRUE)
-
+```
+```{r}
 tmap_mode("plot")
 ```
 
