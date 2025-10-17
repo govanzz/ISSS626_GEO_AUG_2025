@@ -721,6 +721,8 @@ tm_shape(condo_resale.sf.adaptive) +
 tmap_arrange(AREA_SQM_SE, AREA_SQM_TV, 
              asp=1, ncol=2,
              sync = TRUE)
+
+tmap_mode("plot")
 ```
 ```{r}
 tmap_mode("plot")
