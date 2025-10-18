@@ -264,9 +264,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#testing-for-spatial-autocorrelation" id="toc-testing-for-spatial-autocorrelation" class="nav-link" data-scroll-target="#testing-for-spatial-autocorrelation"><span class="header-section-number">7.6.3</span> Testing for Spatial Autocorrelation</a></li>
   </ul></li>
   </ul></li>
-  <li><a href="#building-hedonic-pricing-models-using-gwmodel" id="toc-building-hedonic-pricing-models-using-gwmodel" class="nav-link" data-scroll-target="#building-hedonic-pricing-models-using-gwmodel"><span class="header-section-number">8</span> Building Hedonic Pricing Models using GWmodel</a>
+  <li><a href="#building-hedonic-pricing-models-using-gwmodel-aic" id="toc-building-hedonic-pricing-models-using-gwmodel-aic" class="nav-link" data-scroll-target="#building-hedonic-pricing-models-using-gwmodel-aic"><span class="header-section-number">8</span> Building Hedonic Pricing Models using GWmodel (AIC)</a>
   <ul>
-  <li><a href="#building-fixed-bandwidth-gwr-model" id="toc-building-fixed-bandwidth-gwr-model" class="nav-link" data-scroll-target="#building-fixed-bandwidth-gwr-model"><span class="header-section-number">8.1</span> Building Fixed Bandwidth GWR Model</a>
+  <li><a href="#building-fixed-bandwidth-gwr-model-aic" id="toc-building-fixed-bandwidth-gwr-model-aic" class="nav-link" data-scroll-target="#building-fixed-bandwidth-gwr-model-aic"><span class="header-section-number">8.1</span> Building Fixed Bandwidth GWR Model (AIC)</a>
   <ul class="collapse">
   <li><a href="#computing-fixed-bandwith" id="toc-computing-fixed-bandwith" class="nav-link" data-scroll-target="#computing-fixed-bandwith"><span class="header-section-number">8.1.1</span> Computing fixed bandwith</a></li>
   <li><a href="#gwmodel-method---fixed-bandwith" id="toc-gwmodel-method---fixed-bandwith" class="nav-link" data-scroll-target="#gwmodel-method---fixed-bandwith"><span class="header-section-number">8.1.2</span> GWModel method - fixed bandwith</a></li>
@@ -275,7 +275,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#building-adaptive-bandwidth-gwr-model" id="toc-building-adaptive-bandwidth-gwr-model" class="nav-link" data-scroll-target="#building-adaptive-bandwidth-gwr-model"><span class="header-section-number">9</span> Building Adaptive Bandwidth GWR Model</a>
   <ul>
   <li><a href="#computing-the-adaptive-bandwidth-with-aic" id="toc-computing-the-adaptive-bandwidth-with-aic" class="nav-link" data-scroll-target="#computing-the-adaptive-bandwidth-with-aic"><span class="header-section-number">9.1</span> Computing the adaptive bandwidth witH AIC</a></li>
-  <li><a href="#constructing-the-adaptive-bandwidth-gwr-model" id="toc-constructing-the-adaptive-bandwidth-gwr-model" class="nav-link" data-scroll-target="#constructing-the-adaptive-bandwidth-gwr-model"><span class="header-section-number">9.2</span> Constructing the adaptive bandwidth gwr model</a></li>
+  <li><a href="#constructing-the-adaptive-bandwidth-gwr-model-aic" id="toc-constructing-the-adaptive-bandwidth-gwr-model-aic" class="nav-link" data-scroll-target="#constructing-the-adaptive-bandwidth-gwr-model-aic"><span class="header-section-number">9.2</span> Constructing the adaptive bandwidth gwr model (AIC)</a></li>
   </ul></li>
   <li><a href="#converting-sdf-into-sf-data.frame" id="toc-converting-sdf-into-sf-data.frame" class="nav-link" data-scroll-target="#converting-sdf-into-sf-data.frame"><span class="header-section-number">10</span> Converting SDF into sf data.frame</a></li>
   <li><a href="#visualising-and-plotting-of-r2-in-tampinies" id="toc-visualising-and-plotting-of-r2-in-tampinies" class="nav-link" data-scroll-target="#visualising-and-plotting-of-r2-in-tampinies"><span class="header-section-number">11</span> Visualising and PLotting of R2 in Tampinies</a></li>
@@ -909,23 +909,23 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tbl_regression</span>(condo.mlr1, <span class="at">intercept =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<div id="euwqfuyhjx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#euwqfuyhjx table {
+<div id="eoirzmkkbi" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#eoirzmkkbi table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#euwqfuyhjx thead, #euwqfuyhjx tbody, #euwqfuyhjx tfoot, #euwqfuyhjx tr, #euwqfuyhjx td, #euwqfuyhjx th {
+#eoirzmkkbi thead, #eoirzmkkbi tbody, #eoirzmkkbi tfoot, #eoirzmkkbi tr, #eoirzmkkbi td, #eoirzmkkbi th {
   border-style: none;
 }
 
-#euwqfuyhjx p {
+#eoirzmkkbi p {
   margin: 0;
   padding: 0;
 }
 
-#euwqfuyhjx .gt_table {
+#eoirzmkkbi .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -951,12 +951,12 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#euwqfuyhjx .gt_caption {
+#eoirzmkkbi .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#euwqfuyhjx .gt_title {
+#eoirzmkkbi .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -968,7 +968,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-width: 0;
 }
 
-#euwqfuyhjx .gt_subtitle {
+#eoirzmkkbi .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -980,7 +980,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-top-width: 0;
 }
 
-#euwqfuyhjx .gt_heading {
+#eoirzmkkbi .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -992,13 +992,13 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#euwqfuyhjx .gt_bottom_border {
+#eoirzmkkbi .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#euwqfuyhjx .gt_col_headings {
+#eoirzmkkbi .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1013,7 +1013,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#euwqfuyhjx .gt_col_heading {
+#eoirzmkkbi .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1033,7 +1033,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   overflow-x: hidden;
 }
 
-#euwqfuyhjx .gt_column_spanner_outer {
+#eoirzmkkbi .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1045,15 +1045,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 4px;
 }
 
-#euwqfuyhjx .gt_column_spanner_outer:first-child {
+#eoirzmkkbi .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#euwqfuyhjx .gt_column_spanner_outer:last-child {
+#eoirzmkkbi .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#euwqfuyhjx .gt_column_spanner {
+#eoirzmkkbi .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1065,11 +1065,11 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   width: 100%;
 }
 
-#euwqfuyhjx .gt_spanner_row {
+#eoirzmkkbi .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#euwqfuyhjx .gt_group_heading {
+#eoirzmkkbi .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1095,7 +1095,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   text-align: left;
 }
 
-#euwqfuyhjx .gt_empty_group_heading {
+#eoirzmkkbi .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1110,15 +1110,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   vertical-align: middle;
 }
 
-#euwqfuyhjx .gt_from_md > :first-child {
+#eoirzmkkbi .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#euwqfuyhjx .gt_from_md > :last-child {
+#eoirzmkkbi .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#euwqfuyhjx .gt_row {
+#eoirzmkkbi .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1137,7 +1137,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   overflow-x: hidden;
 }
 
-#euwqfuyhjx .gt_stub {
+#eoirzmkkbi .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1150,7 +1150,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#euwqfuyhjx .gt_stub_row_group {
+#eoirzmkkbi .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1164,15 +1164,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   vertical-align: top;
 }
 
-#euwqfuyhjx .gt_row_group_first td {
+#eoirzmkkbi .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#euwqfuyhjx .gt_row_group_first th {
+#eoirzmkkbi .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#euwqfuyhjx .gt_summary_row {
+#eoirzmkkbi .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1182,16 +1182,16 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#euwqfuyhjx .gt_first_summary_row {
+#eoirzmkkbi .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#euwqfuyhjx .gt_first_summary_row.thick {
+#eoirzmkkbi .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#euwqfuyhjx .gt_last_summary_row {
+#eoirzmkkbi .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1201,7 +1201,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#euwqfuyhjx .gt_grand_summary_row {
+#eoirzmkkbi .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1211,7 +1211,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#euwqfuyhjx .gt_first_grand_summary_row {
+#eoirzmkkbi .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1221,7 +1221,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#euwqfuyhjx .gt_last_grand_summary_row_top {
+#eoirzmkkbi .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1231,11 +1231,11 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#euwqfuyhjx .gt_striped {
+#eoirzmkkbi .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#euwqfuyhjx .gt_table_body {
+#eoirzmkkbi .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1244,7 +1244,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#euwqfuyhjx .gt_footnotes {
+#eoirzmkkbi .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1258,7 +1258,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#euwqfuyhjx .gt_footnote {
+#eoirzmkkbi .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1267,7 +1267,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#euwqfuyhjx .gt_sourcenotes {
+#eoirzmkkbi .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1281,7 +1281,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#euwqfuyhjx .gt_sourcenote {
+#eoirzmkkbi .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1289,72 +1289,72 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#euwqfuyhjx .gt_left {
+#eoirzmkkbi .gt_left {
   text-align: left;
 }
 
-#euwqfuyhjx .gt_center {
+#eoirzmkkbi .gt_center {
   text-align: center;
 }
 
-#euwqfuyhjx .gt_right {
+#eoirzmkkbi .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#euwqfuyhjx .gt_font_normal {
+#eoirzmkkbi .gt_font_normal {
   font-weight: normal;
 }
 
-#euwqfuyhjx .gt_font_bold {
+#eoirzmkkbi .gt_font_bold {
   font-weight: bold;
 }
 
-#euwqfuyhjx .gt_font_italic {
+#eoirzmkkbi .gt_font_italic {
   font-style: italic;
 }
 
-#euwqfuyhjx .gt_super {
+#eoirzmkkbi .gt_super {
   font-size: 65%;
 }
 
-#euwqfuyhjx .gt_footnote_marks {
+#eoirzmkkbi .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#euwqfuyhjx .gt_asterisk {
+#eoirzmkkbi .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#euwqfuyhjx .gt_indent_1 {
+#eoirzmkkbi .gt_indent_1 {
   text-indent: 5px;
 }
 
-#euwqfuyhjx .gt_indent_2 {
+#eoirzmkkbi .gt_indent_2 {
   text-indent: 10px;
 }
 
-#euwqfuyhjx .gt_indent_3 {
+#eoirzmkkbi .gt_indent_3 {
   text-indent: 15px;
 }
 
-#euwqfuyhjx .gt_indent_4 {
+#eoirzmkkbi .gt_indent_4 {
   text-indent: 20px;
 }
 
-#euwqfuyhjx .gt_indent_5 {
+#eoirzmkkbi .gt_indent_5 {
   text-indent: 25px;
 }
 
-#euwqfuyhjx .katex-display {
+#eoirzmkkbi .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#euwqfuyhjx div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#eoirzmkkbi div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1480,23 +1480,23 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
 <span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>                AIC, statistic,</span>
 <span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>                p.value, sigma))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<div id="rrlisqyqup" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#rrlisqyqup table {
+<div id="mmmyayuhzq" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#mmmyayuhzq table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#rrlisqyqup thead, #rrlisqyqup tbody, #rrlisqyqup tfoot, #rrlisqyqup tr, #rrlisqyqup td, #rrlisqyqup th {
+#mmmyayuhzq thead, #mmmyayuhzq tbody, #mmmyayuhzq tfoot, #mmmyayuhzq tr, #mmmyayuhzq td, #mmmyayuhzq th {
   border-style: none;
 }
 
-#rrlisqyqup p {
+#mmmyayuhzq p {
   margin: 0;
   padding: 0;
 }
 
-#rrlisqyqup .gt_table {
+#mmmyayuhzq .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1522,12 +1522,12 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#rrlisqyqup .gt_caption {
+#mmmyayuhzq .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#rrlisqyqup .gt_title {
+#mmmyayuhzq .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1539,7 +1539,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-width: 0;
 }
 
-#rrlisqyqup .gt_subtitle {
+#mmmyayuhzq .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1551,7 +1551,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-top-width: 0;
 }
 
-#rrlisqyqup .gt_heading {
+#mmmyayuhzq .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1563,13 +1563,13 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#rrlisqyqup .gt_bottom_border {
+#mmmyayuhzq .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#rrlisqyqup .gt_col_headings {
+#mmmyayuhzq .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1584,7 +1584,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#rrlisqyqup .gt_col_heading {
+#mmmyayuhzq .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1604,7 +1604,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   overflow-x: hidden;
 }
 
-#rrlisqyqup .gt_column_spanner_outer {
+#mmmyayuhzq .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1616,15 +1616,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 4px;
 }
 
-#rrlisqyqup .gt_column_spanner_outer:first-child {
+#mmmyayuhzq .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#rrlisqyqup .gt_column_spanner_outer:last-child {
+#mmmyayuhzq .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#rrlisqyqup .gt_column_spanner {
+#mmmyayuhzq .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1636,11 +1636,11 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   width: 100%;
 }
 
-#rrlisqyqup .gt_spanner_row {
+#mmmyayuhzq .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#rrlisqyqup .gt_group_heading {
+#mmmyayuhzq .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1666,7 +1666,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   text-align: left;
 }
 
-#rrlisqyqup .gt_empty_group_heading {
+#mmmyayuhzq .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1681,15 +1681,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   vertical-align: middle;
 }
 
-#rrlisqyqup .gt_from_md > :first-child {
+#mmmyayuhzq .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#rrlisqyqup .gt_from_md > :last-child {
+#mmmyayuhzq .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#rrlisqyqup .gt_row {
+#mmmyayuhzq .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1708,7 +1708,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   overflow-x: hidden;
 }
 
-#rrlisqyqup .gt_stub {
+#mmmyayuhzq .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1721,7 +1721,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#rrlisqyqup .gt_stub_row_group {
+#mmmyayuhzq .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1735,15 +1735,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   vertical-align: top;
 }
 
-#rrlisqyqup .gt_row_group_first td {
+#mmmyayuhzq .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#rrlisqyqup .gt_row_group_first th {
+#mmmyayuhzq .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#rrlisqyqup .gt_summary_row {
+#mmmyayuhzq .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1753,16 +1753,16 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#rrlisqyqup .gt_first_summary_row {
+#mmmyayuhzq .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#rrlisqyqup .gt_first_summary_row.thick {
+#mmmyayuhzq .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#rrlisqyqup .gt_last_summary_row {
+#mmmyayuhzq .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1772,7 +1772,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#rrlisqyqup .gt_grand_summary_row {
+#mmmyayuhzq .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1782,7 +1782,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#rrlisqyqup .gt_first_grand_summary_row {
+#mmmyayuhzq .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1792,7 +1792,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#rrlisqyqup .gt_last_grand_summary_row_top {
+#mmmyayuhzq .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1802,11 +1802,11 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#rrlisqyqup .gt_striped {
+#mmmyayuhzq .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#rrlisqyqup .gt_table_body {
+#mmmyayuhzq .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1815,7 +1815,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#rrlisqyqup .gt_footnotes {
+#mmmyayuhzq .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1829,7 +1829,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#rrlisqyqup .gt_footnote {
+#mmmyayuhzq .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1838,7 +1838,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#rrlisqyqup .gt_sourcenotes {
+#mmmyayuhzq .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1852,7 +1852,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#rrlisqyqup .gt_sourcenote {
+#mmmyayuhzq .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1860,72 +1860,72 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#rrlisqyqup .gt_left {
+#mmmyayuhzq .gt_left {
   text-align: left;
 }
 
-#rrlisqyqup .gt_center {
+#mmmyayuhzq .gt_center {
   text-align: center;
 }
 
-#rrlisqyqup .gt_right {
+#mmmyayuhzq .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#rrlisqyqup .gt_font_normal {
+#mmmyayuhzq .gt_font_normal {
   font-weight: normal;
 }
 
-#rrlisqyqup .gt_font_bold {
+#mmmyayuhzq .gt_font_bold {
   font-weight: bold;
 }
 
-#rrlisqyqup .gt_font_italic {
+#mmmyayuhzq .gt_font_italic {
   font-style: italic;
 }
 
-#rrlisqyqup .gt_super {
+#mmmyayuhzq .gt_super {
   font-size: 65%;
 }
 
-#rrlisqyqup .gt_footnote_marks {
+#mmmyayuhzq .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#rrlisqyqup .gt_asterisk {
+#mmmyayuhzq .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#rrlisqyqup .gt_indent_1 {
+#mmmyayuhzq .gt_indent_1 {
   text-indent: 5px;
 }
 
-#rrlisqyqup .gt_indent_2 {
+#mmmyayuhzq .gt_indent_2 {
   text-indent: 10px;
 }
 
-#rrlisqyqup .gt_indent_3 {
+#mmmyayuhzq .gt_indent_3 {
   text-indent: 15px;
 }
 
-#rrlisqyqup .gt_indent_4 {
+#mmmyayuhzq .gt_indent_4 {
   text-indent: 20px;
 }
 
-#rrlisqyqup .gt_indent_5 {
+#mmmyayuhzq .gt_indent_5 {
   text-indent: 25px;
 }
 
-#rrlisqyqup .katex-display {
+#mmmyayuhzq .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#rrlisqyqup div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#mmmyayuhzq div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2211,11 +2211,11 @@ alternative hypothesis: two.sided</code></pre>
 </section>
 </section>
 </section>
-<section id="building-hedonic-pricing-models-using-gwmodel" class="level2" data-number="8">
-<h2 data-number="8" class="anchored" data-anchor-id="building-hedonic-pricing-models-using-gwmodel"><span class="header-section-number">8</span> Building Hedonic Pricing Models using GWmodel</h2>
+<section id="building-hedonic-pricing-models-using-gwmodel-aic" class="level2" data-number="8">
+<h2 data-number="8" class="anchored" data-anchor-id="building-hedonic-pricing-models-using-gwmodel-aic"><span class="header-section-number">8</span> Building Hedonic Pricing Models using GWmodel (AIC)</h2>
 <p>In this section, you are going to learn how to modelling hedonic pricing using both the fixed and adaptive bandwidth schemes</p>
-<section id="building-fixed-bandwidth-gwr-model" class="level3" data-number="8.1">
-<h3 data-number="8.1" class="anchored" data-anchor-id="building-fixed-bandwidth-gwr-model"><span class="header-section-number">8.1</span> Building Fixed Bandwidth GWR Model</h3>
+<section id="building-fixed-bandwidth-gwr-model-aic" class="level3" data-number="8.1">
+<h3 data-number="8.1" class="anchored" data-anchor-id="building-fixed-bandwidth-gwr-model-aic"><span class="header-section-number">8.1</span> Building Fixed Bandwidth GWR Model (AIC)</h3>
 <section id="computing-fixed-bandwith" class="level4" data-number="8.1.1">
 <h4 data-number="8.1.1" class="anchored" data-anchor-id="computing-fixed-bandwith"><span class="header-section-number">8.1.1</span> Computing fixed bandwith</h4>
 <p>In the code chunk below bw.gwr() of GWModel package is used to determine the optimal fixed bandwidth to use in the model. Notice that the argument adaptive is set to FALSE indicates that we are interested to compute the fixed bandwidth.</p>
@@ -2278,7 +2278,7 @@ Fixed bandwidth: 1391.309 AICc value: 42254.7 </code></pre>
 <pre><code>   ***********************************************************************
    *                       Package   GWmodel                             *
    ***********************************************************************
-   Program starts at: 2025-10-18 15:40:30.379083 
+   Program starts at: 2025-10-18 15:44:58.237035 
    Call:
    gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + 
     PROX_CHILDCARE + PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
@@ -2386,7 +2386,7 @@ Fixed bandwidth: 1391.309 AICc value: 42254.7 </code></pre>
    Adjusted R-square value:  0.8182339 
 
    ***********************************************************************
-   Program stops at: 2025-10-18 15:40:31.012507 </code></pre>
+   Program stops at: 2025-10-18 15:44:58.819567 </code></pre>
 </div>
 </div>
 <p>The report shows that the AICc of the gwr is 42263.61 which is significantly smaller than the globel multiple linear regression model of 42967.1.</p>
@@ -2429,8 +2429,8 @@ Adaptive bandwidth (number of nearest neighbours): 27 AICc value: 41978.63 </cod
 </div>
 <p>Best bandwidth = 27 nearest neighbours This is because AICc = 41978.63 is the lowest among all computed values the model with this bandwidth achieves the best trade-off between fit and complexity.</p>
 </section>
-<section id="constructing-the-adaptive-bandwidth-gwr-model" class="level3" data-number="9.2">
-<h3 data-number="9.2" class="anchored" data-anchor-id="constructing-the-adaptive-bandwidth-gwr-model"><span class="header-section-number">9.2</span> Constructing the adaptive bandwidth gwr model</h3>
+<section id="constructing-the-adaptive-bandwidth-gwr-model-aic" class="level3" data-number="9.2">
+<h3 data-number="9.2" class="anchored" data-anchor-id="constructing-the-adaptive-bandwidth-gwr-model-aic"><span class="header-section-number">9.2</span> Constructing the adaptive bandwidth gwr model (AIC)</h3>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>gwr.adaptive <span class="ot">&lt;-</span> <span class="fu">gwr.basic</span>(</span>
 <span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> SELLING_PRICE <span class="sc">~</span> AREA_SQM <span class="sc">+</span> AGE <span class="sc">+</span> </span>
@@ -2450,7 +2450,7 @@ Adaptive bandwidth (number of nearest neighbours): 27 AICc value: 41978.63 </cod
 <pre><code>   ***********************************************************************
    *                       Package   GWmodel                             *
    ***********************************************************************
-   Program starts at: 2025-10-18 15:40:39.036255 
+   Program starts at: 2025-10-18 15:45:06.965433 
    Call:
    gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + 
     PROX_CHILDCARE + PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
@@ -2558,7 +2558,7 @@ Adaptive bandwidth (number of nearest neighbours): 27 AICc value: 41978.63 </cod
    Adjusted R-square value:  0.8634199 
 
    ***********************************************************************
-   Program stops at: 2025-10-18 15:40:39.838048 </code></pre>
+   Program stops at: 2025-10-18 15:45:07.784523 </code></pre>
 </div>
 </div>
 </section>

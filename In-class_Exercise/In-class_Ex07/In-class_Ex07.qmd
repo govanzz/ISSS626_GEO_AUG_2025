@@ -491,10 +491,10 @@ The Global Moranâ€™s I test for residual spatial autocorrelation shows that itâ€
 
 Since the Observed Global Moran I = 0.14389 which is greater than 0, we can infer than the residuals resemble cluster distribution.
 
-## Building Hedonic Pricing Models using GWmodel
+## Building Hedonic Pricing Models using GWmodel (AIC)
 In this section, you are going to learn how to modelling hedonic pricing using both the fixed and adaptive bandwidth schemes
 
-### Building Fixed Bandwidth GWR Model
+### Building Fixed Bandwidth GWR Model (AIC)
 #### Computing fixed bandwith
 In the code chunk below bw.gwr() of GWModel package is used to determine the optimal fixed bandwidth to use in the model. Notice that the argument adaptive is set to FALSE indicates that we are interested to compute the fixed bandwidth.
 
@@ -559,7 +559,7 @@ bw.adaptive <- bw.gwr(
 Best bandwidth = 27 nearest neighbours
 This is because AICc = 41978.63 is the lowest among all computed values  the model with this bandwidth achieves the best trade-off between fit and complexity.
 
-### Constructing the adaptive bandwidth gwr model
+### Constructing the adaptive bandwidth gwr model (AIC)
 ```{r}
 gwr.adaptive <- gwr.basic(
   formula = SELLING_PRICE ~ AREA_SQM + AGE + 
