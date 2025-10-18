@@ -272,6 +272,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#gwmodel-method---fixed-bandwith" id="toc-gwmodel-method---fixed-bandwith" class="nav-link" data-scroll-target="#gwmodel-method---fixed-bandwith"><span class="header-section-number">8.1.2</span> GWModel method - fixed bandwith</a></li>
   </ul></li>
   </ul></li>
+  <li><a href="#building-adaptive-bandwidth-gwr-model" id="toc-building-adaptive-bandwidth-gwr-model" class="nav-link" data-scroll-target="#building-adaptive-bandwidth-gwr-model"><span class="header-section-number">9</span> Building Adaptive Bandwidth GWR Model</a>
+  <ul>
+  <li><a href="#computing-the-adaptive-bandwidth-with-aic" id="toc-computing-the-adaptive-bandwidth-with-aic" class="nav-link" data-scroll-target="#computing-the-adaptive-bandwidth-with-aic"><span class="header-section-number">9.1</span> Computing the adaptive bandwidth witH AIC</a></li>
+  <li><a href="#constructing-the-adaptive-bandwidth-gwr-model" id="toc-constructing-the-adaptive-bandwidth-gwr-model" class="nav-link" data-scroll-target="#constructing-the-adaptive-bandwidth-gwr-model"><span class="header-section-number">9.2</span> Constructing the adaptive bandwidth gwr model</a></li>
+  </ul></li>
+  <li><a href="#converting-sdf-into-sf-data.frame" id="toc-converting-sdf-into-sf-data.frame" class="nav-link" data-scroll-target="#converting-sdf-into-sf-data.frame"><span class="header-section-number">10</span> Converting SDF into sf data.frame</a></li>
+  <li><a href="#visualising-and-plotting-of-r2-in-tampinies" id="toc-visualising-and-plotting-of-r2-in-tampinies" class="nav-link" data-scroll-target="#visualising-and-plotting-of-r2-in-tampinies"><span class="header-section-number">11</span> Visualising and PLotting of R2 in Tampinies</a></li>
   </ul>
 </nav>
     </div>
@@ -902,23 +909,23 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tbl_regression</span>(condo.mlr1, <span class="at">intercept =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<div id="geudiwmurw" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#geudiwmurw table {
+<div id="euwqfuyhjx" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#euwqfuyhjx table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#geudiwmurw thead, #geudiwmurw tbody, #geudiwmurw tfoot, #geudiwmurw tr, #geudiwmurw td, #geudiwmurw th {
+#euwqfuyhjx thead, #euwqfuyhjx tbody, #euwqfuyhjx tfoot, #euwqfuyhjx tr, #euwqfuyhjx td, #euwqfuyhjx th {
   border-style: none;
 }
 
-#geudiwmurw p {
+#euwqfuyhjx p {
   margin: 0;
   padding: 0;
 }
 
-#geudiwmurw .gt_table {
+#euwqfuyhjx .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -944,12 +951,12 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#geudiwmurw .gt_caption {
+#euwqfuyhjx .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#geudiwmurw .gt_title {
+#euwqfuyhjx .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -961,7 +968,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-width: 0;
 }
 
-#geudiwmurw .gt_subtitle {
+#euwqfuyhjx .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -973,7 +980,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-top-width: 0;
 }
 
-#geudiwmurw .gt_heading {
+#euwqfuyhjx .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -985,13 +992,13 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#geudiwmurw .gt_bottom_border {
+#euwqfuyhjx .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#geudiwmurw .gt_col_headings {
+#euwqfuyhjx .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1006,7 +1013,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#geudiwmurw .gt_col_heading {
+#euwqfuyhjx .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1026,7 +1033,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   overflow-x: hidden;
 }
 
-#geudiwmurw .gt_column_spanner_outer {
+#euwqfuyhjx .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1038,15 +1045,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 4px;
 }
 
-#geudiwmurw .gt_column_spanner_outer:first-child {
+#euwqfuyhjx .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#geudiwmurw .gt_column_spanner_outer:last-child {
+#euwqfuyhjx .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#geudiwmurw .gt_column_spanner {
+#euwqfuyhjx .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1058,11 +1065,11 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   width: 100%;
 }
 
-#geudiwmurw .gt_spanner_row {
+#euwqfuyhjx .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#geudiwmurw .gt_group_heading {
+#euwqfuyhjx .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1088,7 +1095,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   text-align: left;
 }
 
-#geudiwmurw .gt_empty_group_heading {
+#euwqfuyhjx .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1103,15 +1110,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   vertical-align: middle;
 }
 
-#geudiwmurw .gt_from_md > :first-child {
+#euwqfuyhjx .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#geudiwmurw .gt_from_md > :last-child {
+#euwqfuyhjx .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#geudiwmurw .gt_row {
+#euwqfuyhjx .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1130,7 +1137,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   overflow-x: hidden;
 }
 
-#geudiwmurw .gt_stub {
+#euwqfuyhjx .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1143,7 +1150,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#geudiwmurw .gt_stub_row_group {
+#euwqfuyhjx .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1157,15 +1164,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   vertical-align: top;
 }
 
-#geudiwmurw .gt_row_group_first td {
+#euwqfuyhjx .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#geudiwmurw .gt_row_group_first th {
+#euwqfuyhjx .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#geudiwmurw .gt_summary_row {
+#euwqfuyhjx .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1175,16 +1182,16 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#geudiwmurw .gt_first_summary_row {
+#euwqfuyhjx .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#geudiwmurw .gt_first_summary_row.thick {
+#euwqfuyhjx .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#geudiwmurw .gt_last_summary_row {
+#euwqfuyhjx .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1194,7 +1201,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#geudiwmurw .gt_grand_summary_row {
+#euwqfuyhjx .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1204,7 +1211,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#geudiwmurw .gt_first_grand_summary_row {
+#euwqfuyhjx .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1214,7 +1221,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#geudiwmurw .gt_last_grand_summary_row_top {
+#euwqfuyhjx .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1224,11 +1231,11 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#geudiwmurw .gt_striped {
+#euwqfuyhjx .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#geudiwmurw .gt_table_body {
+#euwqfuyhjx .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1237,7 +1244,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#geudiwmurw .gt_footnotes {
+#euwqfuyhjx .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1251,7 +1258,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#geudiwmurw .gt_footnote {
+#euwqfuyhjx .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1260,7 +1267,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#geudiwmurw .gt_sourcenotes {
+#euwqfuyhjx .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1274,7 +1281,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#geudiwmurw .gt_sourcenote {
+#euwqfuyhjx .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1282,72 +1289,72 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#geudiwmurw .gt_left {
+#euwqfuyhjx .gt_left {
   text-align: left;
 }
 
-#geudiwmurw .gt_center {
+#euwqfuyhjx .gt_center {
   text-align: center;
 }
 
-#geudiwmurw .gt_right {
+#euwqfuyhjx .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#geudiwmurw .gt_font_normal {
+#euwqfuyhjx .gt_font_normal {
   font-weight: normal;
 }
 
-#geudiwmurw .gt_font_bold {
+#euwqfuyhjx .gt_font_bold {
   font-weight: bold;
 }
 
-#geudiwmurw .gt_font_italic {
+#euwqfuyhjx .gt_font_italic {
   font-style: italic;
 }
 
-#geudiwmurw .gt_super {
+#euwqfuyhjx .gt_super {
   font-size: 65%;
 }
 
-#geudiwmurw .gt_footnote_marks {
+#euwqfuyhjx .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#geudiwmurw .gt_asterisk {
+#euwqfuyhjx .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#geudiwmurw .gt_indent_1 {
+#euwqfuyhjx .gt_indent_1 {
   text-indent: 5px;
 }
 
-#geudiwmurw .gt_indent_2 {
+#euwqfuyhjx .gt_indent_2 {
   text-indent: 10px;
 }
 
-#geudiwmurw .gt_indent_3 {
+#euwqfuyhjx .gt_indent_3 {
   text-indent: 15px;
 }
 
-#geudiwmurw .gt_indent_4 {
+#euwqfuyhjx .gt_indent_4 {
   text-indent: 20px;
 }
 
-#geudiwmurw .gt_indent_5 {
+#euwqfuyhjx .gt_indent_5 {
   text-indent: 25px;
 }
 
-#geudiwmurw .katex-display {
+#euwqfuyhjx .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#geudiwmurw div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#euwqfuyhjx div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1473,23 +1480,23 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
 <span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>                AIC, statistic,</span>
 <span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>                p.value, sigma))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<div id="dawpgylpla" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#dawpgylpla table {
+<div id="rrlisqyqup" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#rrlisqyqup table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#dawpgylpla thead, #dawpgylpla tbody, #dawpgylpla tfoot, #dawpgylpla tr, #dawpgylpla td, #dawpgylpla th {
+#rrlisqyqup thead, #rrlisqyqup tbody, #rrlisqyqup tfoot, #rrlisqyqup tr, #rrlisqyqup td, #rrlisqyqup th {
   border-style: none;
 }
 
-#dawpgylpla p {
+#rrlisqyqup p {
   margin: 0;
   padding: 0;
 }
 
-#dawpgylpla .gt_table {
+#rrlisqyqup .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1515,12 +1522,12 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-left-color: #D3D3D3;
 }
 
-#dawpgylpla .gt_caption {
+#rrlisqyqup .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#dawpgylpla .gt_title {
+#rrlisqyqup .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1532,7 +1539,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-width: 0;
 }
 
-#dawpgylpla .gt_subtitle {
+#rrlisqyqup .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1544,7 +1551,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-top-width: 0;
 }
 
-#dawpgylpla .gt_heading {
+#rrlisqyqup .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1556,13 +1563,13 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#dawpgylpla .gt_bottom_border {
+#rrlisqyqup .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#dawpgylpla .gt_col_headings {
+#rrlisqyqup .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1577,7 +1584,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#dawpgylpla .gt_col_heading {
+#rrlisqyqup .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1597,7 +1604,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   overflow-x: hidden;
 }
 
-#dawpgylpla .gt_column_spanner_outer {
+#rrlisqyqup .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1609,15 +1616,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 4px;
 }
 
-#dawpgylpla .gt_column_spanner_outer:first-child {
+#rrlisqyqup .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#dawpgylpla .gt_column_spanner_outer:last-child {
+#rrlisqyqup .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#dawpgylpla .gt_column_spanner {
+#rrlisqyqup .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1629,11 +1636,11 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   width: 100%;
 }
 
-#dawpgylpla .gt_spanner_row {
+#rrlisqyqup .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#dawpgylpla .gt_group_heading {
+#rrlisqyqup .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1659,7 +1666,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   text-align: left;
 }
 
-#dawpgylpla .gt_empty_group_heading {
+#rrlisqyqup .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1674,15 +1681,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   vertical-align: middle;
 }
 
-#dawpgylpla .gt_from_md > :first-child {
+#rrlisqyqup .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#dawpgylpla .gt_from_md > :last-child {
+#rrlisqyqup .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#dawpgylpla .gt_row {
+#rrlisqyqup .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1701,7 +1708,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   overflow-x: hidden;
 }
 
-#dawpgylpla .gt_stub {
+#rrlisqyqup .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1714,7 +1721,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#dawpgylpla .gt_stub_row_group {
+#rrlisqyqup .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1728,15 +1735,15 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   vertical-align: top;
 }
 
-#dawpgylpla .gt_row_group_first td {
+#rrlisqyqup .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#dawpgylpla .gt_row_group_first th {
+#rrlisqyqup .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#dawpgylpla .gt_summary_row {
+#rrlisqyqup .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1746,16 +1753,16 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#dawpgylpla .gt_first_summary_row {
+#rrlisqyqup .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#dawpgylpla .gt_first_summary_row.thick {
+#rrlisqyqup .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#dawpgylpla .gt_last_summary_row {
+#rrlisqyqup .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1765,7 +1772,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#dawpgylpla .gt_grand_summary_row {
+#rrlisqyqup .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1775,7 +1782,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#dawpgylpla .gt_first_grand_summary_row {
+#rrlisqyqup .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1785,7 +1792,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-top-color: #D3D3D3;
 }
 
-#dawpgylpla .gt_last_grand_summary_row_top {
+#rrlisqyqup .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1795,11 +1802,11 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#dawpgylpla .gt_striped {
+#rrlisqyqup .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#dawpgylpla .gt_table_body {
+#rrlisqyqup .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1808,7 +1815,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-bottom-color: #D3D3D3;
 }
 
-#dawpgylpla .gt_footnotes {
+#rrlisqyqup .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1822,7 +1829,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#dawpgylpla .gt_footnote {
+#rrlisqyqup .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1831,7 +1838,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#dawpgylpla .gt_sourcenotes {
+#rrlisqyqup .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1845,7 +1852,7 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   border-right-color: #D3D3D3;
 }
 
-#dawpgylpla .gt_sourcenote {
+#rrlisqyqup .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1853,72 +1860,72 @@ F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16</code></pre>
   padding-right: 5px;
 }
 
-#dawpgylpla .gt_left {
+#rrlisqyqup .gt_left {
   text-align: left;
 }
 
-#dawpgylpla .gt_center {
+#rrlisqyqup .gt_center {
   text-align: center;
 }
 
-#dawpgylpla .gt_right {
+#rrlisqyqup .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#dawpgylpla .gt_font_normal {
+#rrlisqyqup .gt_font_normal {
   font-weight: normal;
 }
 
-#dawpgylpla .gt_font_bold {
+#rrlisqyqup .gt_font_bold {
   font-weight: bold;
 }
 
-#dawpgylpla .gt_font_italic {
+#rrlisqyqup .gt_font_italic {
   font-style: italic;
 }
 
-#dawpgylpla .gt_super {
+#rrlisqyqup .gt_super {
   font-size: 65%;
 }
 
-#dawpgylpla .gt_footnote_marks {
+#rrlisqyqup .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#dawpgylpla .gt_asterisk {
+#rrlisqyqup .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#dawpgylpla .gt_indent_1 {
+#rrlisqyqup .gt_indent_1 {
   text-indent: 5px;
 }
 
-#dawpgylpla .gt_indent_2 {
+#rrlisqyqup .gt_indent_2 {
   text-indent: 10px;
 }
 
-#dawpgylpla .gt_indent_3 {
+#rrlisqyqup .gt_indent_3 {
   text-indent: 15px;
 }
 
-#dawpgylpla .gt_indent_4 {
+#rrlisqyqup .gt_indent_4 {
   text-indent: 20px;
 }
 
-#dawpgylpla .gt_indent_5 {
+#rrlisqyqup .gt_indent_5 {
   text-indent: 25px;
 }
 
-#dawpgylpla .katex-display {
+#rrlisqyqup .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#dawpgylpla div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#rrlisqyqup div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -2271,7 +2278,7 @@ Fixed bandwidth: 1391.309 AICc value: 42254.7 </code></pre>
 <pre><code>   ***********************************************************************
    *                       Package   GWmodel                             *
    ***********************************************************************
-   Program starts at: 2025-10-18 15:00:49.294699 
+   Program starts at: 2025-10-18 15:40:30.379083 
    Call:
    gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + 
     PROX_CHILDCARE + PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
@@ -2379,14 +2386,288 @@ Fixed bandwidth: 1391.309 AICc value: 42254.7 </code></pre>
    Adjusted R-square value:  0.8182339 
 
    ***********************************************************************
-   Program stops at: 2025-10-18 15:00:49.876306 </code></pre>
+   Program stops at: 2025-10-18 15:40:31.012507 </code></pre>
 </div>
 </div>
 <p>The report shows that the AICc of the gwr is 42263.61 which is significantly smaller than the globel multiple linear regression model of 42967.1.</p>
-
-
 </section>
 </section>
+</section>
+<section id="building-adaptive-bandwidth-gwr-model" class="level2" data-number="9">
+<h2 data-number="9" class="anchored" data-anchor-id="building-adaptive-bandwidth-gwr-model"><span class="header-section-number">9</span> Building Adaptive Bandwidth GWR Model</h2>
+<section id="computing-the-adaptive-bandwidth-with-aic" class="level3" data-number="9.1">
+<h3 data-number="9.1" class="anchored" data-anchor-id="computing-the-adaptive-bandwidth-with-aic"><span class="header-section-number">9.1</span> Computing the adaptive bandwidth witH AIC</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>bw.adaptive <span class="ot">&lt;-</span> <span class="fu">bw.gwr</span>(</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> SELLING_PRICE <span class="sc">~</span> AREA_SQM <span class="sc">+</span> AGE  <span class="sc">+</span> </span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>    PROX_CBD <span class="sc">+</span> PROX_CHILDCARE <span class="sc">+</span> PROX_ELDERLYCARE    <span class="sc">+</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>    PROX_URA_GROWTH_AREA <span class="sc">+</span> PROX_MRT <span class="sc">+</span> PROX_PARK <span class="sc">+</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a>    PROX_PRIMARY_SCH <span class="sc">+</span> PROX_SHOPPING_MALL   <span class="sc">+</span> </span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>    PROX_BUS_STOP   <span class="sc">+</span> NO_Of_UNITS <span class="sc">+</span> </span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>    FAMILY_FRIENDLY <span class="sc">+</span> FREEHOLD, </span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">data=</span>condo_resale.sf, </span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">approach=</span><span class="st">"AIC"</span>, </span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">kernel=</span><span class="st">"gaussian"</span>, </span>
+<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">adaptive=</span><span class="cn">TRUE</span>, </span>
+<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">longlat=</span><span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Adaptive bandwidth (number of nearest neighbours): 895 AICc value: 42879.45 
+Adaptive bandwidth (number of nearest neighbours): 561 AICc value: 42823.52 
+Adaptive bandwidth (number of nearest neighbours): 354 AICc value: 42677.14 
+Adaptive bandwidth (number of nearest neighbours): 226 AICc value: 42484.37 
+Adaptive bandwidth (number of nearest neighbours): 147 AICc value: 42353.27 
+Adaptive bandwidth (number of nearest neighbours): 98 AICc value: 42280.68 
+Adaptive bandwidth (number of nearest neighbours): 68 AICc value: 42201.18 
+Adaptive bandwidth (number of nearest neighbours): 49 AICc value: 42100.66 
+Adaptive bandwidth (number of nearest neighbours): 37 AICc value: 42055.68 
+Adaptive bandwidth (number of nearest neighbours): 30 AICc value: 41982.22 
+Adaptive bandwidth (number of nearest neighbours): 25 AICc value: 42003.33 
+Adaptive bandwidth (number of nearest neighbours): 32 AICc value: 42035.41 
+Adaptive bandwidth (number of nearest neighbours): 27 AICc value: 41978.63 
+Adaptive bandwidth (number of nearest neighbours): 27 AICc value: 41978.63 </code></pre>
+</div>
+</div>
+<p>Best bandwidth = 27 nearest neighbours This is because AICc = 41978.63 is the lowest among all computed values the model with this bandwidth achieves the best trade-off between fit and complexity.</p>
+</section>
+<section id="constructing-the-adaptive-bandwidth-gwr-model" class="level3" data-number="9.2">
+<h3 data-number="9.2" class="anchored" data-anchor-id="constructing-the-adaptive-bandwidth-gwr-model"><span class="header-section-number">9.2</span> Constructing the adaptive bandwidth gwr model</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>gwr.adaptive <span class="ot">&lt;-</span> <span class="fu">gwr.basic</span>(</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> SELLING_PRICE <span class="sc">~</span> AREA_SQM <span class="sc">+</span> AGE <span class="sc">+</span> </span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>    PROX_CBD <span class="sc">+</span> PROX_CHILDCARE <span class="sc">+</span> PROX_ELDERLYCARE <span class="sc">+</span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>    PROX_URA_GROWTH_AREA <span class="sc">+</span> PROX_MRT <span class="sc">+</span> PROX_PARK <span class="sc">+</span></span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>    PROX_PRIMARY_SCH <span class="sc">+</span> PROX_SHOPPING_MALL <span class="sc">+</span> PROX_BUS_STOP <span class="sc">+</span></span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>    NO_Of_UNITS <span class="sc">+</span> FAMILY_FRIENDLY <span class="sc">+</span> FREEHOLD,</span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">data=</span>condo_resale.sf, </span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">bw=</span>bw.adaptive, </span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">kernel =</span> <span class="st">'gaussian'</span>, </span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">adaptive=</span><span class="cn">TRUE</span>, </span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">longlat =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a>gwr.adaptive</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   ***********************************************************************
+   *                       Package   GWmodel                             *
+   ***********************************************************************
+   Program starts at: 2025-10-18 15:40:39.036255 
+   Call:
+   gwr.basic(formula = SELLING_PRICE ~ AREA_SQM + AGE + PROX_CBD + 
+    PROX_CHILDCARE + PROX_ELDERLYCARE + PROX_URA_GROWTH_AREA + 
+    PROX_MRT + PROX_PARK + PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + 
+    PROX_BUS_STOP + NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD, 
+    data = condo_resale.sf, bw = bw.adaptive, kernel = "gaussian", 
+    adaptive = TRUE, longlat = FALSE)
+
+   Dependent (y) variable:  SELLING_PRICE
+   Independent variables:  AREA_SQM AGE PROX_CBD PROX_CHILDCARE PROX_ELDERLYCARE PROX_URA_GROWTH_AREA PROX_MRT PROX_PARK PROX_PRIMARY_SCH PROX_SHOPPING_MALL PROX_BUS_STOP NO_Of_UNITS FAMILY_FRIENDLY FREEHOLD
+   Number of data points: 1436
+   ***********************************************************************
+   *                    Results of Global Regression                     *
+   ***********************************************************************
+
+   Call:
+    lm(formula = formula, data = data)
+
+   Residuals:
+     Min       1Q   Median       3Q      Max 
+-3470778  -298119   -23481   248917 12234210 
+
+   Coefficients:
+                          Estimate Std. Error t value Pr(&gt;|t|)    
+   (Intercept)           527633.22  108183.22   4.877 1.20e-06 ***
+   AREA_SQM               12777.52     367.48  34.771  &lt; 2e-16 ***
+   AGE                   -24687.74    2754.84  -8.962  &lt; 2e-16 ***
+   PROX_CBD              -77131.32    5763.12 -13.384  &lt; 2e-16 ***
+   PROX_CHILDCARE       -318472.75  107959.51  -2.950 0.003231 ** 
+   PROX_ELDERLYCARE      185575.62   39901.86   4.651 3.61e-06 ***
+   PROX_URA_GROWTH_AREA   39163.25   11754.83   3.332 0.000885 ***
+   PROX_MRT             -294745.11   56916.37  -5.179 2.56e-07 ***
+   PROX_PARK             570504.81   65507.03   8.709  &lt; 2e-16 ***
+   PROX_PRIMARY_SCH      159856.14   60234.60   2.654 0.008046 ** 
+   PROX_SHOPPING_MALL   -220947.25   36561.83  -6.043 1.93e-09 ***
+   PROX_BUS_STOP         682482.22  134513.24   5.074 4.42e-07 ***
+   NO_Of_UNITS             -245.48      87.95  -2.791 0.005321 ** 
+   FAMILY_FRIENDLY       146307.58   46893.02   3.120 0.001845 ** 
+   FREEHOLD              350599.81   48506.48   7.228 7.98e-13 ***
+
+   ---Significance stars
+   Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 
+   Residual standard error: 756000 on 1421 degrees of freedom
+   Multiple R-squared: 0.6507
+   Adjusted R-squared: 0.6472 
+   F-statistic: 189.1 on 14 and 1421 DF,  p-value: &lt; 2.2e-16 
+   ***Extra Diagnostic information
+   Residual sum of squares: 8.120609e+14
+   Sigma(hat): 752522.9
+   AIC:  42966.76
+   AICc:  42967.14
+   BIC:  41731.39
+   ***********************************************************************
+   *          Results of Geographically Weighted Regression              *
+   ***********************************************************************
+
+   *********************Model calibration information*********************
+   Kernel function: gaussian 
+   Adaptive bandwidth: 27 (number of nearest neighbours)
+   Regression points: the same locations as observations are used.
+   Distance metric: Euclidean distance metric is used.
+
+   ****************Summary of GWR coefficient estimates:******************
+                               Min.     1st Qu.      Median     3rd Qu.
+   Intercept            -3.4055e+08 -4.9698e+05  7.6667e+05  1.6291e+06
+   AREA_SQM              3.2900e+03  5.5381e+03  7.6847e+03  1.2674e+04
+   AGE                  -1.0016e+05 -2.7556e+04 -1.3592e+04 -4.6598e+03
+   PROX_CBD             -4.0881e+06 -1.9515e+05 -7.3518e+04  2.9526e+04
+   PROX_CHILDCARE       -1.7059e+06 -2.6967e+05 -1.2514e+04  3.4777e+05
+   PROX_ELDERLYCARE     -2.2412e+06 -9.4985e+04  7.9372e+04  3.2765e+05
+   PROX_URA_GROWTH_AREA -1.8375e+07 -2.3765e+04  5.7504e+04  2.9631e+05
+   PROX_MRT             -4.5351e+07 -6.2318e+05 -2.0888e+05 -3.8964e+04
+   PROX_PARK            -1.0166e+08 -2.0084e+05  1.1152e+05  4.4450e+05
+   PROX_PRIMARY_SCH     -4.6505e+06 -1.9579e+05 -9.1754e+03  4.3824e+05
+   PROX_SHOPPING_MALL   -2.4269e+06 -1.4053e+05 -1.3684e+04  1.5823e+05
+   PROX_BUS_STOP        -2.1436e+06 -8.7705e+04  4.1820e+05  1.2784e+06
+   NO_Of_UNITS          -3.2993e+03 -2.2606e+02 -2.1790e+01  1.4231e+02
+   FAMILY_FRIENDLY      -4.0477e+06 -6.5054e+04  2.2989e+04  1.9452e+05
+   FREEHOLD             -1.0164e+08  2.4578e+04  1.8212e+05  3.8182e+05
+                              Max.
+   Intercept            55107367.9
+   AREA_SQM                23242.4
+   AGE                    265480.4
+   PROX_CBD             26220365.8
+   PROX_CHILDCARE        3565627.3
+   PROX_ELDERLYCARE     93434431.6
+   PROX_URA_GROWTH_AREA 25096284.3
+   PROX_MRT              9223676.9
+   PROX_PARK             2754387.0
+   PROX_PRIMARY_SCH      4618809.5
+   PROX_SHOPPING_MALL   39514834.8
+   PROX_BUS_STOP        13319341.1
+   NO_Of_UNITS              9878.1
+   FAMILY_FRIENDLY       2315112.2
+   FREEHOLD              1876281.2
+   ************************Diagnostic information*************************
+   Number of data points: 1436 
+   Effective number of parameters (2trace(S) - trace(S'S)): 393.0807 
+   Effective degrees of freedom (n-2trace(S) + trace(S'S)): 1042.919 
+   AICc (GWR book, Fotheringham, et al. 2002, p. 61, eq 2.33): 41978.63 
+   AIC (GWR book, Fotheringham, et al. 2002,GWR p. 96, eq. 4.22): 41453.88 
+   BIC (GWR book, Fotheringham, et al. 2002,GWR p. 61, eq. 2.34): 42070.13 
+   Residual sum of squares: 2.305296e+14 
+   R-square value:  0.9008324 
+   Adjusted R-square value:  0.8634199 
+
+   ***********************************************************************
+   Program stops at: 2025-10-18 15:40:39.838048 </code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="converting-sdf-into-sf-data.frame" class="level2" data-number="10">
+<h2 data-number="10" class="anchored" data-anchor-id="converting-sdf-into-sf-data.frame"><span class="header-section-number">10</span> Converting SDF into sf data.frame</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>condo_resale.sf.adaptive <span class="ot">&lt;-</span></span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>(gwr.adaptive<span class="sc">$</span>SDF) <span class="sc">%&gt;%</span></span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs=</span><span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(condo_resale.sf.adaptive)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Rows: 1,436
+Columns: 52
+$ Intercept               &lt;dbl&gt; 2044700.26, 1773153.15, 3520072.36, 1539855.35…
+$ AREA_SQM                &lt;dbl&gt; 9559.598, 15390.155, 13016.013, 21340.305, 678…
+$ AGE                     &lt;dbl&gt; -9500.111, -48975.055, -25897.022, -97109.448,…
+$ PROX_CBD                &lt;dbl&gt; -120265.31, -173034.60, -266084.74, 4535464.61…
+$ PROX_CHILDCARE          &lt;dbl&gt; 318045.039, 348815.035, -194366.004, 286266.93…
+$ PROX_ELDERLYCARE        &lt;dbl&gt; -394643.95, 238275.45, 558021.92, 402763.72, -…
+$ PROX_URA_GROWTH_AREA    &lt;dbl&gt; -159575.59, -31187.00, -253591.14, -4781655.68…
+$ PROX_MRT                &lt;dbl&gt; -299592.54, -2557296.15, -942766.83, -2495885.…
+$ PROX_PARK               &lt;dbl&gt; -172380.89, 442318.02, 246972.65, -937538.48, …
+$ PROX_PRIMARY_SCH        &lt;dbl&gt; 242732.037, 919399.390, 558785.123, 3340638.60…
+$ PROX_SHOPPING_MALL      &lt;dbl&gt; 302051.162, -215149.309, -142022.712, 134573.9…
+$ PROX_BUS_STOP           &lt;dbl&gt; 1209536.14, 1919405.53, 1450141.54, 8743551.68…
+$ NO_Of_UNITS             &lt;dbl&gt; 106.372669, -211.071177, 19.339246, -150.59531…
+$ FAMILY_FRIENDLY         &lt;dbl&gt; -9098.124, 152642.975, -29284.824, 1723147.674…
+$ FREEHOLD                &lt;dbl&gt; 303927.63, 400568.89, 162972.29, 1318502.10, 3…
+$ y                       &lt;dbl&gt; 3000000, 3880000, 3325000, 4250000, 1400000, 1…
+$ yhat                    &lt;dbl&gt; 2885980.3, 3464956.3, 3621402.8, 5528248.5, 13…
+$ residual                &lt;dbl&gt; 114019.686, 415043.736, -296402.814, -1278248.…
+$ CV_Score                &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+$ Stud_residual           &lt;dbl&gt; 0.39812858, 1.12993822, -0.89467945, -3.237264…
+$ Intercept_SE            &lt;dbl&gt; 505352.2, 959583.4, 1088656.5, 644451.8, 21882…
+$ AREA_SQM_SE             &lt;dbl&gt; 803.9810, 1041.2806, 1005.1322, 647.0447, 1408…
+$ AGE_SE                  &lt;dbl&gt; 5754.545, 7873.214, 6772.090, 6339.353, 8401.1…
+$ PROX_CBD_SE             &lt;dbl&gt; 36644.67, 46892.76, 64224.98, 723130.45, 42870…
+$ PROX_CHILDCARE_SE       &lt;dbl&gt; 311604.5, 383548.3, 356362.3, 318029.0, 726053…
+$ PROX_ELDERLYCARE_SE     &lt;dbl&gt; 117822.10, 121329.51, 145658.37, 153818.83, 36…
+$ PROX_URA_GROWTH_AREA_SE &lt;dbl&gt; 54991.59, 138590.35, 104509.67, 714454.45, 501…
+$ PROX_MRT_SE             &lt;dbl&gt; 181049.7, 426727.9, 290345.8, 310229.2, 399736…
+$ PROX_PARK_SE            &lt;dbl&gt; 200556.4, 337273.4, 328846.1, 250084.3, 406910…
+$ PROX_PRIMARY_SCH_SE     &lt;dbl&gt; 149035.4, 213215.4, 206844.1, 276593.8, 253671…
+$ PROX_SHOPPING_MALL_SE   &lt;dbl&gt; 106789.05, 168563.26, 124684.33, 237237.76, 33…
+$ PROX_BUS_STOP_SE        &lt;dbl&gt; 587417.1, 527904.1, 468907.1, 625949.7, 748596…
+$ NO_Of_UNITS_SE          &lt;dbl&gt; 213.2704, 232.9495, 211.9892, 452.1575, 315.82…
+$ FAMILY_FRIENDLY_SE      &lt;dbl&gt; 128381.97, 139756.71, 152249.80, 115274.06, 16…
+$ FREEHOLD_SE             &lt;dbl&gt; 113234.6, 170426.6, 146100.1, 149874.1, 215886…
+$ Intercept_TV            &lt;dbl&gt; 4.04608981, 1.84783643, 3.23340951, 2.38940359…
+$ AREA_SQM_TV             &lt;dbl&gt; 11.890328, 14.780026, 12.949553, 32.981191, 4.…
+$ AGE_TV                  &lt;dbl&gt; -1.6508882, -6.2204656, -3.8240810, -15.318510…
+$ PROX_CBD_TV             &lt;dbl&gt; -3.28193222, -3.69000648, -4.14301022, 6.27198…
+$ PROX_CHILDCARE_TV       &lt;dbl&gt; 1.020669014, 0.909442298, -0.545416851, 0.9001…
+$ PROX_ELDERLYCARE_TV     &lt;dbl&gt; -3.34948996, 1.96387060, 3.83103226, 2.6184291…
+$ PROX_URA_GROWTH_AREA_TV &lt;dbl&gt; -2.90181817, -0.22503007, -2.42648497, -6.6927…
+$ PROX_MRT_TV             &lt;dbl&gt; -1.65475280, -5.99280279, -3.24704810, -8.0452…
+$ PROX_PARK_TV            &lt;dbl&gt; -0.8595132, 1.3114524, 0.7510281, -3.7488897, …
+$ PROX_PRIMARY_SCH_TV     &lt;dbl&gt; 1.62868734, 4.31206879, 2.70147945, 12.0777779…
+$ PROX_SHOPPING_MALL_TV   &lt;dbl&gt; 2.82848439, -1.27637129, -1.13905821, 0.567253…
+$ PROX_BUS_STOP_TV        &lt;dbl&gt; 2.0590756, 3.6358978, 3.0925989, 13.9684567, 0…
+$ NO_Of_UNITS_TV          &lt;dbl&gt; 0.49876913, -0.90608143, 0.09122749, -0.333059…
+$ FAMILY_FRIENDLY_TV      &lt;dbl&gt; -0.07086762, 1.09220500, -0.19234721, 14.94826…
+$ FREEHOLD_TV             &lt;dbl&gt; 2.68405282, 2.35038940, 1.11548393, 8.79739845…
+$ Local_R2                &lt;dbl&gt; 0.9172836, 0.9154542, 0.9132622, 0.9192190, 0.…
+$ geometry                &lt;POINT [m]&gt; POINT (22085.12 29951.54), POINT (25656.…</code></pre>
+</div>
+</div>
+</section>
+<section id="visualising-and-plotting-of-r2-in-tampinies" class="level2" data-number="11">
+<h2 data-number="11" class="anchored" data-anchor-id="visualising-and-plotting-of-r2-in-tampinies"><span class="header-section-number">11</span> Visualising and PLotting of R2 in Tampinies</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>pa_col <span class="ot">&lt;-</span> <span class="fu">names</span>(mpsz_svy21)[<span class="fu">grepl</span>(<span class="st">"PLN|PLAN.*AREA"</span>, <span class="fu">names</span>(mpsz_svy21), <span class="at">ignore.case =</span> <span class="cn">TRUE</span>)][<span class="dv">1</span>]</span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>mpsz_tamp <span class="ot">&lt;-</span> mpsz_svy21 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(<span class="sc">!!</span>rlang<span class="sc">::</span><span class="fu">sym</span>(pa_col) <span class="sc">==</span> <span class="st">"TAMPINES"</span>)</span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 3) Keep only points that fall inside Tampines</span></span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>pts_tamp <span class="ot">&lt;-</span> <span class="fu">st_join</span>(condo_resale.sf.adaptive, mpsz_tamp[<span class="st">"SUBZONE_N"</span>], <span class="at">join =</span> st_within, <span class="at">left =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a><span class="co"># (left = FALSE drops points outside; use left=TRUE if you want to keep NAs)</span></span>
+<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb63-8"><a href="#cb63-8" aria-hidden="true" tabindex="-1"></a><span class="co"># 4) Plot Local R² for Tampines only</span></span>
+<span id="cb63-9"><a href="#cb63-9" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(mpsz_tamp) <span class="sc">+</span></span>
+<span id="cb63-10"><a href="#cb63-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="cn">NA</span>) <span class="sc">+</span>               <span class="co"># was fill_alpha=0.1; make polygon transparent</span></span>
+<span id="cb63-11"><a href="#cb63-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">col =</span> <span class="st">"gray60"</span>, <span class="at">lwd =</span> <span class="dv">1</span>) <span class="sc">+</span> <span class="co"># add clear border</span></span>
+<span id="cb63-12"><a href="#cb63-12" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(pts_tamp) <span class="sc">+</span></span>
+<span id="cb63-13"><a href="#cb63-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"Local_R2"</span>,</span>
+<span id="cb63-14"><a href="#cb63-14" aria-hidden="true" tabindex="-1"></a>          <span class="at">palette =</span> <span class="st">"-RdYlBu"</span>,          <span class="co"># was "Blues" → strong diverging palette</span></span>
+<span id="cb63-15"><a href="#cb63-15" aria-hidden="true" tabindex="-1"></a>          <span class="at">style =</span> <span class="st">"fixed"</span>,              <span class="co"># fix the breaks for consistent reading</span></span>
+<span id="cb63-16"><a href="#cb63-16" aria-hidden="true" tabindex="-1"></a>          <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="fl">0.88</span>, <span class="fl">0.98</span>, <span class="fl">0.02</span>),  <span class="co"># 0.88–0.98 in 0.02 steps</span></span>
+<span id="cb63-17"><a href="#cb63-17" aria-hidden="true" tabindex="-1"></a>          <span class="at">size =</span> <span class="fl">0.35</span>,</span>
+<span id="cb63-18"><a href="#cb63-18" aria-hidden="true" tabindex="-1"></a>          <span class="at">border.col =</span> <span class="st">"gray20"</span>,</span>
+<span id="cb63-19"><a href="#cb63-19" aria-hidden="true" tabindex="-1"></a>          <span class="at">border.lwd =</span> <span class="fl">0.4</span>,</span>
+<span id="cb63-20"><a href="#cb63-20" aria-hidden="true" tabindex="-1"></a>          <span class="at">title =</span> <span class="st">"Local R² (Tampines)"</span>) <span class="sc">+</span></span>
+<span id="cb63-21"><a href="#cb63-21" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_layout</span>(<span class="at">legend.outside =</span> <span class="cn">TRUE</span>, <span class="at">legend.title.size =</span> <span class="dv">1</span>, <span class="at">legend.text.size =</span> <span class="fl">0.8</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="In-class_Ex07_files/figure-html/unnamed-chunk-42-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The Local R² map for Tampines shows how well the Geographically Weighted Regression (GWR) model explains variations in condominium resale prices across the subzones of Tampines. Local R² values range between 0.88 and 0.98, indicating generally strong model performance throughout the area.</p>
+<p>High Local R² values (0.94–0.98, shown in red) are concentrated in the central and eastern parts of Tampines. This suggests that the chosen explanatory variables—such as floor area, building age, and proximity to MRT stations, parks, and schools—effectively capture the spatial variability of property prices in these subzones. These areas are typically well-developed, with stable housing markets and strong accessibility features that align with the predictors used in the model.</p>
+<p>In contrast, the western and peripheral subzones show slightly lower R² values (0.88–0.92, shown in blue). This indicates that the model explains less of the price variation in these locations. The weaker performance may be attributed to local heterogeneity in property characteristics, differences in condominium types, or unobserved neighbourhood amenities—such as building-specific facilities or newer developments—that were not captured in the dataset.</p>
+<p>Overall, the high Local R² values across most of Tampines highlight the robustness of the GWR model in this planning area. The few lower-R² clusters point to potential spatial non-stationarity in price determinants, suggesting that incorporating additional neighbourhood-level factors (e.g., development age, distance to employment centres, or recent transaction dynamics) could further enhance the model’s local explanatory power.</p>
+
+
 </section>
 
 </main> <!-- /main -->

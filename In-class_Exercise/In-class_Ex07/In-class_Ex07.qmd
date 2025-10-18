@@ -539,5 +539,87 @@ gwr.fixed
 ```
 The report shows that the AICc of the gwr is 42263.61 which is significantly smaller than the globel multiple linear regression model of 42967.1.
 
+## Building Adaptive Bandwidth GWR Model
+
+### Computing the adaptive bandwidth witH AIC 
+```{r}
+bw.adaptive <- bw.gwr(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE    +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL   + 
+    PROX_BUS_STOP   + NO_Of_UNITS + 
+    FAMILY_FRIENDLY + FREEHOLD, 
+  data=condo_resale.sf, 
+  approach="AIC", 
+  kernel="gaussian", 
+  adaptive=TRUE, 
+  longlat=FALSE)
+```
+Best bandwidth = 27 nearest neighbours
+This is because AICc = 41978.63 is the lowest among all computed values  the model with this bandwidth achieves the best trade-off between fit and complexity.
+
+### Constructing the adaptive bandwidth gwr model
+```{r}
+gwr.adaptive <- gwr.basic(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE + 
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_BUS_STOP +
+    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+  data=condo_resale.sf, 
+  bw=bw.adaptive, 
+  kernel = 'gaussian', 
+  adaptive=TRUE, 
+  longlat = FALSE)
+```
+```{r}
+gwr.adaptive
+```
+## Converting SDF into sf data.frame
+
+```{r}
+condo_resale.sf.adaptive <-
+  st_as_sf(gwr.adaptive$SDF) %>%
+  st_transform(crs=3414)
+```
+
+```{r}
+glimpse(condo_resale.sf.adaptive)
+```
+##  Visualising and PLotting of R2 in Tampinies 
+
+```{r}
+pa_col <- names(mpsz_svy21)[grepl("PLN|PLAN.*AREA", names(mpsz_svy21), ignore.case = TRUE)][1]
+mpsz_tamp <- mpsz_svy21 %>% filter(!!rlang::sym(pa_col) == "TAMPINES")
+
+# 3) Keep only points that fall inside Tampines
+pts_tamp <- st_join(condo_resale.sf.adaptive, mpsz_tamp["SUBZONE_N"], join = st_within, left = FALSE)
+# (left = FALSE drops points outside; use left=TRUE if you want to keep NAs)
+
+# 4) Plot Local R² for Tampines only
+tm_shape(mpsz_tamp) +
+  tm_polygons(col = NA) +               # was fill_alpha=0.1; make polygon transparent
+  tm_borders(col = "gray60", lwd = 1) + # add clear border
+tm_shape(pts_tamp) +
+  tm_dots(col = "Local_R2",
+          palette = "-RdYlBu",          # was "Blues" → strong diverging palette
+          style = "fixed",              # fix the breaks for consistent reading
+          breaks = seq(0.88, 0.98, 0.02),  # 0.88–0.98 in 0.02 steps
+          size = 0.35,
+          border.col = "gray20",
+          border.lwd = 0.4,
+          title = "Local R² (Tampines)") +
+tm_layout(legend.outside = TRUE, legend.title.size = 1, legend.text.size = 0.8)
+```
+The Local R² map for Tampines shows how well the Geographically Weighted Regression (GWR) model explains variations in condominium resale prices across the subzones of Tampines. Local R² values range between 0.88 and 0.98, indicating generally strong model performance throughout the area.
+
+High Local R² values (0.94–0.98, shown in red) are concentrated in the central and eastern parts of Tampines. This suggests that the chosen explanatory variables—such as floor area, building age, and proximity to MRT stations, parks, and schools—effectively capture the spatial variability of property prices in these subzones. These areas are typically well-developed, with stable housing markets and strong accessibility features that align with the predictors used in the model.
+
+In contrast, the western and peripheral subzones show slightly lower R² values (0.88–0.92, shown in blue). This indicates that the model explains less of the price variation in these locations. The weaker performance may be attributed to local heterogeneity in property characteristics, differences in condominium types, or unobserved neighbourhood amenities—such as building-specific facilities or newer developments—that were not captured in the dataset.
+
+Overall, the high Local R² values across most of Tampines highlight the robustness of the GWR model in this planning area. The few lower-R² clusters point to potential spatial non-stationarity in price determinants, suggesting that incorporating additional neighbourhood-level factors (e.g., development age, distance to employment centres, or recent transaction dynamics) could further enhance the model’s local explanatory power.
+
+
 
 
