@@ -1,0 +1,15 @@
+---
+title: "Take Home Exercise 2"
+author: "Gautamgovan"
+date: "October 13, 2025"
+date-modified: "last-modified"
+format: 
+  html:
+    toc: true
+    number-sections: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  freeze: true
+---
