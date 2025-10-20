@@ -264,7 +264,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#aggregating-trips-based-on-hex_id" id="toc-aggregating-trips-based-on-hex_id" class="nav-link" data-scroll-target="#aggregating-trips-based-on-hex_id"><span class="header-section-number">4.4.3</span> Aggregating TRIPS based on HEX_ID</a></li>
   <li><a href="#build-analysis-periods-am-pm-weekend-and-aggregate" id="toc-build-analysis-periods-am-pm-weekend-and-aggregate" class="nav-link" data-scroll-target="#build-analysis-periods-am-pm-weekend-and-aggregate"><span class="header-section-number">4.4.4</span> Build analysis periods (AM / PM / Weekend) and aggregate</a></li>
   </ul></li>
-  <li><a href="#code-explanation" id="toc-code-explanation" class="nav-link" data-scroll-target="#code-explanation"><span class="header-section-number">4.5</span> Code Explanation</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -753,10 +752,6 @@ It consists of three steps:</p>
 </section>
 <section id="build-analysis-periods-am-pm-weekend-and-aggregate" class="level4" data-number="4.4.4">
 <h4 data-number="4.4.4" class="anchored" data-anchor-id="build-analysis-periods-am-pm-weekend-and-aggregate"><span class="header-section-number">4.4.4</span> Build analysis periods (AM / PM / Weekend) and aggregate</h4>
-</section>
-</section>
-<section id="code-explanation" class="level3" data-number="4.5">
-<h3 data-number="4.5" class="anchored" data-anchor-id="code-explanation"><span class="header-section-number">4.5</span> Code Explanation</h3>
 <p>The code chunk below prepares and aggregates bus trip data by time period and spatial hexagon for visualization and spatial analysis. It consists of four main steps.</p>
 <hr>
 <p>First, a list of weekend labels (<code>wknd_labels</code>) is defined to identify weekend or public holiday days.<br>
@@ -831,6 +826,7 @@ The resulting spatial object <code>hex_period_sf</code> contains both geometry a
 </div>
 
 
+</section>
 </section>
 </section>
 

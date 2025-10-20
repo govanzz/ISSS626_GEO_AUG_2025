@@ -307,8 +307,6 @@ trips
 
 #### Build analysis periods (AM / PM / Weekend) and aggregate
 
-### Code Explanation
-
 The code chunk below prepares and aggregates bus trip data by time period and spatial hexagon for visualization and spatial analysis. It consists of four main steps.
 
 ---
