@@ -299,3 +299,87 @@ trips <- trips %>%
     HOUR_OF_DAY) %>%
   summarise(TRIPS = sum(TRIPS))
 ```
+```{r}
+#| eval: false
+#| include: false
+trips
+```
+
+#### Build analysis periods (AM / PM / Weekend) and aggregate
+
+### Code Explanation
+
+The code chunk below prepares and aggregates bus trip data by time period and spatial hexagon for visualization and spatial analysis. It consists of four main steps.
+
+---
+
+First, a list of weekend labels (`wknd_labels`) is defined to identify weekend or public holiday days.  
+The `mutate()` function converts `HOUR_OF_DAY` to integer format and creates two new variables:  
+- `IS_WEEKEND`: Flags whether the trip occurred on a weekend or public holiday.  
+- `PERIOD`: Categorizes trips into time periods:
+  - **WKD_AM** – Weekday morning (06:00–09:00)  
+  - **WKD_PM** – Weekday evening (17:00–20:00)  
+  - **WKND** – Weekend or public holiday (11:00–20:00)  
+Rows with undefined `PERIOD` values are removed using `filter(!is.na(PERIOD))`.
+
+---
+
+Next, the data is grouped by `HEX_ID` (spatial hexagon) and `PERIOD` (time category).  
+For each combination, total trips are summed using `summarise(TRIPS = sum(TRIPS))`.
+
+---
+
+Then, all possible combinations of `HEX_ID` and `PERIOD` are generated to ensure no missing data.  
+`all_hex` extracts all unique hexagon IDs, and `all_periods` lists the three time categories (`WKD_AM`, `WKD_PM`, `WKND`).  
+`crossing()` ensures every hexagon is paired with every period.  
+`left_join()` merges this with the aggregated data, while `replace_na(TRIPS, 0L)` fills missing combinations with zeros to avoid map gaps.
+
+---
+
+Finally, the hexagon geometry is reattached to the aggregated trip data by joining on `HEX_ID`.  
+The resulting spatial object `hex_period_sf` contains both geometry and trip counts, ready for mapping and spatial analysis.
+
+```{r}
+wknd_labels <- c("SATURDAY", "SUNDAY/PH", "WEEKENDS/HOLIDAY", "SUNDAY", "PH")
+
+trips <- trips %>%
+  mutate(
+    HOUR_OF_DAY = as.integer(HOUR_OF_DAY),
+    IS_WEEKEND = DAY_TYPE %in% wknd_labels,
+    PERIOD = case_when(
+      !IS_WEEKEND & HOUR_OF_DAY %in% 6:8  ~ "WKD_AM",     # 06:00–09:00
+      !IS_WEEKEND & HOUR_OF_DAY %in% 17:19 ~ "WKD_PM",    # 17:00–20:00
+      IS_WEEKEND  & HOUR_OF_DAY %in% 11:20 ~ "WKND",      # 11:00–20:00
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  filter(!is.na(PERIOD))
+hex_period <- trips %>%
+  group_by(HEX_ID, PERIOD) %>%
+  summarise(TRIPS = sum(TRIPS), .groups = "drop")
+
+
+all_hex   <- hexagon %>% st_drop_geometry() %>% distinct(HEX_ID)
+all_periods <- tibble(PERIOD = c("WKD_AM","WKD_PM","WKND"))
+hex_period <- all_hex %>%
+  crossing(all_periods) %>%
+  left_join(hex_period, by = c("HEX_ID","PERIOD")) %>%
+  mutate(TRIPS = replace_na(TRIPS, 0L))
+
+
+hex_period_sf <- hexagon %>%
+  select(HEX_ID) %>%
+  left_join(hex_period, by = "HEX_ID")
+```
+
+
+```{r}
+trips
+```
+
+```{r}
+#| eval: false
+#| include: false
+hex_period_sf
+```
+
