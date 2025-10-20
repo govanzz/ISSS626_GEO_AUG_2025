@@ -275,7 +275,7 @@ The code chunk below identifies which bus stops fall inside each hexagon and cre
 
 ```{r}
 bs_hex <- st_intersection(
-  BusStop, hexagon) %>%
+  BusStop_in_SG, hexagon) %>%
   st_drop_geometry() %>%
   select(c(BUS_STOP_N, HEX_ID))
 ```
