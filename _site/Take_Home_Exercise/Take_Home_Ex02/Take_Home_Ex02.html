@@ -265,6 +265,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#build-analysis-periods-am-pm-weekend-and-aggregate" id="toc-build-analysis-periods-am-pm-weekend-and-aggregate" class="nav-link" data-scroll-target="#build-analysis-periods-am-pm-weekend-and-aggregate"><span class="header-section-number">4.4.4</span> Build analysis periods (AM / PM / Weekend) and aggregate</a></li>
   </ul></li>
   </ul></li>
+  <li><a href="#neighbours-and-weights-knn-on-hex-centroids" id="toc-neighbours-and-weights-knn-on-hex-centroids" class="nav-link" data-scroll-target="#neighbours-and-weights-knn-on-hex-centroids"><span class="header-section-number">5</span> Neighbours and weights (KNN on hex centroids)</a></li>
+  <li><a href="#local-indicators-of-spatial-association-lisa-analysis" id="toc-local-indicators-of-spatial-association-lisa-analysis" class="nav-link" data-scroll-target="#local-indicators-of-spatial-association-lisa-analysis"><span class="header-section-number">6</span> Local Indicators of Spatial Association (LISA) Analysis</a></li>
   </ul>
 </nav>
     </div>
@@ -571,7 +573,7 @@ First 10 features:
 </div>
 </div>
 </div>
-<p>From the code we can see that some bus stops are outside Singapore due to some routues that start from singpoare but continue into Johor Bharu.</p>
+<p>The plot shows a few bus stops appearing outside Singapore’s boundary. These correspond to cross-border routes extending into Johor Bahru.</p>
 <section id="extracting-bus-stops-located-within-singapore" class="level4" data-number="4.2.1">
 <h4 data-number="4.2.1" class="anchored" data-anchor-id="extracting-bus-stops-located-within-singapore"><span class="header-section-number">4.2.1</span> Extracting Bus Stops located within Singapore</h4>
 <p>In the code chunk below, st_join() of sf package is used to select all bus stops located within Singapore main island.</p>
@@ -595,7 +597,7 @@ First 10 features:
 <section id="derving-analytical-hexagon" class="level3" data-number="4.3">
 <h3 data-number="4.3" class="anchored" data-anchor-id="derving-analytical-hexagon"><span class="header-section-number">4.3</span> Derving Analytical Hexagon</h3>
 <p>Hexagons reduce sampling bias due to edge effects of the grid shape, this is related to the low perimeter-to-area ratio of the shape of the hexagon. A circle has the lowest ratio but cannot tessellate to form a continuous grid. Hexagons are the most circular-shaped polygon that can tessellate to form an evenly spaced grid.</p>
-<p>In the code chunk below, st_make_grid() of sf package is used to create the hexagon data set.</p>
+<p>In the code chunk below, st_make_grid() of sf package is used to create the hexagon data set. This resolution (750 m cell size) balances spatial granularity and computational feasibility, aligning with prior research on urban transport density mapping.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>hexagon <span class="ot">&lt;-</span> <span class="fu">st_make_grid</span>(mpsz,</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">cellsize =</span> <span class="dv">750</span>,</span>
@@ -671,6 +673,7 @@ It consists of three steps:</p>
 </div>
 </div>
 </div>
+<p>The analytical hexagon layer (375 m apothem) shows complete coverage of built-up areas across Singapore, with dense concentrations in the east and central corridors. Hexagons with zero bus stops are excluded to ensure spatial analysis focuses on active passenger zones.</p>
 <section id="assigning-id-to-each-hexagon" class="level4" data-number="4.3.1">
 <h4 data-number="4.3.1" class="anchored" data-anchor-id="assigning-id-to-each-hexagon"><span class="header-section-number">4.3.1</span> Assigning Id to each hexagon</h4>
 <p>In the code chunk below select() is used to drop busstop_count field from the sf data frame. A new feld called HEX_ID is created. Then, sprintf(), seq_len() and nrow() are used to insert sequential ID values with a character H in front. as.factor() is used to convert the values into factor data type.</p>
@@ -824,10 +827,172 @@ The resulting spatial object <code>hex_period_sf</code> contains both geometry a
 # ℹ 13,050 more rows</code></pre>
 </div>
 </div>
-
-
 </section>
 </section>
+</section>
+<section id="neighbours-and-weights-knn-on-hex-centroids" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="neighbours-and-weights-knn-on-hex-centroids"><span class="header-section-number">5</span> Neighbours and weights (KNN on hex centroids)</h2>
+<p>The below code constructs spatial neighbor relationships and corresponding weights for hexagonal polygons, which are essential for spatial autocorrelation analysis.</p>
+<hr>
+<p>First, <code>st_centroid(hexagon)</code> creates the centroid (geometric center point) of each hexagon. These centroids are used to determine spatial proximity between hexagons.</p>
+<p>Next, <code>st_knn(hex_cent, k = 8)</code> computes the <strong>k-nearest neighbors</strong> for each centroid, where <code>k = 8</code> ensures each hexagon is connected to its eight closest neighbors — a typical choice for regular hexagonal grids to maintain stability.</p>
+<p>Then, <code>st_inverse_distance(nb_knn, hex_cent, scale = 1, alpha = 1)</code> calculates <strong>inverse-distance weights</strong>, assigning higher weights to closer neighbors and lower weights to distant ones.<br>
+Each weight vector is then <strong>row-standardized</strong> with <code>purrr::map(wt_idw, ~ .x / sum(.x))</code> so that the weights for each hexagon sum to 1.</p>
+<p>Finally, the neighbor list (<code>nb_knn</code>) and standardized weights (<code>wt_rowstd</code>) are added to the <code>hexagon</code> spatial dataframe using <code>mutate()</code>, creating a new object <code>hex_weights</code> that stores both spatial geometry and spatial relationships for later use.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create centroids (points) for neighbor computation</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>hex_cent <span class="ot">&lt;-</span> <span class="fu">st_centroid</span>(hexagon)</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="co"># 6–8 neighbors is typical for regular hex grids; choose 8 for stability</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>nb_knn <span class="ot">&lt;-</span> <span class="fu">st_knn</span>(hex_cent, <span class="at">k =</span> <span class="dv">8</span>)</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Row-standardized inverse-distance weights (and avoid self-neighbor)</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>wt_idw <span class="ot">&lt;-</span> <span class="fu">st_inverse_distance</span>(nb_knn, hex_cent, <span class="at">scale =</span> <span class="dv">1</span>, <span class="at">alpha =</span> <span class="dv">1</span>)</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="co"># normalize each weight vector to sum to 1</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>wt_rowstd <span class="ot">&lt;-</span> purrr<span class="sc">::</span><span class="fu">map</span>(wt_idw, <span class="sc">~</span> .x <span class="sc">/</span> <span class="fu">sum</span>(.x))</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Store neighbors and weights with the hex geometry for reuse</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>hex_weights <span class="ot">&lt;-</span> hexagon <span class="sc">%&gt;%</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">nb =</span> nb_knn,</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>         <span class="at">wt =</span> wt_rowstd)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="local-indicators-of-spatial-association-lisa-analysis" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="local-indicators-of-spatial-association-lisa-analysis"><span class="header-section-number">6</span> Local Indicators of Spatial Association (LISA) Analysis</h2>
+<p>Local Moran’s I (LMSA) for each period</p>
+<p>This code chunk defines and executes a function <code>run_lisa_period()</code> to perform <strong>Local Moran’s I</strong> analysis on bus trip data for a selected time period (e.g., <code>WKD_AM</code>, <code>WKD_PM</code>, or <code>WKND</code>).<br>
+It identifies spatial clusters such as <em>High-High</em>, <em>Low-Low</em>, <em>High-Low</em>, and <em>Low-High</em> areas and visualizes them through two side-by-side maps.</p>
+<hr>
+<p><strong>1. Function Definition and Input</strong> - The function takes two parameters: - <code>period_label</code>: a string indicating which time period to analyze (e.g., “WKD_AM”). - <code>background</code>: a polygon layer (default: <code>mpsz</code>) used as the map backdrop. - The relevant records from <code>hex_period_sf</code> are filtered by <code>PERIOD</code>, and neighborhood-weight information from <code>hex_weights</code> is joined by <code>HEX_ID</code>.</p>
+<hr>
+<p><strong>2. LISA Calculation</strong> - A random seed (<code>set.seed(123)</code>) ensures reproducibility.<br>
+- The Local Moran’s I statistic is computed for each hexagon using <code>sfdep::local_moran(TRIPS, nb, wt)</code>.<br>
+- The results are expanded with <code>unnest()</code> and additional classification columns are created: - <code>SIG</code>: Flags statistically significant results (<code>p_ii_sim &lt; 0.05</code>). - <code>QUADRANT</code>: Categorizes each hexagon based on local spatial association: - <strong>High-High</strong>: High trip counts surrounded by high values (hotspot). - <strong>Low-Low</strong>: Low trip counts surrounded by low values (cold spot). - <strong>High-Low</strong>: High value surrounded by low values (spatial outlier). - <strong>Low-High</strong>: Low value surrounded by high values (spatial outlier). - <strong>Insignificant</strong>: Not statistically significant. - <strong>Missing</strong>: Cases without sufficient data.</p>
+<hr>
+<p><strong>3. Color Palette Definition</strong> A custom color palette is created for the LISA map:<br>
+- High-High → <code>#d7191c</code> (red)<br>
+- High-Low → <code>#fdae61</code> (orange)<br>
+- Low-High → <code>#abd9e9</code> (light blue)<br>
+- Low-Low → <code>#2c7bb6</code> (dark blue)<br>
+- Insignificant → <code>#FFFFFF</code> (white)<br>
+- Missing → <code>#FFFF00</code> (yellow)</p>
+<hr>
+<p><strong>4. Map Generation</strong> The function switches <code>tmap</code> to plot mode using <code>tmap_mode("plot")</code> and creates two maps side-by-side:</p>
+<ul>
+<li><p><strong>Left Map (<code>map_stat</code>)</strong>:<br>
+Displays the Local Moran’s I statistic (<code>ii</code>) using a diverging color palette (<code>-RdBu</code>), where red and blue indicate opposite directions of spatial autocorrelation.</p></li>
+<li><p><strong>Right Map (<code>map_cluster</code>)</strong>:<br>
+Shows the LISA cluster types (<code>QUADRANT</code>) using the custom color palette defined earlier.</p></li>
+</ul>
+<p>Both maps use the <code>mpsz</code> layer as a background and apply consistent styling for borders and titles.</p>
+<hr>
+<p><strong>5. Output</strong> Finally, the two maps are arranged horizontally with <code>tmap_arrange(map_stat, map_cluster, ncol = 2)</code>.<br>
+Calling <code>run_lisa_period("WKD_AM")</code> runs the analysis for <strong>weekday morning (AM)</strong> trips and generates both the <strong>Local Moran’s I map</strong> and the <strong>LISA cluster map</strong> for visual interpretation of spatial patterns in bus trip intensity.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>run_lisa_period <span class="ot">&lt;-</span> <span class="cf">function</span>(period_label, <span class="at">background =</span> mpsz) {</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  df <span class="ot">&lt;-</span> hex_period_sf <span class="sc">%&gt;%</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">filter</span>(PERIOD <span class="sc">==</span> period_label) <span class="sc">%&gt;%</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">left_join</span>(hex_weights <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>(), <span class="at">by =</span> <span class="st">"HEX_ID"</span>)</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>  lisa <span class="ot">&lt;-</span> df <span class="sc">%&gt;%</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">local_moran =</span> sfdep<span class="sc">::</span><span class="fu">local_moran</span>(TRIPS, nb, wt), <span class="at">.before =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>    tidyr<span class="sc">::</span><span class="fu">unnest</span>(local_moran) <span class="sc">%&gt;%</span></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(</span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">SIG =</span> p_ii_sim <span class="sc">&lt;</span> <span class="fl">0.05</span>,</span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">QUADRANT =</span> dplyr<span class="sc">::</span><span class="fu">case_when</span>(</span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>        <span class="sc">!</span>SIG <span class="sc">~</span> <span class="st">"Insignificant"</span>,</span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>        mean <span class="sc">==</span> <span class="st">"High-High"</span> <span class="sc">~</span> <span class="st">"High-High"</span>,</span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>        mean <span class="sc">==</span> <span class="st">"Low-Low"</span>   <span class="sc">~</span> <span class="st">"Low-Low"</span>,</span>
+<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a>        mean <span class="sc">==</span> <span class="st">"High-Low"</span>  <span class="sc">~</span> <span class="st">"High-Low"</span>,</span>
+<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a>        mean <span class="sc">==</span> <span class="st">"Low-High"</span>  <span class="sc">~</span> <span class="st">"Low-High"</span>,</span>
+<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a>        <span class="cn">TRUE</span> <span class="sc">~</span> <span class="cn">NA_character_</span></span>
+<span id="cb28-20"><a href="#cb28-20" aria-hidden="true" tabindex="-1"></a>      ),</span>
+<span id="cb28-21"><a href="#cb28-21" aria-hidden="true" tabindex="-1"></a>      <span class="at">QUADRANT =</span> tidyr<span class="sc">::</span><span class="fu">replace_na</span>(QUADRANT, <span class="st">"Missing"</span>)</span>
+<span id="cb28-22"><a href="#cb28-22" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb28-23"><a href="#cb28-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-24"><a href="#cb28-24" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Color palette (yellow = Insignificant, grey = Missing)</span></span>
+<span id="cb28-25"><a href="#cb28-25" aria-hidden="true" tabindex="-1"></a>  pal <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb28-26"><a href="#cb28-26" aria-hidden="true" tabindex="-1"></a>    <span class="st">"High-High"</span>     <span class="ot">=</span> <span class="st">"#d7191c"</span>,</span>
+<span id="cb28-27"><a href="#cb28-27" aria-hidden="true" tabindex="-1"></a>    <span class="st">"High-Low"</span>      <span class="ot">=</span> <span class="st">"#fdae61"</span>,</span>
+<span id="cb28-28"><a href="#cb28-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Low-High"</span>      <span class="ot">=</span> <span class="st">"#abd9e9"</span>,</span>
+<span id="cb28-29"><a href="#cb28-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Low-Low"</span>       <span class="ot">=</span> <span class="st">"#2c7bb6"</span>,</span>
+<span id="cb28-30"><a href="#cb28-30" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Insignificant"</span> <span class="ot">=</span> <span class="st">"#FFFFFF"</span>,</span>
+<span id="cb28-31"><a href="#cb28-31" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Missing"</span>       <span class="ot">=</span> <span class="st">"#FFFF00"</span></span>
+<span id="cb28-32"><a href="#cb28-32" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb28-33"><a href="#cb28-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-34"><a href="#cb28-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb28-35"><a href="#cb28-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-36"><a href="#cb28-36" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Left: Local Moran's Ii</span></span>
+<span id="cb28-37"><a href="#cb28-37" aria-hidden="true" tabindex="-1"></a>  map_stat <span class="ot">&lt;-</span></span>
+<span id="cb28-38"><a href="#cb28-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_shape</span>(background) <span class="sc">+</span></span>
+<span id="cb28-39"><a href="#cb28-39" aria-hidden="true" tabindex="-1"></a>      <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"grey92"</span>, <span class="at">border.col =</span> <span class="st">"grey70"</span>, <span class="at">alpha =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb28-40"><a href="#cb28-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_shape</span>(lisa) <span class="sc">+</span></span>
+<span id="cb28-41"><a href="#cb28-41" aria-hidden="true" tabindex="-1"></a>      <span class="fu">tm_polygons</span>(<span class="st">"ii"</span>, <span class="at">style =</span> <span class="st">"cont"</span>, <span class="at">midpoint =</span> <span class="dv">0</span>,</span>
+<span id="cb28-42"><a href="#cb28-42" aria-hidden="true" tabindex="-1"></a>                  <span class="at">palette =</span> <span class="st">"-RdBu"</span>, <span class="at">title =</span> <span class="st">"Local Moran's Ii"</span>) <span class="sc">+</span></span>
+<span id="cb28-43"><a href="#cb28-43" aria-hidden="true" tabindex="-1"></a>      <span class="fu">tm_borders</span>(<span class="at">alpha =</span> .<span class="dv">6</span>) <span class="sc">+</span></span>
+<span id="cb28-44"><a href="#cb28-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="fu">paste0</span>(<span class="st">"Local Moran's I ("</span>, period_label, <span class="st">")"</span>),</span>
+<span id="cb28-45"><a href="#cb28-45" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb28-46"><a href="#cb28-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-47"><a href="#cb28-47" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Right: LISA cluster map</span></span>
+<span id="cb28-48"><a href="#cb28-48" aria-hidden="true" tabindex="-1"></a>  map_cluster <span class="ot">&lt;-</span></span>
+<span id="cb28-49"><a href="#cb28-49" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_shape</span>(background) <span class="sc">+</span></span>
+<span id="cb28-50"><a href="#cb28-50" aria-hidden="true" tabindex="-1"></a>      <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"grey92"</span>, <span class="at">border.col =</span> <span class="st">"grey70"</span>, <span class="at">alpha =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb28-51"><a href="#cb28-51" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_shape</span>(lisa) <span class="sc">+</span></span>
+<span id="cb28-52"><a href="#cb28-52" aria-hidden="true" tabindex="-1"></a>      <span class="fu">tm_polygons</span>(<span class="st">"QUADRANT"</span>, <span class="at">palette =</span> pal, <span class="at">title =</span> <span class="st">"Cluster (p &lt; 0.05)"</span>) <span class="sc">+</span></span>
+<span id="cb28-53"><a href="#cb28-53" aria-hidden="true" tabindex="-1"></a>      <span class="fu">tm_borders</span>(<span class="at">alpha =</span> .<span class="dv">6</span>) <span class="sc">+</span></span>
+<span id="cb28-54"><a href="#cb28-54" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="fu">paste0</span>(<span class="st">"LISA clusters ("</span>, period_label, <span class="st">")"</span>),</span>
+<span id="cb28-55"><a href="#cb28-55" aria-hidden="true" tabindex="-1"></a>              <span class="at">frame =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb28-56"><a href="#cb28-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-57"><a href="#cb28-57" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tmap_arrange</span>(map_stat, map_cluster, <span class="at">ncol =</span> <span class="dv">2</span>)</span>
+<span id="cb28-58"><a href="#cb28-58" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb28-59"><a href="#cb28-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-60"><a href="#cb28-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-61"><a href="#cb28-61" aria-hidden="true" tabindex="-1"></a><span class="fu">run_lisa_period</span>(<span class="st">"WKD_AM"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex02_files/figure-html/unnamed-chunk-25-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># run_lisa_period("WKD_PM")</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="co"># run_lisa_period("WKND")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The weekday morning peak (6 – 9 a.m.) pattern shows strong spatial clustering of bus trip generation across Singapore. The Local Moran’s I map indicates clear positive spatial autocorrelation, with elevated Ii values concentrated in the eastern and central corridors. These areas coincide with high-density residential towns such as Tampines, Bedok, and Punggol, where commuter outflows toward employment centers are most intense. The LISA cluster map further confirms several High-High hotspots, representing zones of consistently high ridership surrounded by similar high-volume neighbors.</p>
+<p>In contrast, Low-Low coldspots are found mainly in the western industrial and northern fringe zones (e.g., Tuas, Lim Chu Kang), where population density and passenger activity are low. A few High-Low outliers appear near the Central Business District, reflecting localized nodes of heavy ridership adjacent to moderate or low-demand areas, such as transport interchanges or mixed-use developments.</p>
+<p>Overall, the weekday AM distribution reflects Singapore’s directional commuting pattern from residential east to central employment hubs. The significant p &lt; 0.05 clustering confirms that morning ridership is not randomly distributed, but shaped by strong spatial dependence between adjacent high-trip hexagons, underscoring the concentrated nature of peak-hour bus demand.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">run_lisa_period</span>(<span class="st">"WKD_PM"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex02_files/figure-html/unnamed-chunk-26-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The evening peak period (5–8 p.m.) reveals a more spatially dispersed pattern of bus trip generation compared to the concentrated morning clusters. The Local Moran’s I map shows moderate positive spatial autocorrelation, indicating that while clustering still exists, the magnitude of spatial dependence has weakened relative to the morning commute.</p>
+<p>The LISA cluster map identifies High-High hotspots mainly in the eastern and central planning areas, including Bedok, Tampines, Hougang, and Toa Payoh, representing strong evening return flows as commuters travel back toward residential estates. Smaller hotspots emerge around Jurong East and Clementi, reflecting local employment or educational hubs with high outbound ridership.</p>
+<p>Conversely, Low-Low coldspots remain in the western industrial and northern regions (e.g., Tuas, Lim Chu Kang), consistent with low residential density and limited evening ridership. A few High-Low outliers appear near major interchanges such as HarbourFront and Serangoon, suggesting localized high-volume nodes surrounded by moderate-activity zones.</p>
+<p>Overall, the weekday PM pattern illustrates Singapore’s home-bound commuting structure. While morning trips converge toward the city, evening flows disperse back to suburban areas, sustaining statistically significant (p &lt; 0.05) but weaker spatial clustering across the island.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">run_lisa_period</span>(<span class="st">"WKND"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex02_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The weekend and public holiday pattern displays a more dispersed and recreationally oriented distribution of bus trip generation across Singapore. The Local Moran’s I map shows generally lower Ii values than weekday peaks, indicating weaker overall spatial autocorrelation. However, significant clusters remain observable, particularly in areas of concentrated leisure or retail activity.</p>
+<p>The LISA cluster map highlights High-High hotspots across the eastern coastal belt (e.g., Bedok, Pasir Ris, and Tampines) and central leisure zones such as Orchard, Bugis, and Marina Bay, reflecting weekend trips to shopping, entertainment, and recreational destinations. Smaller hotspots appear in the western suburbs, notably Jurong East and Clementi, corresponding to major malls and transit interchanges.</p>
+<p>In contrast, Low-Low coldspots dominate the northern rural and industrial fringes (e.g., Lim Chu Kang, Seletar, Tuas), where ridership remains consistently low. The more fragmented spatial clustering pattern suggests a shift from structured work commuting to discretionary leisure and family travel.</p>
+<p>Overall, weekend mobility patterns are less spatially clustered but still exhibit localized concentrations of activity near key retail and recreation nodes, confirming a statistically significant but weaker form of spatial dependence (p &lt; 0.05) driven by non-commuting travel behavior.</p>
+
+
 </section>
 
 </main> <!-- /main -->

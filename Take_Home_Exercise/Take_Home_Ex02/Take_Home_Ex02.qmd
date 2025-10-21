@@ -143,7 +143,7 @@ In the code chunk below plots polygon boundaries from the mpsz shapefile (e.g., 
 tm_shape(mpsz) + tm_polygons() + tm_shape(BusStop) + tm_dots()
 ```
 
-From the code we can see that some bus stops are outside Singapore due to some routues that start from singpoare but continue into Johor Bharu.
+The plot shows a few bus stops appearing outside Singapore’s boundary. These correspond to cross-border routes extending into Johor Bahru.
 
 #### Extracting Bus Stops located within Singapore
 
@@ -163,6 +163,7 @@ We can find that all bus stops are within Singapore
 Hexagons reduce sampling bias due to edge effects of the grid shape, this is related to the low perimeter-to-area ratio of the shape of the hexagon. A circle has the lowest ratio but cannot tessellate to form a continuous grid. Hexagons are the most circular-shaped polygon that can tessellate to form an evenly spaced grid.
 
 In the code chunk below, st_make_grid() of sf package is used to create the hexagon data set.
+This resolution (750 m cell size) balances spatial granularity and computational feasibility, aligning with prior research on urban transport density mapping.
 
 ```{r}
 hexagon <- st_make_grid(mpsz,
@@ -227,6 +228,8 @@ tm_layout(
 tm_scale_bar(position = c("left", "bottom")) +
 tm_compass(type = "8star", position = c("right", "bottom"), size = 2)
 ```
+The analytical hexagon layer (375 m apothem) shows complete coverage of built-up areas across Singapore, with dense concentrations in the east and central corridors. Hexagons with zero bus stops are excluded to ensure spatial analysis focuses on active passenger zones.
+
 #### Assigning Id to each hexagon
 In the code chunk below 
 select() is used to drop busstop_count field from the sf data frame.
@@ -380,4 +383,195 @@ trips
 #| include: false
 hex_period_sf
 ```
+## Neighbours and weights (KNN on hex centroids)
+The below code constructs spatial neighbor relationships and corresponding weights for hexagonal polygons, which are essential for spatial autocorrelation analysis.
+
+---
+
+First, `st_centroid(hexagon)` creates the centroid (geometric center point) of each hexagon. These centroids are used to determine spatial proximity between hexagons.
+
+Next, `st_knn(hex_cent, k = 8)` computes the **k-nearest neighbors** for each centroid, where `k = 8` ensures each hexagon is connected to its eight closest neighbors — a typical choice for regular hexagonal grids to maintain stability.
+
+Then, `st_inverse_distance(nb_knn, hex_cent, scale = 1, alpha = 1)` calculates **inverse-distance weights**, assigning higher weights to closer neighbors and lower weights to distant ones.  
+Each weight vector is then **row-standardized** with `purrr::map(wt_idw, ~ .x / sum(.x))` so that the weights for each hexagon sum to 1.
+
+Finally, the neighbor list (`nb_knn`) and standardized weights (`wt_rowstd`) are added to the `hexagon` spatial dataframe using `mutate()`, creating a new object `hex_weights` that stores both spatial geometry and spatial relationships for later use.
+```{r}
+
+# Create centroids (points) for neighbor computation
+hex_cent <- st_centroid(hexagon)
+
+# 6–8 neighbors is typical for regular hex grids; choose 8 for stability
+nb_knn <- st_knn(hex_cent, k = 8)
+
+# Row-standardized inverse-distance weights (and avoid self-neighbor)
+wt_idw <- st_inverse_distance(nb_knn, hex_cent, scale = 1, alpha = 1)
+# normalize each weight vector to sum to 1
+wt_rowstd <- purrr::map(wt_idw, ~ .x / sum(.x))
+
+# Store neighbors and weights with the hex geometry for reuse
+hex_weights <- hexagon %>%
+  mutate(nb = nb_knn,
+         wt = wt_rowstd)
+
+```
+
+## Local Indicators of Spatial Association (LISA) Analysis
+
+Local Moran's I (LMSA) for each period 
+
+
+This code chunk defines and executes a function `run_lisa_period()` to perform **Local Moran’s I** analysis on bus trip data for a selected time period (e.g., `WKD_AM`, `WKD_PM`, or `WKND`).  
+It identifies spatial clusters such as *High-High*, *Low-Low*, *High-Low*, and *Low-High* areas and visualizes them through two side-by-side maps.
+
+---
+
+**1. Function Definition and Input**
+- The function takes two parameters:
+  - `period_label`: a string indicating which time period to analyze (e.g., "WKD_AM").
+  - `background`: a polygon layer (default: `mpsz`) used as the map backdrop.
+- The relevant records from `hex_period_sf` are filtered by `PERIOD`, and neighborhood-weight information from `hex_weights` is joined by `HEX_ID`.
+
+---
+
+**2. LISA Calculation**
+- A random seed (`set.seed(123)`) ensures reproducibility.  
+- The Local Moran’s I statistic is computed for each hexagon using `sfdep::local_moran(TRIPS, nb, wt)`.  
+- The results are expanded with `unnest()` and additional classification columns are created:
+  - `SIG`: Flags statistically significant results (`p_ii_sim < 0.05`).
+  - `QUADRANT`: Categorizes each hexagon based on local spatial association:
+    - **High-High**: High trip counts surrounded by high values (hotspot).
+    - **Low-Low**: Low trip counts surrounded by low values (cold spot).
+    - **High-Low**: High value surrounded by low values (spatial outlier).
+    - **Low-High**: Low value surrounded by high values (spatial outlier).
+    - **Insignificant**: Not statistically significant.
+    - **Missing**: Cases without sufficient data.
+
+---
+
+**3. Color Palette Definition**
+A custom color palette is created for the LISA map:  
+- High-High → `#d7191c` (red)  
+- High-Low → `#fdae61` (orange)  
+- Low-High → `#abd9e9` (light blue)  
+- Low-Low → `#2c7bb6` (dark blue)  
+- Insignificant → `#FFFFFF` (white)  
+- Missing → `#FFFF00` (yellow)
+
+---
+
+**4. Map Generation**
+The function switches `tmap` to plot mode using `tmap_mode("plot")` and creates two maps side-by-side:
+
+- **Left Map (`map_stat`)**:  
+  Displays the Local Moran’s I statistic (`ii`) using a diverging color palette (`-RdBu`), where red and blue indicate opposite directions of spatial autocorrelation.  
+
+- **Right Map (`map_cluster`)**:  
+  Shows the LISA cluster types (`QUADRANT`) using the custom color palette defined earlier.
+
+Both maps use the `mpsz` layer as a background and apply consistent styling for borders and titles.
+
+---
+
+**5. Output**
+Finally, the two maps are arranged horizontally with `tmap_arrange(map_stat, map_cluster, ncol = 2)`.  
+Calling `run_lisa_period("WKD_AM")` runs the analysis for **weekday morning (AM)** trips and generates both the **Local Moran’s I map** and the **LISA cluster map** for visual interpretation of spatial patterns in bus trip intensity.
+
+
+
+```{r}
+
+run_lisa_period <- function(period_label, background = mpsz) {
+
+  df <- hex_period_sf %>%
+    dplyr::filter(PERIOD == period_label) %>%
+    dplyr::left_join(hex_weights %>% st_drop_geometry(), by = "HEX_ID")
+
+  set.seed(123)
+  lisa <- df %>%
+    dplyr::mutate(local_moran = sfdep::local_moran(TRIPS, nb, wt), .before = 1) %>%
+    tidyr::unnest(local_moran) %>%
+    dplyr::mutate(
+      SIG = p_ii_sim < 0.05,
+      QUADRANT = dplyr::case_when(
+        !SIG ~ "Insignificant",
+        mean == "High-High" ~ "High-High",
+        mean == "Low-Low"   ~ "Low-Low",
+        mean == "High-Low"  ~ "High-Low",
+        mean == "Low-High"  ~ "Low-High",
+        TRUE ~ NA_character_
+      ),
+      QUADRANT = tidyr::replace_na(QUADRANT, "Missing")
+    )
+
+  # Color palette (yellow = Insignificant, grey = Missing)
+  pal <- c(
+    "High-High"     = "#d7191c",
+    "High-Low"      = "#fdae61",
+    "Low-High"      = "#abd9e9",
+    "Low-Low"       = "#2c7bb6",
+    "Insignificant" = "#FFFFFF",
+    "Missing"       = "#FFFF00"
+  )
+
+  tmap_mode("plot")
+
+  # Left: Local Moran's Ii
+  map_stat <-
+    tm_shape(background) +
+      tm_polygons(col = "grey92", border.col = "grey70", alpha = 1) +
+    tm_shape(lisa) +
+      tm_polygons("ii", style = "cont", midpoint = 0,
+                  palette = "-RdBu", title = "Local Moran's Ii") +
+      tm_borders(alpha = .6) +
+    tm_layout(main.title = paste0("Local Moran's I (", period_label, ")"),
+              frame = FALSE)
+
+  # Right: LISA cluster map
+  map_cluster <-
+    tm_shape(background) +
+      tm_polygons(col = "grey92", border.col = "grey70", alpha = 1) +
+    tm_shape(lisa) +
+      tm_polygons("QUADRANT", palette = pal, title = "Cluster (p < 0.05)") +
+      tm_borders(alpha = .6) +
+    tm_layout(main.title = paste0("LISA clusters (", period_label, ")"),
+              frame = FALSE)
+
+  tmap_arrange(map_stat, map_cluster, ncol = 2)
+}
+
+
+run_lisa_period("WKD_AM")
+# run_lisa_period("WKD_PM")
+# run_lisa_period("WKND")
+
+```
+The weekday morning peak (6 – 9 a.m.) pattern shows strong spatial clustering of bus trip generation across Singapore. The Local Moran’s I map indicates clear positive spatial autocorrelation, with elevated Ii values concentrated in the eastern and central corridors. These areas coincide with high-density residential towns such as Tampines, Bedok, and Punggol, where commuter outflows toward employment centers are most intense. The LISA cluster map further confirms several High-High hotspots, representing zones of consistently high ridership surrounded by similar high-volume neighbors.
+
+In contrast, Low-Low coldspots are found mainly in the western industrial and northern fringe zones (e.g., Tuas, Lim Chu Kang), where population density and passenger activity are low. A few High-Low outliers appear near the Central Business District, reflecting localized nodes of heavy ridership adjacent to moderate or low-demand areas, such as transport interchanges or mixed-use developments.
+
+Overall, the weekday AM distribution reflects Singapore’s directional commuting pattern from residential east to central employment hubs. The significant p < 0.05 clustering confirms that morning ridership is not randomly distributed, but shaped by strong spatial dependence between adjacent high-trip hexagons, underscoring the concentrated nature of peak-hour bus demand.
+
+
+```{r}
+run_lisa_period("WKD_PM")
+```
+The evening peak period (5–8 p.m.) reveals a more spatially dispersed pattern of bus trip generation compared to the concentrated morning clusters. The Local Moran’s I map shows moderate positive spatial autocorrelation, indicating that while clustering still exists, the magnitude of spatial dependence has weakened relative to the morning commute.
+
+The LISA cluster map identifies High-High hotspots mainly in the eastern and central planning areas, including Bedok, Tampines, Hougang, and Toa Payoh, representing strong evening return flows as commuters travel back toward residential estates. Smaller hotspots emerge around Jurong East and Clementi, reflecting local employment or educational hubs with high outbound ridership.
+
+Conversely, Low-Low coldspots remain in the western industrial and northern regions (e.g., Tuas, Lim Chu Kang), consistent with low residential density and limited evening ridership. A few High-Low outliers appear near major interchanges such as HarbourFront and Serangoon, suggesting localized high-volume nodes surrounded by moderate-activity zones.
+
+Overall, the weekday PM pattern illustrates Singapore’s home-bound commuting structure. While morning trips converge toward the city, evening flows disperse back to suburban areas, sustaining statistically significant (p < 0.05) but weaker spatial clustering across the island.
+
+```{r}
+run_lisa_period("WKND")
+```
+The weekend and public holiday pattern displays a more dispersed and recreationally oriented distribution of bus trip generation across Singapore. The Local Moran’s I map shows generally lower Ii values than weekday peaks, indicating weaker overall spatial autocorrelation. However, significant clusters remain observable, particularly in areas of concentrated leisure or retail activity.
+
+The LISA cluster map highlights High-High hotspots across the eastern coastal belt (e.g., Bedok, Pasir Ris, and Tampines) and central leisure zones such as Orchard, Bugis, and Marina Bay, reflecting weekend trips to shopping, entertainment, and recreational destinations. Smaller hotspots appear in the western suburbs, notably Jurong East and Clementi, corresponding to major malls and transit interchanges.
+
+In contrast, Low-Low coldspots dominate the northern rural and industrial fringes (e.g., Lim Chu Kang, Seletar, Tuas), where ridership remains consistently low. The more fragmented spatial clustering pattern suggests a shift from structured work commuting to discretionary leisure and family travel.
+
+Overall, weekend mobility patterns are less spatially clustered but still exhibit localized concentrations of activity near key retail and recreation nodes, confirming a statistically significant but weaker form of spatial dependence (p < 0.05) driven by non-commuting travel behavior.
 
