@@ -39,7 +39,7 @@ In this exercise, several R packages are used to support spatial data handling, 
 We will load these packages using `pacman::p_load()` to streamline installation and loading:
 
 ```{r}
-pacman::p_load(sf, sfdep, tidyverse, tmap, lubridate, readr, readxl, mapview,rvest, knitr)
+pacman::p_load(sf, sfdep, tidyverse, tmap, lubridate, readr, readxl, mapview,rvest, knitr,Kendall)
 ```
 
 ### The Data
@@ -575,3 +575,216 @@ In contrast, Low-Low coldspots dominate the northern rural and industrial fringe
 
 Overall, weekend mobility patterns are less spatially clustered but still exhibit localized concentrations of activity near key retail and recreation nodes, confirming a statistically significant but weaker form of spatial dependence (p < 0.05) driven by non-commuting travel behavior.
 
+## Emerging Hot Spot Analysis (EHSA)
+
+```{r}
+hex_period_sf <- hex_period_sf %>%
+mutate(PERIOD = factor(PERIOD, levels = c("WKD_AM","WKD_PM","WKND")))
+```
+
+Build a stable base index for HEX_IDs (to keep neighbor order consistent)
+
+```{r}
+hex_base <- hexagon %>%
+st_as_sf() %>%
+mutate(.idx = row_number()) %>%
+select(HEX_ID, .idx, geometry)
+```
+
+Centroids and kNN neighbors (k=8 typical for hex grids)
+
+```{r}
+hex_cent <- st_centroid(hex_base)
+coords <- st_coordinates(hex_cent)
+
+
+
+
+knn_obj <- spdep::knearneigh(coords, k = 8)
+nb_obj <- spdep::knn2nb(knn_obj)
+lw_obj <- spdep::nb2listw(nb_obj, style = "W") # row-standardized weights
+```
+
+### EHSA 2 — Local Gi* (per period) and significance
+
+```{r}
+#| label: ehsa-gistar
+.z_to_sig <- function(z, alpha = 0.05) {
+thr <- qnorm(1 - alpha/2) # 1.96 for alpha=0.05
+case_when(
+z >= thr ~ 1L, # hotspot
+z <= -thr ~ -1L, # coldspot
+TRUE ~ 0L # not significant
+)
+}
+```
+
+For each PERIOD: align to hex_base order, fill missing TRIPS with 0, run localG
+
+```{r}
+gi_by_period <- hex_period_sf %>%
+st_drop_geometry() %>%
+right_join(hex_base %>% st_drop_geometry(), by = "HEX_ID") %>%
+arrange(PERIOD, .idx) %>%
+mutate(TRIPS = replace_na(TRIPS, 0)) %>%
+group_by(PERIOD) %>%
+group_modify(~{
+z <- as.numeric(spdep::localG(.x$TRIPS, lw_obj))
+tibble(.x, z = z, sig = .z_to_sig(z, alpha = 0.05))
+}) %>%
+ungroup() %>%
+select(HEX_ID, PERIOD, .idx, TRIPS, z, sig)
+```
+
+###  Mann–Kendall trend & category assignment
+
+```{r}
+#| label: ehsa-mk
+mk_trends <- gi_by_period %>%
+arrange(HEX_ID, PERIOD) %>%
+group_by(HEX_ID) %>%
+summarise(
+mk_tau = Kendall::MannKendall(z)$tau %>% as.numeric(),
+mk_p = Kendall::MannKendall(z)$sl %>% as.numeric(),
+latest_z = z[dplyr::n()],
+latest_sig = sig[dplyr::n()],
+hot_count = sum(sig == 1L, na.rm = TRUE),
+cold_count = sum(sig == -1L, na.rm = TRUE),
+.groups = "drop"
+)
+```
+
+EHSA rule-set (compact, robust for 3 time-slices)
+
+```{r}
+# --- EHSA classifier (fixed) -----------------------------------------------
+classify_ehsa <- function(latest_sig, hot_count, cold_count, mk_tau, mk_p, alpha = 0.05) {
+  # No significant slices at all
+  if (hot_count + cold_count == 0) return("No Pattern")
+
+  # All three slices significant with same sign
+  if (hot_count == 3) return("Persistent Hotspot")
+  if (cold_count == 3) return("Persistent Coldspot")
+
+  # Latest = HOT
+  if (latest_sig == 1L) {
+    if (!is.na(mk_p) && mk_p < alpha) {
+      if (!is.na(mk_tau) && mk_tau > 0) return("Intensifying Hotspot")
+      if (!is.na(mk_tau) && mk_tau < 0) return("Diminishing Hotspot")
+    }
+    if (hot_count == 1L) return("New Hotspot")
+    return("Sporadic Hotspot")
+  }
+
+  # Latest = COLD
+  if (latest_sig == -1L) {
+    if (!is.na(mk_p) && mk_p < alpha) {
+      if (!is.na(mk_tau) && mk_tau < 0) return("Intensifying Coldspot")
+      if (!is.na(mk_tau) && mk_tau > 0) return("Diminishing Coldspot")
+    }
+    if (cold_count == 1L) return("New Coldspot")
+    return("Sporadic Coldspot")
+  }
+
+  # Latest not significant but had some earlier activity
+  if (hot_count > 0 && cold_count == 0) return("Sporadic Hotspot")
+  if (cold_count > 0 && hot_count == 0) return("Sporadic Coldspot")
+  return("No Pattern")
+}
+```
+
+```{r}
+ehsa_labels <- mk_trends %>%
+  rowwise() %>%
+  mutate(EHSA = classify_ehsa(latest_sig, hot_count, cold_count, mk_tau, mk_p)) %>%
+  ungroup()
+```
+
+Spatial join back
+
+```{r}
+ehsa_sf <- hex_base %>%
+left_join(ehsa_labels, by = "HEX_ID")
+```
+
+### Map the EHSA categories
+```{r}
+#| label: ehsa-map
+
+# Palette
+
+pal_ehsa <- c(
+"Persistent Hotspot"     = "#b10026",
+"Intensifying Hotspot"   = "#fc4e2a",
+"New Hotspot"            = "#fd8d3c",
+"Sporadic Hotspot"       = "#feb24c",
+"Diminishing Hotspot"    = "#fdd0a2",
+
+"Persistent Coldspot"    = "#084081",
+"Intensifying Coldspot"  = "#0868ac",
+"New Coldspot"           = "#2b8cbe",
+"Sporadic Coldspot"      = "#4eb3d3",
+"Diminishing Coldspot"   = "#9ecae1",
+
+"No Pattern"             = "#f0f0f0"
+)
+
+tmap_mode("plot")
+tm_shape(mpsz) + tm_polygons(col = "grey92", border.col = "grey70") +
+tm_shape(ehsa_sf) +
+tm_polygons("EHSA", palette = pal_ehsa, title = "EHSA (Gi* + Mann–Kendall)") +
+tm_borders(alpha = 0.5) +
+tm_layout(
+main.title = "Emerging Hot Spot Analysis (Hexagon TAZ, AM→PM→WKND)",
+frame = FALSE, legend.outside = TRUE
+)
+```
+The Emerging Hot Spot Analysis reveals evolving spatio-temporal patterns of bus trip generation across Singapore between weekday morning (AM), weekday evening (PM), and weekend periods.
+
+Persistent and new hotspots (in red and orange) are concentrated in the eastern and central corridors—notably Tampines, Bedok, Hougang, and Toa Payoh—indicating consistently high and intensifying passenger demand in mature residential estates. These areas serve as key origin zones for commuters traveling toward central employment hubs during weekdays and leisure destinations on weekends. The presence of new hotspots along the Punggol–Sengkang and Jurong East regions suggests expanding commuter activity in newer towns and mixed-use developments.
+
+Sporadic hotspots (light orange) appear intermittently around the Downtown Core and Orchard, reflecting fluctuating weekend and off-peak ridership linked to shopping and recreation. Conversely, sporadic coldspots (blue) dominate the western industrial belt (Tuas) and northern rural areas (Lim Chu Kang, Seletar), where population density and public transit dependence remain low.
+
+Overall, the EHSA confirms that bus trip generation in Singapore is **spatially structured and temporally dynamic**, driven by residential–employment linkages during weekdays and leisure mobility during weekends. The identification of emerging and persistent hotspots provides actionable insight for LTA planners to prioritize service frequency adjustments and ensure equitable accessibility across high-growth corridors.
+
+### Diagnostics: Gi* facets + counts table
+
+```{r}
+gi_map_sf <- hex_base %>%
+left_join(gi_by_period, by = c("HEX_ID", ".idx")) %>%
+mutate(sig_lbl = case_when(
+sig == 1L ~ "Hotspot (p<0.05)",
+sig == -1L ~ "Coldspot (p<0.05)",
+TRUE ~ "Not significant"
+))
+
+
+
+
+tmap_mode("plot")
+tm_shape(mpsz) + tm_polygons(col = "grey95", border.col = "grey80") +
+tm_shape(gi_map_sf) +
+tm_polygons("z", palette = "-RdBu", midpoint = 0, title = "Gi* z-score") +
+tm_facets(by = "PERIOD", ncol = 3) +
+tm_layout(main.title = "Local Getis–Ord Gi* by Period", frame = FALSE)
+```
+#### Local Getis–Ord Gi* by Period – Interpretation
+The Local Getis–Ord Gi* statistic identifies statistically significant local clusters of high (hot) and low (cold) bus trip intensities across Singapore for the three time periods.
+
+During the weekday morning peak (WKD_AM), high Gi* z-scores (red hexagons) are concentrated in eastern and northeastern residential estates such as Tampines, Bedok, Punggol, and Hougang, indicating strong commuter outflows toward the central region. Corresponding low z-score areas (blue) are found in western industrial and northern fringe zones, where trip generation is minimal during morning hours.
+
+In the weekday evening peak (WKD_PM), the spatial pattern remains broadly similar but with slightly expanded hotspots in both eastern and central regions (Toa Payoh, Serangoon, Bedok), reflecting the home-bound return flows of workers. The morning-to-evening symmetry highlights Singapore’s dominant east-to-west commuting corridor.
+
+For weekends and public holidays (WKND), hotspots become more dispersed and shift toward central leisure and retail destinations such as Orchard, Marina Bay, and Bugis, as well as coastal recreation belts in the east. The weakening of coldspot clusters suggests that ridership becomes more evenly distributed island-wide.
+
+Overall, the Gi* results confirm a transition from structured weekday commuting patterns to diffuse weekend leisure mobility, aligning well with the temporal dynamics later captured in the EHSA map.
+
+
+```{r}
+#| label: ehsa-counts
+ehsa_counts <- ehsa_sf %>%
+st_drop_geometry() %>%
+count(EHSA) %>%
+arrange(desc(n))
+knitr::kable(ehsa_counts, caption = "EHSA category counts")
+```

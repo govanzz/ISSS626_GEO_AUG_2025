@@ -267,6 +267,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#neighbours-and-weights-knn-on-hex-centroids" id="toc-neighbours-and-weights-knn-on-hex-centroids" class="nav-link" data-scroll-target="#neighbours-and-weights-knn-on-hex-centroids"><span class="header-section-number">5</span> Neighbours and weights (KNN on hex centroids)</a></li>
   <li><a href="#local-indicators-of-spatial-association-lisa-analysis" id="toc-local-indicators-of-spatial-association-lisa-analysis" class="nav-link" data-scroll-target="#local-indicators-of-spatial-association-lisa-analysis"><span class="header-section-number">6</span> Local Indicators of Spatial Association (LISA) Analysis</a></li>
+  <li><a href="#emerging-hot-spot-analysis-ehsa" id="toc-emerging-hot-spot-analysis-ehsa" class="nav-link" data-scroll-target="#emerging-hot-spot-analysis-ehsa"><span class="header-section-number">7</span> Emerging Hot Spot Analysis (EHSA)</a>
+  <ul>
+  <li><a href="#ehsa-2-local-gi-per-period-and-significance" id="toc-ehsa-2-local-gi-per-period-and-significance" class="nav-link" data-scroll-target="#ehsa-2-local-gi-per-period-and-significance"><span class="header-section-number">7.1</span> EHSA 2 — Local Gi* (per period) and significance</a></li>
+  <li><a href="#mannkendall-trend-category-assignment" id="toc-mannkendall-trend-category-assignment" class="nav-link" data-scroll-target="#mannkendall-trend-category-assignment"><span class="header-section-number">7.2</span> Mann–Kendall trend &amp; category assignment</a></li>
+  <li><a href="#map-the-ehsa-categories" id="toc-map-the-ehsa-categories" class="nav-link" data-scroll-target="#map-the-ehsa-categories"><span class="header-section-number">7.3</span> Map the EHSA categories</a></li>
+  <li><a href="#diagnostics-gi-facets-counts-table" id="toc-diagnostics-gi-facets-counts-table" class="nav-link" data-scroll-target="#diagnostics-gi-facets-counts-table"><span class="header-section-number">7.4</span> Diagnostics: Gi* facets + counts table</a>
+  <ul class="collapse">
+  <li><a href="#local-getisord-gi-by-period-interpretation" id="toc-local-getisord-gi-by-period-interpretation" class="nav-link" data-scroll-target="#local-getisord-gi-by-period-interpretation"><span class="header-section-number">7.4.1</span> Local Getis–Ord Gi* by Period – Interpretation</a></li>
+  </ul></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -299,7 +309,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">October 21, 2025</p>
+      <p class="date-modified">October 22, 2025</p>
     </div>
   </div>
     
@@ -367,7 +377,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 <p>We will load these packages using <code>pacman::p_load()</code> to streamline installation and loading:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, sfdep, tidyverse, tmap, lubridate, readr, readxl, mapview,rvest, knitr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, sfdep, tidyverse, tmap, lubridate, readr, readxl, mapview,rvest, knitr,Kendall)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="the-data" class="level3" data-number="2.3">
@@ -991,8 +1001,1917 @@ Calling <code>run_lisa_period("WKD_AM")</code> runs the analysis for <strong>wee
 <p>The LISA cluster map highlights High-High hotspots across the eastern coastal belt (e.g., Bedok, Pasir Ris, and Tampines) and central leisure zones such as Orchard, Bugis, and Marina Bay, reflecting weekend trips to shopping, entertainment, and recreational destinations. Smaller hotspots appear in the western suburbs, notably Jurong East and Clementi, corresponding to major malls and transit interchanges.</p>
 <p>In contrast, Low-Low coldspots dominate the northern rural and industrial fringes (e.g., Lim Chu Kang, Seletar, Tuas), where ridership remains consistently low. The more fragmented spatial clustering pattern suggests a shift from structured work commuting to discretionary leisure and family travel.</p>
 <p>Overall, weekend mobility patterns are less spatially clustered but still exhibit localized concentrations of activity near key retail and recreation nodes, confirming a statistically significant but weaker form of spatial dependence (p &lt; 0.05) driven by non-commuting travel behavior.</p>
+</section>
+<section id="emerging-hot-spot-analysis-ehsa" class="level2" data-number="7">
+<h2 data-number="7" class="anchored" data-anchor-id="emerging-hot-spot-analysis-ehsa"><span class="header-section-number">7</span> Emerging Hot Spot Analysis (EHSA)</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>hex_period_sf <span class="ot">&lt;-</span> hex_period_sf <span class="sc">%&gt;%</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">PERIOD =</span> <span class="fu">factor</span>(PERIOD, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"WKD_AM"</span>,<span class="st">"WKD_PM"</span>,<span class="st">"WKND"</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Build a stable base index for HEX_IDs (to keep neighbor order consistent)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>hex_base <span class="ot">&lt;-</span> hexagon <span class="sc">%&gt;%</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_as_sf</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">.idx =</span> <span class="fu">row_number</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="fu">select</span>(HEX_ID, .idx, geometry)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Centroids and kNN neighbors (k=8 typical for hex grids)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>hex_cent <span class="ot">&lt;-</span> <span class="fu">st_centroid</span>(hex_base)</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(hex_cent)</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>knn_obj <span class="ot">&lt;-</span> spdep<span class="sc">::</span><span class="fu">knearneigh</span>(coords, <span class="at">k =</span> <span class="dv">8</span>)</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>nb_obj <span class="ot">&lt;-</span> spdep<span class="sc">::</span><span class="fu">knn2nb</span>(knn_obj)</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>lw_obj <span class="ot">&lt;-</span> spdep<span class="sc">::</span><span class="fu">nb2listw</span>(nb_obj, <span class="at">style =</span> <span class="st">"W"</span>) <span class="co"># row-standardized weights</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="ehsa-2-local-gi-per-period-and-significance" class="level3" data-number="7.1">
+<h3 data-number="7.1" class="anchored" data-anchor-id="ehsa-2-local-gi-per-period-and-significance"><span class="header-section-number">7.1</span> EHSA 2 — Local Gi* (per period) and significance</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>.z_to_sig <span class="ot">&lt;-</span> <span class="cf">function</span>(z, <span class="at">alpha =</span> <span class="fl">0.05</span>) {</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>thr <span class="ot">&lt;-</span> <span class="fu">qnorm</span>(<span class="dv">1</span> <span class="sc">-</span> alpha<span class="sc">/</span><span class="dv">2</span>) <span class="co"># 1.96 for alpha=0.05</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a><span class="fu">case_when</span>(</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>z <span class="sc">&gt;=</span> thr <span class="sc">~</span> <span class="dv">1</span>L, <span class="co"># hotspot</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>z <span class="sc">&lt;=</span> <span class="sc">-</span>thr <span class="sc">~</span> <span class="sc">-</span><span class="dv">1</span>L, <span class="co"># coldspot</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a><span class="cn">TRUE</span> <span class="sc">~</span> <span class="dv">0</span>L <span class="co"># not significant</span></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>For each PERIOD: align to hex_base order, fill missing TRIPS with 0, run localG</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>gi_by_period <span class="ot">&lt;-</span> hex_period_sf <span class="sc">%&gt;%</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="fu">right_join</span>(hex_base <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>(), <span class="at">by =</span> <span class="st">"HEX_ID"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a><span class="fu">arrange</span>(PERIOD, .idx) <span class="sc">%&gt;%</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">TRIPS =</span> <span class="fu">replace_na</span>(TRIPS, <span class="dv">0</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a><span class="fu">group_by</span>(PERIOD) <span class="sc">%&gt;%</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a><span class="fu">group_modify</span>(<span class="sc">~</span>{</span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>z <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(spdep<span class="sc">::</span><span class="fu">localG</span>(.x<span class="sc">$</span>TRIPS, lw_obj))</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a><span class="fu">tibble</span>(.x, <span class="at">z =</span> z, <span class="at">sig =</span> <span class="fu">.z_to_sig</span>(z, <span class="at">alpha =</span> <span class="fl">0.05</span>))</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>}) <span class="sc">%&gt;%</span></span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a><span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a><span class="fu">select</span>(HEX_ID, PERIOD, .idx, TRIPS, z, sig)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="mannkendall-trend-category-assignment" class="level3" data-number="7.2">
+<h3 data-number="7.2" class="anchored" data-anchor-id="mannkendall-trend-category-assignment"><span class="header-section-number">7.2</span> Mann–Kendall trend &amp; category assignment</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>mk_trends <span class="ot">&lt;-</span> gi_by_period <span class="sc">%&gt;%</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">arrange</span>(HEX_ID, PERIOD) <span class="sc">%&gt;%</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a><span class="fu">group_by</span>(HEX_ID) <span class="sc">%&gt;%</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise</span>(</span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a><span class="at">mk_tau =</span> Kendall<span class="sc">::</span><span class="fu">MannKendall</span>(z)<span class="sc">$</span>tau <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a><span class="at">mk_p =</span> Kendall<span class="sc">::</span><span class="fu">MannKendall</span>(z)<span class="sc">$</span>sl <span class="sc">%&gt;%</span> <span class="fu">as.numeric</span>(),</span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a><span class="at">latest_z =</span> z[dplyr<span class="sc">::</span><span class="fu">n</span>()],</span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a><span class="at">latest_sig =</span> sig[dplyr<span class="sc">::</span><span class="fu">n</span>()],</span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a><span class="at">hot_count =</span> <span class="fu">sum</span>(sig <span class="sc">==</span> <span class="dv">1</span>L, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a><span class="at">cold_count =</span> <span class="fu">sum</span>(sig <span class="sc">==</span> <span class="sc">-</span><span class="dv">1</span>L, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a><span class="at">.groups =</span> <span class="st">"drop"</span></span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12
+WARNING: Error exit, tauk2. IFAULT =  12</code></pre>
+</div>
+</div>
+<p>EHSA rule-set (compact, robust for 3 time-slices)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- EHSA classifier (fixed) -----------------------------------------------</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>classify_ehsa <span class="ot">&lt;-</span> <span class="cf">function</span>(latest_sig, hot_count, cold_count, mk_tau, mk_p, <span class="at">alpha =</span> <span class="fl">0.05</span>) {</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># No significant slices at all</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (hot_count <span class="sc">+</span> cold_count <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="st">"No Pattern"</span>)</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># All three slices significant with same sign</span></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (hot_count <span class="sc">==</span> <span class="dv">3</span>) <span class="fu">return</span>(<span class="st">"Persistent Hotspot"</span>)</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (cold_count <span class="sc">==</span> <span class="dv">3</span>) <span class="fu">return</span>(<span class="st">"Persistent Coldspot"</span>)</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Latest = HOT</span></span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (latest_sig <span class="sc">==</span> <span class="dv">1</span>L) {</span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(mk_p) <span class="sc">&amp;&amp;</span> mk_p <span class="sc">&lt;</span> alpha) {</span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(mk_tau) <span class="sc">&amp;&amp;</span> mk_tau <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="st">"Intensifying Hotspot"</span>)</span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(mk_tau) <span class="sc">&amp;&amp;</span> mk_tau <span class="sc">&lt;</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="st">"Diminishing Hotspot"</span>)</span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (hot_count <span class="sc">==</span> <span class="dv">1</span>L) <span class="fu">return</span>(<span class="st">"New Hotspot"</span>)</span>
+<span id="cb39-17"><a href="#cb39-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="st">"Sporadic Hotspot"</span>)</span>
+<span id="cb39-18"><a href="#cb39-18" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb39-19"><a href="#cb39-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-20"><a href="#cb39-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Latest = COLD</span></span>
+<span id="cb39-21"><a href="#cb39-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (latest_sig <span class="sc">==</span> <span class="sc">-</span><span class="dv">1</span>L) {</span>
+<span id="cb39-22"><a href="#cb39-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(mk_p) <span class="sc">&amp;&amp;</span> mk_p <span class="sc">&lt;</span> alpha) {</span>
+<span id="cb39-23"><a href="#cb39-23" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(mk_tau) <span class="sc">&amp;&amp;</span> mk_tau <span class="sc">&lt;</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="st">"Intensifying Coldspot"</span>)</span>
+<span id="cb39-24"><a href="#cb39-24" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.na</span>(mk_tau) <span class="sc">&amp;&amp;</span> mk_tau <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="st">"Diminishing Coldspot"</span>)</span>
+<span id="cb39-25"><a href="#cb39-25" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb39-26"><a href="#cb39-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (cold_count <span class="sc">==</span> <span class="dv">1</span>L) <span class="fu">return</span>(<span class="st">"New Coldspot"</span>)</span>
+<span id="cb39-27"><a href="#cb39-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="st">"Sporadic Coldspot"</span>)</span>
+<span id="cb39-28"><a href="#cb39-28" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb39-29"><a href="#cb39-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-30"><a href="#cb39-30" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Latest not significant but had some earlier activity</span></span>
+<span id="cb39-31"><a href="#cb39-31" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (hot_count <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;&amp;</span> cold_count <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="st">"Sporadic Hotspot"</span>)</span>
+<span id="cb39-32"><a href="#cb39-32" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (cold_count <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;&amp;</span> hot_count <span class="sc">==</span> <span class="dv">0</span>) <span class="fu">return</span>(<span class="st">"Sporadic Coldspot"</span>)</span>
+<span id="cb39-33"><a href="#cb39-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="st">"No Pattern"</span>)</span>
+<span id="cb39-34"><a href="#cb39-34" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>ehsa_labels <span class="ot">&lt;-</span> mk_trends <span class="sc">%&gt;%</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">EHSA =</span> <span class="fu">classify_ehsa</span>(latest_sig, hot_count, cold_count, mk_tau, mk_p)) <span class="sc">%&gt;%</span></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Spatial join back</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>ehsa_sf <span class="ot">&lt;-</span> hex_base <span class="sc">%&gt;%</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="fu">left_join</span>(ehsa_labels, <span class="at">by =</span> <span class="st">"HEX_ID"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="map-the-ehsa-categories" class="level3" data-number="7.3">
+<h3 data-number="7.3" class="anchored" data-anchor-id="map-the-ehsa-categories"><span class="header-section-number">7.3</span> Map the EHSA categories</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Palette</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>pal_ehsa <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a><span class="st">"Persistent Hotspot"</span>     <span class="ot">=</span> <span class="st">"#b10026"</span>,</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="st">"Intensifying Hotspot"</span>   <span class="ot">=</span> <span class="st">"#fc4e2a"</span>,</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a><span class="st">"New Hotspot"</span>            <span class="ot">=</span> <span class="st">"#fd8d3c"</span>,</span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a><span class="st">"Sporadic Hotspot"</span>       <span class="ot">=</span> <span class="st">"#feb24c"</span>,</span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a><span class="st">"Diminishing Hotspot"</span>    <span class="ot">=</span> <span class="st">"#fdd0a2"</span>,</span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a><span class="st">"Persistent Coldspot"</span>    <span class="ot">=</span> <span class="st">"#084081"</span>,</span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a><span class="st">"Intensifying Coldspot"</span>  <span class="ot">=</span> <span class="st">"#0868ac"</span>,</span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a><span class="st">"New Coldspot"</span>           <span class="ot">=</span> <span class="st">"#2b8cbe"</span>,</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a><span class="st">"Sporadic Coldspot"</span>      <span class="ot">=</span> <span class="st">"#4eb3d3"</span>,</span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a><span class="st">"Diminishing Coldspot"</span>   <span class="ot">=</span> <span class="st">"#9ecae1"</span>,</span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a><span class="st">"No Pattern"</span>             <span class="ot">=</span> <span class="st">"#f0f0f0"</span></span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(mpsz) <span class="sc">+</span> <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"grey92"</span>, <span class="at">border.col =</span> <span class="st">"grey70"</span>) <span class="sc">+</span></span>
+<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(ehsa_sf) <span class="sc">+</span></span>
+<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_polygons</span>(<span class="st">"EHSA"</span>, <span class="at">palette =</span> pal_ehsa, <span class="at">title =</span> <span class="st">"EHSA (Gi* + Mann–Kendall)"</span>) <span class="sc">+</span></span>
+<span id="cb42-23"><a href="#cb42-23" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_borders</span>(<span class="at">alpha =</span> <span class="fl">0.5</span>) <span class="sc">+</span></span>
+<span id="cb42-24"><a href="#cb42-24" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_layout</span>(</span>
+<span id="cb42-25"><a href="#cb42-25" aria-hidden="true" tabindex="-1"></a><span class="at">main.title =</span> <span class="st">"Emerging Hot Spot Analysis (Hexagon TAZ, AM→PM→WKND)"</span>,</span>
+<span id="cb42-26"><a href="#cb42-26" aria-hidden="true" tabindex="-1"></a><span class="at">frame =</span> <span class="cn">FALSE</span>, <span class="at">legend.outside =</span> <span class="cn">TRUE</span></span>
+<span id="cb42-27"><a href="#cb42-27" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex02_files/figure-html/ehsa-map-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The Emerging Hot Spot Analysis reveals evolving spatio-temporal patterns of bus trip generation across Singapore between weekday morning (AM), weekday evening (PM), and weekend periods.</p>
+<p>Persistent and new hotspots (in red and orange) are concentrated in the eastern and central corridors—notably Tampines, Bedok, Hougang, and Toa Payoh—indicating consistently high and intensifying passenger demand in mature residential estates. These areas serve as key origin zones for commuters traveling toward central employment hubs during weekdays and leisure destinations on weekends. The presence of new hotspots along the Punggol–Sengkang and Jurong East regions suggests expanding commuter activity in newer towns and mixed-use developments.</p>
+<p>Sporadic hotspots (light orange) appear intermittently around the Downtown Core and Orchard, reflecting fluctuating weekend and off-peak ridership linked to shopping and recreation. Conversely, sporadic coldspots (blue) dominate the western industrial belt (Tuas) and northern rural areas (Lim Chu Kang, Seletar), where population density and public transit dependence remain low.</p>
+<p>Overall, the EHSA confirms that bus trip generation in Singapore is <strong>spatially structured and temporally dynamic</strong>, driven by residential–employment linkages during weekdays and leisure mobility during weekends. The identification of emerging and persistent hotspots provides actionable insight for LTA planners to prioritize service frequency adjustments and ensure equitable accessibility across high-growth corridors.</p>
+</section>
+<section id="diagnostics-gi-facets-counts-table" class="level3" data-number="7.4">
+<h3 data-number="7.4" class="anchored" data-anchor-id="diagnostics-gi-facets-counts-table"><span class="header-section-number">7.4</span> Diagnostics: Gi* facets + counts table</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>gi_map_sf <span class="ot">&lt;-</span> hex_base <span class="sc">%&gt;%</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="fu">left_join</span>(gi_by_period, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"HEX_ID"</span>, <span class="st">".idx"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">sig_lbl =</span> <span class="fu">case_when</span>(</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>sig <span class="sc">==</span> <span class="dv">1</span>L <span class="sc">~</span> <span class="st">"Hotspot (p&lt;0.05)"</span>,</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>sig <span class="sc">==</span> <span class="sc">-</span><span class="dv">1</span>L <span class="sc">~</span> <span class="st">"Coldspot (p&lt;0.05)"</span>,</span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a><span class="cn">TRUE</span> <span class="sc">~</span> <span class="st">"Not significant"</span></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>))</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(mpsz) <span class="sc">+</span> <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"grey95"</span>, <span class="at">border.col =</span> <span class="st">"grey80"</span>) <span class="sc">+</span></span>
+<span id="cb43-14"><a href="#cb43-14" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(gi_map_sf) <span class="sc">+</span></span>
+<span id="cb43-15"><a href="#cb43-15" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_polygons</span>(<span class="st">"z"</span>, <span class="at">palette =</span> <span class="st">"-RdBu"</span>, <span class="at">midpoint =</span> <span class="dv">0</span>, <span class="at">title =</span> <span class="st">"Gi* z-score"</span>) <span class="sc">+</span></span>
+<span id="cb43-16"><a href="#cb43-16" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_facets</span>(<span class="at">by =</span> <span class="st">"PERIOD"</span>, <span class="at">ncol =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb43-17"><a href="#cb43-17" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_layout</span>(<span class="at">main.title =</span> <span class="st">"Local Getis–Ord Gi* by Period"</span>, <span class="at">frame =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex02_files/figure-html/unnamed-chunk-35-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<section id="local-getisord-gi-by-period-interpretation" class="level4" data-number="7.4.1">
+<h4 data-number="7.4.1" class="anchored" data-anchor-id="local-getisord-gi-by-period-interpretation"><span class="header-section-number">7.4.1</span> Local Getis–Ord Gi* by Period – Interpretation</h4>
+<p>The Local Getis–Ord Gi* statistic identifies statistically significant local clusters of high (hot) and low (cold) bus trip intensities across Singapore for the three time periods.</p>
+<p>During the weekday morning peak (WKD_AM), high Gi* z-scores (red hexagons) are concentrated in eastern and northeastern residential estates such as Tampines, Bedok, Punggol, and Hougang, indicating strong commuter outflows toward the central region. Corresponding low z-score areas (blue) are found in western industrial and northern fringe zones, where trip generation is minimal during morning hours.</p>
+<p>In the weekday evening peak (WKD_PM), the spatial pattern remains broadly similar but with slightly expanded hotspots in both eastern and central regions (Toa Payoh, Serangoon, Bedok), reflecting the home-bound return flows of workers. The morning-to-evening symmetry highlights Singapore’s dominant east-to-west commuting corridor.</p>
+<p>For weekends and public holidays (WKND), hotspots become more dispersed and shift toward central leisure and retail destinations such as Orchard, Marina Bay, and Bugis, as well as coastal recreation belts in the east. The weakening of coldspot clusters suggests that ridership becomes more evenly distributed island-wide.</p>
+<p>Overall, the Gi* results confirm a transition from structured weekday commuting patterns to diffuse weekend leisure mobility, aligning well with the temporal dynamics later captured in the EHSA map.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>ehsa_counts <span class="ot">&lt;-</span> ehsa_sf <span class="sc">%&gt;%</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a><span class="fu">count</span>(EHSA) <span class="sc">%&gt;%</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="fu">arrange</span>(<span class="fu">desc</span>(n))</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(ehsa_counts, <span class="at">caption =</span> <span class="st">"EHSA category counts"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>EHSA category counts</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">EHSA</th>
+<th style="text-align: right;">n</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">No Pattern</td>
+<td style="text-align: right;">613</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sporadic Hotspot</td>
+<td style="text-align: right;">80</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Persistent Hotspot</td>
+<td style="text-align: right;">61</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sporadic Coldspot</td>
+<td style="text-align: right;">60</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">New Hotspot</td>
+<td style="text-align: right;">20</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 
 
+</section>
+</section>
 </section>
 
 </main> <!-- /main -->
