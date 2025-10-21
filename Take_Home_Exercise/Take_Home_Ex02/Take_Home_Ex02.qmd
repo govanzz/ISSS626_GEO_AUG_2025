@@ -640,6 +640,11 @@ select(HEX_ID, PERIOD, .idx, TRIPS, z, sig)
 
 ```{r}
 #| label: ehsa-mk
+#| echo: true
+#| results: "hide"
+#| warning: false
+#| message: false
+
 mk_trends <- gi_by_period %>%
 arrange(HEX_ID, PERIOD) %>%
 group_by(HEX_ID) %>%
