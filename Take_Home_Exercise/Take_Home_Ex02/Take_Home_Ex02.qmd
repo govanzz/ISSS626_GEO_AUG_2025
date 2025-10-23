@@ -504,42 +504,45 @@ run_lisa_period <- function(period_label, background = mpsz) {
       QUADRANT = tidyr::replace_na(QUADRANT, "Missing")
     )
 
-  # Color palette (yellow = Insignificant, grey = Missing)
+  # Palette only for significant classes (optional but cleaner)
   pal <- c(
-    "High-High"     = "#d7191c",
-    "High-Low"      = "#fdae61",
-    "Low-High"      = "#abd9e9",
-    "Low-Low"       = "#2c7bb6",
-    "Insignificant" = "#FFFFFF",
-    "Missing"       = "#FFFF00"
+    "High-High" = "#d7191c",
+    "High-Low"  = "#fdae61",
+    "Low-High"  = "#abd9e9",
+    "Low-Low"   = "#2c7bb6"
   )
 
-  tmap_mode("plot")
+  # --- significance filtering / masking
+  lisa_sig <- dplyr::filter(lisa, SIG)
+  lisa_for_stat <- dplyr::mutate(lisa, ii_sig = ifelse(SIG, ii, NA_real_))
 
-  # Left: Local Moran's Ii
+  tmap_mode("plot")  # <-- ensure plot mode
+
+  # Left: Local Moran's Ii (masked to significant only)
   map_stat <-
     tm_shape(background) +
       tm_polygons(col = "grey92", border.col = "grey70", alpha = 1) +
-    tm_shape(lisa) +
-      tm_polygons("ii", style = "cont", midpoint = 0,
-                  palette = "-RdBu", title = "Local Moran's Ii") +
+    tm_shape(lisa_for_stat) +
+      tm_polygons("ii_sig", style = "cont", midpoint = 0,
+                  palette = "-RdBu", title = "Local Moran's Ii",
+                  legend.show = TRUE, id = "HEX_ID") +  # (id harmless in plot mode)
       tm_borders(alpha = .6) +
     tm_layout(main.title = paste0("Local Moran's I (", period_label, ")"),
               frame = FALSE)
 
-  # Right: LISA cluster map
+  # Right: significant clusters only
   map_cluster <-
     tm_shape(background) +
       tm_polygons(col = "grey92", border.col = "grey70", alpha = 1) +
-    tm_shape(lisa) +
-      tm_polygons("QUADRANT", palette = pal, title = "Cluster (p < 0.05)") +
+    tm_shape(lisa_sig) +
+      tm_polygons("QUADRANT", palette = pal, title = "Cluster (p < 0.05)",
+                  drop.levels = TRUE) +
       tm_borders(alpha = .6) +
     tm_layout(main.title = paste0("LISA clusters (", period_label, ")"),
               frame = FALSE)
 
-  tmap_arrange(map_stat, map_cluster, ncol = 2)
+  tmap_arrange(map_stat, map_cluster, ncol = 2)  # <-- return both maps
 }
-
 
 run_lisa_period("WKD_AM")
 # run_lisa_period("WKD_PM")
