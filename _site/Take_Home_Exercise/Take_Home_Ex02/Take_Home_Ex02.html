@@ -309,7 +309,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">October 22, 2025</p>
+      <p class="date-modified">October 23, 2025</p>
     </div>
   </div>
     
@@ -1004,6 +1004,15 @@ Calling <code>run_lisa_period("WKD_AM")</code> runs the analysis for <strong>wee
 </section>
 <section id="emerging-hot-spot-analysis-ehsa" class="level2" data-number="7">
 <h2 data-number="7" class="anchored" data-anchor-id="emerging-hot-spot-analysis-ehsa"><span class="header-section-number">7</span> Emerging Hot Spot Analysis (EHSA)</h2>
+<p>The code below converts the <code>PERIOD</code> column in the <code>hex_period_sf</code> dataset into a categorical variable (factor) with a defined order of levels.</p>
+<ol type="1">
+<li>The <code>mutate()</code> function is used to modify the existing dataset <code>hex_period_sf</code>.<br>
+</li>
+<li>The <code>PERIOD</code> variable is converted into a factor using <code>factor()</code>.<br>
+</li>
+<li>The <code>levels</code> argument explicitly sets the desired order of categories as <code>"WKD_AM"</code>, <code>"WKD_PM"</code>, and <code>"WKND"</code>.</li>
+</ol>
+<p>This ensures that when plotting or summarizing data, the periods will appear in a consistent and logical order: weekday morning → weekday evening → weekend.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>hex_period_sf <span class="ot">&lt;-</span> hex_period_sf <span class="sc">%&gt;%</span></span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">PERIOD =</span> <span class="fu">factor</span>(PERIOD, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"WKD_AM"</span>,<span class="st">"WKD_PM"</span>,<span class="st">"WKND"</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -1029,6 +1038,7 @@ Calling <code>run_lisa_period("WKD_AM")</code> runs the analysis for <strong>wee
 </div>
 <section id="ehsa-2-local-gi-per-period-and-significance" class="level3" data-number="7.1">
 <h3 data-number="7.1" class="anchored" data-anchor-id="ehsa-2-local-gi-per-period-and-significance"><span class="header-section-number">7.1</span> EHSA 2 — Local Gi* (per period) and significance</h3>
+<p>This section performs the <strong>Local Gi*</strong> (Getis-Ord Gi*) analysis to identify statistically significant <em>hotspots</em> and <em>coldspots</em> of bus trip intensity for each time period (<code>PERIOD</code>).</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>.z_to_sig <span class="ot">&lt;-</span> <span class="cf">function</span>(z, <span class="at">alpha =</span> <span class="fl">0.05</span>) {</span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>thr <span class="ot">&lt;-</span> <span class="fu">qnorm</span>(<span class="dv">1</span> <span class="sc">-</span> alpha<span class="sc">/</span><span class="dv">2</span>) <span class="co"># 1.96 for alpha=0.05</span></span>
@@ -1040,6 +1050,30 @@ Calling <code>run_lisa_period("WKD_AM")</code> runs the analysis for <strong>wee
 <span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>For each PERIOD: align to hex_base order, fill missing TRIPS with 0, run localG</p>
+<p>The code below performs the <strong>Local Gi*</strong> (Getis-Ord) hotspot analysis for each time period (<code>PERIOD</code>) to identify areas with significantly high or low bus trip activity.</p>
+<hr>
+<ol type="1">
+<li>The dataset <code>hex_period_sf</code> is used as input, and the geometry is removed using <code>st_drop_geometry()</code> since only attribute data is required for computation.<br>
+</li>
+<li>A <code>right_join()</code> aligns the trip data with a base hexagon layer (<code>hex_base</code>), ensuring all hexagons are included — even those with missing trip data.<br>
+</li>
+<li>The data is arranged by <code>PERIOD</code> and index (<code>.idx</code>) for consistent ordering.<br>
+</li>
+<li><code>mutate(TRIPS = replace_na(TRIPS, 0))</code> fills missing trip values with zeros to avoid calculation errors.<br>
+</li>
+<li>The dataset is grouped by <code>PERIOD</code>, meaning the hotspot analysis is performed separately for each time period.<br>
+</li>
+<li>Within each group, <code>spdep::localG()</code> calculates the <strong>Local Gi*</strong> z-scores based on the number of trips (<code>TRIPS</code>) and the spatial weights object (<code>lw_obj</code>).<br>
+</li>
+<li>The resulting z-scores are classified for statistical significance using the helper function <code>.z_to_sig()</code>.<br>
+</li>
+<li>The results are stored in a tibble containing the original attributes, computed z-scores (<code>z</code>), and significance category (<code>sig</code>).<br>
+</li>
+<li>After ungrouping, only relevant columns — <code>HEX_ID</code>, <code>PERIOD</code>, <code>.idx</code>, <code>TRIPS</code>, <code>z</code>, and <code>sig</code> — are retained.</li>
+</ol>
+<hr>
+<p><strong>In summary:</strong><br>
+This code computes the Local Gi* statistic for each hexagon across different time periods, identifying <strong>hotspots (high z-scores)</strong> and <strong>coldspots (low z-scores)</strong> based on the spatial distribution of bus trips.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>gi_by_period <span class="ot">&lt;-</span> hex_period_sf <span class="sc">%&gt;%</span></span>
 <span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span></span>
@@ -1057,6 +1091,40 @@ Calling <code>run_lisa_period("WKD_AM")</code> runs the analysis for <strong>wee
 </section>
 <section id="mannkendall-trend-category-assignment" class="level3" data-number="7.2">
 <h3 data-number="7.2" class="anchored" data-anchor-id="mannkendall-trend-category-assignment"><span class="header-section-number">7.2</span> Mann–Kendall trend &amp; category assignment</h3>
+<p>This code performs the <strong>Mann–Kendall trend test</strong> on the Local Gi* z-scores for each hexagon to detect temporal trends in hotspot and coldspot patterns over multiple periods.</p>
+<hr>
+<ol type="1">
+<li>The dataset <code>gi_by_period</code> (containing Local Gi* z-scores per hexagon and period) is arranged by <code>HEX_ID</code> and <code>PERIOD</code> to ensure chronological order.<br>
+</li>
+<li>The data is grouped by <code>HEX_ID</code>, so trend analysis is conducted <strong>individually for each hexagon</strong> across time.<br>
+</li>
+<li>The <code>summarise()</code> function computes several key statistics for each hexagon:
+<ul>
+<li><code>mk_tau</code>: The <strong>Kendall’s tau</strong> statistic from <code>Kendall::MannKendall(z)</code>, indicating the direction and strength of the trend:
+<ul>
+<li>Positive → increasing trend<br>
+</li>
+<li>Negative → decreasing trend<br>
+</li>
+<li>Near zero → no trend<br>
+</li>
+</ul></li>
+<li><code>mk_p</code>: The <strong>p-value</strong> of the test, assessing whether the trend is statistically significant.<br>
+</li>
+<li><code>latest_z</code>: The most recent z-score (<code>z</code>) value for that hexagon.<br>
+</li>
+<li><code>latest_sig</code>: The most recent significance classification (<code>sig</code>) value.<br>
+</li>
+<li><code>hot_count</code>: The total number of times the hexagon was identified as a <strong>hotspot</strong> (<code>sig == 1L</code>).<br>
+</li>
+<li><code>cold_count</code>: The total number of times it was identified as a <strong>coldspot</strong> (<code>sig == -1L</code>).</li>
+</ul></li>
+<li>The argument <code>.groups = "drop"</code> ensures that the grouped data is flattened after summarization.</li>
+</ol>
+<hr>
+<p><strong>In summary:</strong><br>
+This code evaluates whether each hexagon’s Local Gi* values show a statistically significant increasing or decreasing trend over time.<br>
+It produces a summary table (<code>mk_trends</code>) containing the Mann–Kendall statistics (<code>mk_tau</code>, <code>mk_p</code>), recent z-scores, and counts of hotspot or coldspot occurrences — which are later used for <strong>spatiotemporal hotspot classification</strong> in the EHSA (Emerging Hot Spot Analysis) framework.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>mk_trends <span class="ot">&lt;-</span> gi_by_period <span class="sc">%&gt;%</span></span>
 <span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="fu">arrange</span>(HEX_ID, PERIOD) <span class="sc">%&gt;%</span></span>
@@ -1072,6 +1140,60 @@ Calling <code>run_lisa_period("WKD_AM")</code> runs the analysis for <strong>wee
 <span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>EHSA rule-set (compact, robust for 3 time-slices)</p>
+<p>This function defines the rule-set for classifying <strong>Emerging Hot Spot Analysis (EHSA)</strong> categories based on spatial and temporal trends.<br>
+It integrates both spatial significance (hotspot or coldspot status) and temporal trends (from the Mann–Kendall test).</p>
+<hr>
+<p><strong>Function:</strong> <code>classify_ehsa(latest_sig, hot_count, cold_count, mk_tau, mk_p, alpha = 0.05)</code></p>
+<ol type="1">
+<li><strong>No Pattern Check</strong>
+<ul>
+<li>If there are no significant hotspot or coldspot occurrences (<code>hot_count + cold_count == 0</code>),<br>
+→ returns <code>"No Pattern"</code>.</li>
+</ul></li>
+<li><strong>Persistent Patterns</strong>
+<ul>
+<li>If all three time slices are significant hotspots → <code>"Persistent Hotspot"</code>.<br>
+</li>
+<li>If all three are significant coldspots → <code>"Persistent Coldspot"</code>.</li>
+</ul></li>
+<li><strong>Latest Slice = Hotspot (<code>latest_sig == 1L</code>)</strong>
+<ul>
+<li>If Mann–Kendall test is significant (<code>mk_p &lt; alpha</code>):
+<ul>
+<li>Positive trend (<code>mk_tau &gt; 0</code>) → <code>"Intensifying Hotspot"</code>.<br>
+</li>
+<li>Negative trend (<code>mk_tau &lt; 0</code>) → <code>"Diminishing Hotspot"</code>.<br>
+</li>
+</ul></li>
+<li>If only one slice shows a hotspot → <code>"New Hotspot"</code>.<br>
+</li>
+<li>Otherwise → <code>"Sporadic Hotspot"</code>.</li>
+</ul></li>
+<li><strong>Latest Slice = Coldspot (<code>latest_sig == -1L</code>)</strong>
+<ul>
+<li>If Mann–Kendall test is significant (<code>mk_p &lt; alpha</code>):
+<ul>
+<li>Negative trend (<code>mk_tau &lt; 0</code>) → <code>"Intensifying Coldspot"</code>.<br>
+</li>
+<li>Positive trend (<code>mk_tau &gt; 0</code>) → <code>"Diminishing Coldspot"</code>.<br>
+</li>
+</ul></li>
+<li>If only one slice shows a coldspot → <code>"New Coldspot"</code>.<br>
+</li>
+<li>Otherwise → <code>"Sporadic Coldspot"</code>.</li>
+</ul></li>
+<li><strong>Non-significant Latest Slice with Past Activity</strong>
+<ul>
+<li>If previous hotspots exist → <code>"Sporadic Hotspot"</code>.<br>
+</li>
+<li>If previous coldspots exist → <code>"Sporadic Coldspot"</code>.<br>
+</li>
+<li>Otherwise → <code>"No Pattern"</code>.</li>
+</ul></li>
+</ol>
+<hr>
+<p><strong>In summary:</strong><br>
+This rule-set categorizes each spatial unit (hexagon) into EHSA classes such as <em>Persistent</em>, <em>Intensifying</em>, <em>Diminishing</em>, <em>New</em>, <em>Sporadic</em>, or <em>No Pattern</em> based on how hotspot or coldspot patterns evolve across three time slices, using both spatial significance and temporal trend indicators</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- EHSA classifier (fixed) -----------------------------------------------</span></span>
 <span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>classify_ehsa <span class="ot">&lt;-</span> <span class="cf">function</span>(latest_sig, hot_count, cold_count, mk_tau, mk_p, <span class="at">alpha =</span> <span class="fl">0.05</span>) {</span>
@@ -1108,6 +1230,7 @@ Calling <code>run_lisa_period("WKD_AM")</code> runs the analysis for <strong>wee
 <span id="cb38-33"><a href="#cb38-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="st">"No Pattern"</span>)</span>
 <span id="cb38-34"><a href="#cb38-34" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>The two code chunks below apply the EHSA classification rules to each hexagon and then reattach the spatial geometry for mapping.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>ehsa_labels <span class="ot">&lt;-</span> mk_trends <span class="sc">%&gt;%</span></span>
 <span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rowwise</span>() <span class="sc">%&gt;%</span></span>
@@ -1122,14 +1245,16 @@ Calling <code>run_lisa_period("WKD_AM")</code> runs the analysis for <strong>wee
 </section>
 <section id="map-the-ehsa-categories" class="level3" data-number="7.3">
 <h3 data-number="7.3" class="anchored" data-anchor-id="map-the-ehsa-categories"><span class="header-section-number">7.3</span> Map the EHSA categories</h3>
+<p>This code visualizes the results of the Emerging Hot Spot Analysis (EHSA) using the <code>tmap</code> package.<br>
+It creates a choropleth map showing the spatial distribution of different EHSA categories (e.g., persistent, new, or intensifying hotspots/coldspots). - A custom color palette is created to represent each EHSA category. - Warm colors (reds and oranges) indicate hotspots, while cool colors (blues) indicate coldspots. - Grey represents areas with no discernible pattern.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Palette</span></span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>pal_ehsa <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
 <span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a><span class="st">"Persistent Hotspot"</span>     <span class="ot">=</span> <span class="st">"#b10026"</span>,</span>
 <span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a><span class="st">"Intensifying Hotspot"</span>   <span class="ot">=</span> <span class="st">"#fc4e2a"</span>,</span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a><span class="st">"New Hotspot"</span>            <span class="ot">=</span> <span class="st">"#fd8d3c"</span>,</span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a><span class="st">"Sporadic Hotspot"</span>       <span class="ot">=</span> <span class="st">"#feb24c"</span>,</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a><span class="st">"New Hotspot"</span>            <span class="ot">=</span> <span class="st">"#FFD700"</span>,</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a><span class="st">"Sporadic Hotspot"</span>       <span class="ot">=</span> <span class="st">"#32CD32"</span>,</span>
 <span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a><span class="st">"Diminishing Hotspot"</span>    <span class="ot">=</span> <span class="st">"#fdd0a2"</span>,</span>
 <span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a><span class="st">"Persistent Coldspot"</span>    <span class="ot">=</span> <span class="st">"#084081"</span>,</span>
@@ -1160,11 +1285,16 @@ Calling <code>run_lisa_period("WKD_AM")</code> runs the analysis for <strong>wee
 </div>
 <p>The Emerging Hot Spot Analysis reveals evolving spatio-temporal patterns of bus trip generation across Singapore between weekday morning (AM), weekday evening (PM), and weekend periods.</p>
 <p>Persistent and new hotspots (in red and orange) are concentrated in the eastern and central corridors—notably Tampines, Bedok, Hougang, and Toa Payoh—indicating consistently high and intensifying passenger demand in mature residential estates. These areas serve as key origin zones for commuters traveling toward central employment hubs during weekdays and leisure destinations on weekends. The presence of new hotspots along the Punggol–Sengkang and Jurong East regions suggests expanding commuter activity in newer towns and mixed-use developments.</p>
-<p>Sporadic hotspots (light orange) appear intermittently around the Downtown Core and Orchard, reflecting fluctuating weekend and off-peak ridership linked to shopping and recreation. Conversely, sporadic coldspots (blue) dominate the western industrial belt (Tuas) and northern rural areas (Lim Chu Kang, Seletar), where population density and public transit dependence remain low.</p>
+<p>Sporadic hotspots appear intermittently around the Downtown Core and Orchard, reflecting fluctuating weekend and off-peak ridership linked to shopping and recreation. Conversely, sporadic coldspots (blue) dominate the western industrial belt (Tuas) and northern rural areas (Lim Chu Kang, Seletar), where population density and public transit dependence remain low.</p>
+<p>In the Emerging Hot Spot Analysis of bus trips, a New Hotspot represents an area (hexagon) where bus trip activity has recently increased significantly, forming a new cluster of high values that was not observed in earlier time periods. This means the location was not previously a hotspot during the weekday AM or PM periods, but has now emerged as one often during the weekend.</p>
 <p>Overall, the EHSA confirms that bus trip generation in Singapore is <strong>spatially structured and temporally dynamic</strong>, driven by residential–employment linkages during weekdays and leisure mobility during weekends. The identification of emerging and persistent hotspots provides actionable insight for LTA planners to prioritize service frequency adjustments and ensure equitable accessibility across high-growth corridors.</p>
 </section>
 <section id="diagnostics-gi-facets-counts-table" class="level3" data-number="7.4">
 <h3 data-number="7.4" class="anchored" data-anchor-id="diagnostics-gi-facets-counts-table"><span class="header-section-number">7.4</span> Diagnostics: Gi* facets + counts table</h3>
+<p>This section creates diagnostic maps to visually assess the results of the Local Gi* (Getis-Ord) analysis across different time periods.</p>
+<p>First, the dataset combines the base hexagon geometry with the Gi* results to ensure that each spatial unit (hexagon) includes both its spatial position and the computed z-scores. A new variable is added to label each hexagon based on its statistical significance — whether it represents a significant hotspot, a significant coldspot, or is not significant at all.</p>
+<p>Once the dataset is prepared, the code switches the mapping mode to static plotting and constructs a faceted map using <code>tmap</code>. The base planning area boundaries are displayed in light grey to provide spatial context. Each hexagon is then colored according to its Gi* z-score using a diverging red-blue palette, where red shades indicate hotspots (high positive z-scores) and blue shades indicate coldspots (low negative z-scores). The midpoint is set at zero to emphasize the separation between hot and cold clusters.</p>
+<p>Finally, the map is faceted by time period, producing side-by-side panels for each temporal slice (for example, weekday AM, weekday PM, and weekend). This allows for easy comparison of how spatial clustering patterns vary over time and helps identify areas that consistently show hotspot or coldspot behavior.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>gi_map_sf <span class="ot">&lt;-</span> hex_base <span class="sc">%&gt;%</span></span>
 <span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="fu">left_join</span>(gi_by_period, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"HEX_ID"</span>, <span class="st">".idx"</span>)) <span class="sc">%&gt;%</span></span>
@@ -1238,6 +1368,9 @@ Calling <code>run_lisa_period("WKD_AM")</code> runs the analysis for <strong>wee
 </table>
 </div>
 </div>
+<p>The EHSA summary shows that a large majority of hexagons (613) fall under No Pattern, meaning these areas exhibit stable, non-significant variation in trip generation across time. Among significant categories, Sporadic Hotspots (80) and Persistent Hotspots (61) dominate, marking consistently or recurrently high ridership zones in dense residential and mixed-use districts such as Tampines, Bedok, Hougang, and Toa Payoh. These locations sustain strong commuter flows throughout both weekday and weekend periods.</p>
+<p>Sporadic Coldspots (60) correspond mainly to the western industrial and northern fringe regions (e.g., Tuas, Lim Chu Kang, Seletar), where passenger volumes remain intermittently low. The New Hotspots (20) highlight recently emerging growth areas—particularly Jurong East and Punggol—where new developments and expanded bus services have intensified ridership.</p>
+<p>Overall, the pattern indicates a spatially stable but evolving bus network, with established hotspots maintaining strong demand and new hotspots signaling areas of increasing travel activity. These insights can help guide targeted service enhancements and network planning in Singapore’s growing residential corridors.</p>
 
 
 </section>
