@@ -94,6 +94,11 @@ Reading the input data sets. It is in simple feature data frame.
 mdata <- read_rds("data/rawdata/mdata.rds")
 ```
 
+```{r}
+mdata
+```
+
+
 ### Data Sampling
 The entire data are split into training and test data sets with 65% and 35% respectively by using initial_split() of rsample package. rsample is one of the package of tigymodels.
 
@@ -153,6 +158,7 @@ write_rds(price_mlr, "data/model/price_mlr.rds" )
 In this section, we will learn how to calibrate a model to predict HDB resale price by using geographically weighted regression method of GWmodel package.
 
 ```{r}
+#| eval: false
 bw_adaptive <- bw.gwr(
   formula = resale_price ~ floor_area_sqm +
     storey_order + remaining_lease_mths +
@@ -169,5 +175,111 @@ bw_adaptive <- bw.gwr(
 
 write_rds(bw_adaptive, "data/model/bw_adaptive.rds")
 ```
+## Constructing the adaptive bandwidth gwr model
+
+First, let us call the save bandwidth by using the code chunk below.
+
+```{r}
+#| include: false
+bw_adaptive <- read_rds(
+  "data/model/bw_adaptive.rds")
+```
+
+Now, we can go ahead to calibrate the gwr-based hedonic pricing model by using adaptive bandwidth and Gaussian kernel as shown in the code chunk below.
+
+```{r}
+#| eval: false
+gwr_adaptive <- gwr.basic(
+  formula = resale_price ~ floor_area_sqm +
+    storey_order + remaining_lease_mths + 
+    PROX_CBD + PROX_ELDERLYCARE + 
+    PROX_HAWKER + PROX_MRT + PROX_PARK + 
+    PROX_MALL + PROX_SUPERMARKET +
+    WITHIN_350M_KINDERGARTEN +
+    WITHIN_350M_CHILDCARE + 
+    WITHIN_350M_BUS + WITHIN_1KM_PRISCH,
+  data=train_data,
+  bw=bw_adaptive, 
+  kernel = 'gaussian', 
+  adaptive=TRUE,
+  longlat = FALSE)
+
+write_rds(gwr_adaptive, 
+          "data/model/gwr_adaptive.rds")
+```
 
 
+
+
+
+### Retrieve gwr output object
+The code chunk below will be used to retrieve the save gwr model object.
+```{r}
+#| include: false
+gwr_adaptive <- read_rds("data/model/gwr_adaptive.rds")
+```
+
+The code below can be used to display the model output.
+
+```{r}
+gwr_adaptive
+```
+### Computing adaptive bandwidth for the test data
+```{r}
+#| eval: false
+gwr_bw_test_adaptive <- bw.gwr(
+  formula = resale_price ~ floor_area_sqm +
+    storey_order + remaining_lease_mths +
+    PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+    PROX_MRT + PROX_PARK + PROX_MALL + 
+    PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+    WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+    WITHIN_1KM_PRISCH,
+  data=test_data,
+  approach="CV",
+  kernel="gaussian",
+  adaptive=TRUE,
+  longlat=FALSE)
+
+write_rds(gwr_bw_test_adaptive, 
+          "data/model/gwr_bw_test_adaptive.rds")
+```
+```{r}
+#| include: false
+gwr_bw_test_adaptive <- read_rds("data/model/gwr_bw_test_adaptive.rds")
+```
+
+```{r}
+gwr_bw_test_adaptive
+```
+
+
+### Computing predicted values of the test data
+```{r}
+#| eval: false
+gwr_pred <- gwr.predict(
+  formula = resale_price ~ floor_area_sqm + 
+    storey_order + remaining_lease_mths + 
+    PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER + 
+    PROX_MRT + PROX_PARK + PROX_MALL + 
+    PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+    WITHIN_350M_CHILDCARE + WITHIN_350M_BUS + 
+    WITHIN_1KM_PRISCH, 
+  data=train_data, 
+  predictdata = test_data, 
+  bw=80, 
+  kernel = 'gaussian', 
+  adaptive=TRUE, 
+  longlat = FALSE)
+
+
+
+
+
+write_rds(gwr_pred, 
+          "data/model/gwr_pred.rds")
+
+```
+
+```
+`
