@@ -1,0 +1,119 @@
+---
+title: "In Class Excercise  8 a"
+author: "Gautamgovan"
+date: "October 25, 2025"
+date-modified: "last-modified"
+format: 
+  html:
+    toc: true
+    toc-depth: 4
+    number-sections: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  freeze: true
+---
+## Data Wrangling 
+```{r}
+pacman::p_load(httr, tidyverse,sf, tmap, jsonlite, progress)
+```
+
+```{r}
+HDBresale <- read_csv(
+  "data/rawdata/HDBresale.csv"
+) %>%
+  filter(flat_type == "4 ROOM") %>%
+  filter(month >= "2025-09" & month <= "2025-10")
+```
+```{r}
+HDBresale$street_name <- gsub(
+  "ST\\.", "SAINT",
+  HDBresale$street_name
+)
+```
+
+```{r}
+geocode <- function(block, streetname) {
+  base_url <- "https://onemap.gov.sg/api/common/elastic/search"
+  address <- paste(block, streetname, sep = " ")
+  query <- list(
+    "searchVal" = address,
+    "returnGeom" = "Y",
+    "getAddrDetails" = "N",
+    "pageNum" = "1"
+  )
+  
+  res <- GET(base_url, query = query)
+  restext <- content(res, as = "text")
+  
+  output <- fromJSON(restext) %>%
+    as.data.frame() %>%
+    select(results.LATITUDE, results.LONGITUDE)
+  
+  return(output)
+}
+```
+
+```{r}
+#| eval: False
+HDBresale$LATITUDE <- 0
+HDBresale$LONGITUDE <- 0
+
+for (i in 1:nrow(HDBresale)) {
+  temp_output <- geocode(HDBresale[i, 4], HDBresale[i, 5])
+  
+  HDBresale$LATITUDE[i] <- temp_output$results.LATITUDE
+  HDBresale$LONGITUDE[i] <- temp_output$results.LONGITUDE
+}
+```
+## Convert into spatial data fram
+```{r}
+#| eval: False
+HDBresale_sf <- st_as_sf(
+  HDBresale,
+  coords = c("LONGITUDE", "LATITUDE"),  # x = lon, y = lat
+  crs = 4326                            # WGS84 (lat/lon)
+)
+```
+
+```{r}
+#| eval: false
+HDBresale_sf <- st_transform(HDBresale_sf, crs = 3414)
+```
+
+```{r}
+#| eval: false
+saveRDS(HDBresale_sf, "data/rds/HDBresale_sf.rds")
+```
+
+```{r}
+HDBresale_sf <- readRDS("data/rds/HDBresale_sf.rds")
+```
+
+```{r}
+#| eval: false
+#| include: false
+HDBresale_sf
+```
+
+```{r}
+preschool <- st_read("data/rawdata/PreSchoolsLocation.kml") %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+#| eval: false
+#| include: false
+preschool
+```
+
+```{r}
+within_350m <- st_is_within_distance(
+  HDBresale_sf, preschool, dist = 350
+)
+
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(prischool_350m = map_int(within_350m, length))
+```
+
