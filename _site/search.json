@@ -866,5 +866,40 @@
     "title": "In Class Excercise 8 a",
     "section": "2 Convert into spatial data fram",
     "text": "2 Convert into spatial data fram\n\nHDBresale_sf &lt;- st_as_sf(\n  HDBresale,\n  coords = c(\"LONGITUDE\", \"LATITUDE\"),  # x = lon, y = lat\n  crs = 4326                            # WGS84 (lat/lon)\n)\n\n\nHDBresale_sf &lt;- st_transform(HDBresale_sf, crs = 3414)\n\n\nsaveRDS(HDBresale_sf, \"data/rds/HDBresale_sf.rds\")\n\n\nHDBresale_sf &lt;- readRDS(\"data/rds/HDBresale_sf.rds\")\n\n\npreschool &lt;- st_read(\"data/rawdata/PreSchoolsLocation.kml\") %&gt;%\n  st_transform(crs = 3414)\n\nReading layer `PRESCHOOLS_LOCATION' from data source \n  `C:\\govanzz\\ISSS626_GEO_AUG_2025\\In-class_Exercise\\In-class_Ex08\\data\\rawdata\\PreSchoolsLocation.kml' \n  using driver `KML'\nSimple feature collection with 2290 features and 2 fields\nGeometry type: POINT\nDimension:     XYZ\nBounding box:  xmin: 103.6878 ymin: 1.247759 xmax: 103.9897 ymax: 1.462134\nz_range:       zmin: 0 zmax: 0\nGeodetic CRS:  WGS 84\n\n\n\nwithin_350m &lt;- st_is_within_distance(\n  HDBresale_sf, preschool, dist = 350\n)\n\nHDBresale_sf &lt;- HDBresale_sf %&gt;%\n  mutate(prischool_350m = map_int(within_350m, length))"
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html",
+    "href": "Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html",
+    "title": "Hands-on_Ex09",
+    "section": "",
+    "text": "In this hands-on exercise, we will gain hands-on experience on how to model geographical accessibility by using R’s geospatial analysis packages."
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html#objective",
+    "href": "Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html#objective",
+    "title": "Hands-on_Ex09",
+    "section": "",
+    "text": "In this hands-on exercise, we will gain hands-on experience on how to model geographical accessibility by using R’s geospatial analysis packages."
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html#the-data",
+    "href": "Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html#the-data",
+    "title": "Hands-on_Ex09",
+    "section": "2 The Data",
+    "text": "2 The Data\nFour data sets will be used in this hands-on exercise, they are:\n\nMP14_SUBZONE_NO_SEA_PL: URA Master Plan 2014 subzone boundary GIS data. This data set is downloaded from data.gov.sg.\nhexagons: A 250m radius hexagons GIS data. This data set was created by using st_make_grid() of sf package. It is in ESRI shapefile format.\nELDERCARE: GIS data showing location of eldercare service. This data is downloaded from data.gov.sg. There are two versions. One in ESRI shapefile format. The other one in Google kml file format. For the purpose of this hands-on exercise, ESRI shapefile format is provided.\nOD_Matrix: a distance matrix in csv format. There are six fields in the data file. They are:\n\norigin_id: the unique id values of the origin (i.e. fid of hexagon data set)\ndestination_id: the unique id values of the destination (i.e. fid of ELDERCARE data set)\nentry_cost: the perpendicular distance between the origins and the nearest road\nnetwork_cost: the actual network distance from the origin and destination\nexit_cost: the perpendicular distance between the destination and the nearest road\ntotal_cost: the summation of entry_cost, network_cost and exit_cost"
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html#getting-started",
+    "href": "Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html#getting-started",
+    "title": "Hands-on_Ex09",
+    "section": "3 Getting Started",
+    "text": "3 Getting Started\nBefore we getting started, it is important for us to install the necessary R packages and launch them into RStudio environment. The code chunk below installs and launches these R packages into RStudio environment.\n\npacman::p_load(tmap, SpatialAcc, sf, \n               ggstatsplot, reshape2,\n               tidyverse)"
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html#geospatial-data-wrangling",
+    "href": "Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html#geospatial-data-wrangling",
+    "title": "Hands-on_Ex09",
+    "section": "4 Geospatial Data Wrangling",
+    "text": "4 Geospatial Data Wrangling\n\n4.1 Importing geospatial data\nThree geospatial data will be imported from the data/geospatial sub-folder. They are MP14_SUBZONE_NO_SEA_PL, hexagons and ELDERCARE.\nThe code chunk below is used to import these three data sets shapefile by using st_read() of sf packages."
   }
 ]

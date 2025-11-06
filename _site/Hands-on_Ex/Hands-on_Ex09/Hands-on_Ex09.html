@@ -6,8 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Gautamgovan">
+<meta name="dcterms.date" content="2025-11-06">
 
-<title>ISSS626 – Geospatial Analytics and Applications – ISSS626</title>
+<title>Hands-on_Ex09 – ISSS626</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,26 +22,61 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js" type="module"></script>
-<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-ea385d0e468b0dd5ea5bf0780b1290d9.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-dfb324f25d9b1687192fa8be62ac8f9c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-ea385d0e468b0dd5ea5bf0780b1290d9.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-dfb324f25d9b1687192fa8be62ac8f9c.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -69,7 +106,7 @@ ul.task-list li input[type="checkbox"] {
 }</script>
 
 
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="../../styles.css">
 </head>
 
 <body class="nav-fixed quarto-light">
@@ -79,7 +116,7 @@ ul.task-list li input[type="checkbox"] {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">ISSS626</span>
     </a>
   </div>
@@ -95,39 +132,39 @@ ul.task-list li input[type="checkbox"] {
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-hands-on-exercise">    
         <li>
-    <a class="dropdown-item" href="./Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html">
+    <a class="dropdown-item" href="../../Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html">
  <span class="dropdown-text">Hands-on Exercise 1</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./Hands-on_Ex/Hands-on_Ex02/Hands-on_Ex02.html">
+    <a class="dropdown-item" href="../../Hands-on_Ex/Hands-on_Ex02/Hands-on_Ex02.html">
  <span class="dropdown-text">Hands-on Exercise 2</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html">
+    <a class="dropdown-item" href="../../Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html">
  <span class="dropdown-text">Hands-on Exercise 3</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.html">
+    <a class="dropdown-item" href="../../Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.html">
  <span class="dropdown-text">Hands-on Exercise 4</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./Hands-on_Ex/Hands-on_Ex05/Hands-on_Ex05.html">
+    <a class="dropdown-item" href="../../Hands-on_Ex/Hands-on_Ex05/Hands-on_Ex05.html">
  <span class="dropdown-text">Hands-on Exercise 5</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html">
+    <a class="dropdown-item" href="../../Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html">
  <span class="dropdown-text">Hands-on Exercise 6</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./Hands-on_Ex/Hands-on_Ex07/Hands-on_Ex07.html">
+    <a class="dropdown-item" href="../../Hands-on_Ex/Hands-on_Ex07/Hands-on_Ex07.html">
  <span class="dropdown-text">Hands-on Exercise 7</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.html">
+    <a class="dropdown-item" href="../../Hands-on_Ex/Hands-on_Ex08/Hands-on_Ex08.html">
  <span class="dropdown-text">Hands-on Exercise 8</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html">
+    <a class="dropdown-item" href="../../Hands-on_Ex/Hands-on_Ex09/Hands-on_Ex09.html">
  <span class="dropdown-text">Hands-on Exercise 9</span></a>
   </li>  
     </ul>
@@ -138,31 +175,31 @@ ul.task-list li input[type="checkbox"] {
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-in-class-exercise">    
         <li>
-    <a class="dropdown-item" href="./In-class_Exercise/In-class_Ex03/In-class_Ex03a.html">
+    <a class="dropdown-item" href="../../In-class_Exercise/In-class_Ex03/In-class_Ex03a.html">
  <span class="dropdown-text">In Class Exercise 3a</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./In-class_Exercise/In-class-Ex03b.html">
+    <a class="dropdown-item" href="../../In-class_Exercise/In-class-Ex03b.html">
  <span class="dropdown-text">In Class Exercise 3b</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./In-class_Exercise/In-class_Ex04/In-class_Ex04.html">
+    <a class="dropdown-item" href="../../In-class_Exercise/In-class_Ex04/In-class_Ex04.html">
  <span class="dropdown-text">In Class Exercise 4</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./In-class_Exercise/In-class_Ex05/In-class_Ex05.html">
+    <a class="dropdown-item" href="../../In-class_Exercise/In-class_Ex05/In-class_Ex05.html">
  <span class="dropdown-text">In Class Exercise 5</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./In-class_Exercise/In-class_Ex06/In-class_Ex06.html">
+    <a class="dropdown-item" href="../../In-class_Exercise/In-class_Ex06/In-class_Ex06.html">
  <span class="dropdown-text">In Class Exercise 6</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./In-class_Exercise/In-class_Ex07/In-class_Ex07.html">
+    <a class="dropdown-item" href="../../In-class_Exercise/In-class_Ex07/In-class_Ex07.html">
  <span class="dropdown-text">In Class Exercise 7</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./In-class_Exercise/In-class_Ex08/In-class_Ex08.html">
+    <a class="dropdown-item" href="../../In-class_Exercise/In-class_Ex08/In-class_Ex08.html">
  <span class="dropdown-text">In Class Exercise 8</span></a>
   </li>  
     </ul>
@@ -173,11 +210,11 @@ ul.task-list li input[type="checkbox"] {
     </a>
     <ul class="dropdown-menu" aria-labelledby="nav-menu-take-home-exercises">    
         <li>
-    <a class="dropdown-item" href="./Take_Home_Exercise/Take_Home_Ex01/Take_Home_Ex01.html">
+    <a class="dropdown-item" href="../../Take_Home_Exercise/Take_Home_Ex01/Take_Home_Ex01.html">
  <span class="dropdown-text">Take Home Exercise 1</span></a>
   </li>  
         <li>
-    <a class="dropdown-item" href="./Take_Home_Exercise/Take_Home_Ex02/Take_Home_Ex02.html">
+    <a class="dropdown-item" href="../../Take_Home_Exercise/Take_Home_Ex02/Take_Home_Ex02.html">
  <span class="dropdown-text">Take Home Exercise 2</span></a>
   </li>  
     </ul>
@@ -185,11 +222,11 @@ ul.task-list li input[type="checkbox"] {
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./index.html" aria-current="page"> 
+    <a class="nav-link" href="../../index.html"> 
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <a class="nav-link" href="./about.html"> 
+    <a class="nav-link" href="../../about.html"> 
 <span class="menu-text">About</span></a>
   </li>  
 </ul>
@@ -200,24 +237,56 @@ ul.task-list li input[type="checkbox"] {
     </nav>
 </header>
 <!-- content -->
-<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-full page-navbar">
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#objective" id="toc-objective" class="nav-link active" data-scroll-target="#objective"><span class="header-section-number">1</span> Objective</a></li>
+  <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data"><span class="header-section-number">2</span> The Data</a></li>
+  <li><a href="#getting-started" id="toc-getting-started" class="nav-link" data-scroll-target="#getting-started"><span class="header-section-number">3</span> Getting Started</a></li>
+  <li><a href="#geospatial-data-wrangling" id="toc-geospatial-data-wrangling" class="nav-link" data-scroll-target="#geospatial-data-wrangling"><span class="header-section-number">4</span> Geospatial Data Wrangling</a>
+  <ul>
+  <li><a href="#importing-geospatial-data" id="toc-importing-geospatial-data" class="nav-link" data-scroll-target="#importing-geospatial-data"><span class="header-section-number">4.1</span> Importing geospatial data</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
 <!-- main -->
-<main class="content column-page" id="quarto-document-content">
+<main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">ISSS626 – Geospatial Analytics and Applications</h1>
+<h1 class="title">Hands-on_Ex09</h1>
 </div>
 
 
 
-<div class="quarto-title-meta column-page">
+<div class="quarto-title-meta">
 
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Gautamgovan </p>
+          </div>
+  </div>
     
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">November 6, 2025</p>
+    </div>
+  </div>
   
+    <div>
+    <div class="quarto-title-meta-heading">Modified</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date-modified">November 6, 2025</p>
+    </div>
+  </div>
     
   </div>
   
@@ -226,63 +295,46 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<div class="welcome-row">
-<section class="welcome-text">
-<h2 id="welcome" class="anchored">
-Welcome
-</h2>
-<p>
-This website hosts my coursework for <strong>ISSS626 – Geospatial Analytics and Applications</strong>.
-</p>
+<section id="objective" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="objective"><span class="header-section-number">1</span> Objective</h2>
+<p>In this hands-on exercise, we will gain hands-on experience on how to model geographical accessibility by using R’s geospatial analysis packages.</p>
+</section>
+<section id="the-data" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="the-data"><span class="header-section-number">2</span> The Data</h2>
+<p>Four data sets will be used in this hands-on exercise, they are:</p>
 <ul>
-<li>
-📝 Hands-on Exercises
-</li>
-<li>
-🧾 Take-home Exercises (coming soon)
-</li>
+<li><p>MP14_SUBZONE_NO_SEA_PL: URA Master Plan 2014 subzone boundary GIS data. This data set is downloaded from data.gov.sg.</p></li>
+<li><p>hexagons: A 250m radius hexagons GIS data. This data set was created by using st_make_grid() of sf package. It is in ESRI shapefile format.</p></li>
+<li><p>ELDERCARE: GIS data showing location of eldercare service. This data is downloaded from data.gov.sg. There are two versions. One in ESRI shapefile format. The other one in Google kml file format. For the purpose of this hands-on exercise, ESRI shapefile format is provided.</p></li>
+<li><p>OD_Matrix: a distance matrix in csv format. There are six fields in the data file. They are:</p>
+<ul>
+<li>origin_id: the unique id values of the origin (i.e.&nbsp;fid of hexagon data set)</li>
+<li>destination_id: the unique id values of the destination (i.e.&nbsp;fid of ELDERCARE data set)</li>
+<li>entry_cost: the perpendicular distance between the origins and the nearest road</li>
+<li>network_cost: the actual network distance from the origin and destination</li>
+<li>exit_cost: the perpendicular distance between the destination and the nearest road</li>
+<li>total_cost: the summation of entry_cost, network_cost and exit_cost</li>
+</ul></li>
 </ul>
 </section>
-<figure class="welcome-fig figure">
-<img src="images/World.png" alt="World map thumbnail" class="figure-img">
-</figure>
+<section id="getting-started" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="getting-started"><span class="header-section-number">3</span> Getting Started</h2>
+<p>Before we getting started, it is important for us to install the necessary R packages and launch them into RStudio environment. The code chunk below installs and launches these R packages into RStudio environment.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(tmap, SpatialAcc, sf, </span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>               ggstatsplot, reshape2,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>               tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<section id="contacts" class="level2">
-<h2 class="anchored" data-anchor-id="contacts">Contacts</h2>
-<ul>
-<li><strong>Email:</strong> <a href="mailto:gautamgovan@gmail.com">gautamgovan@gmail.com</a></li>
-<li><strong>LinkedIn:</strong> <a href="https://www.linkedin.com/in/gautamgovan-e" class="uri">https://www.linkedin.com/in/gautamgovan-e</a></li>
-</ul>
-<style>
-/* Welcome section: text left, image in the red box area on the right */
-.welcome-row{
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  max-width: 1100px;     /* keeps it aligned with the page content */
-  margin: 0 auto 1.75rem;
-}
-.welcome-text{ flex: 2 1 560px; }
-.welcome-fig{
-  flex: 1 1 300px;
-  margin: 0;
-  text-align: center;
-}
-.welcome-fig img{
-  width: 100%;
-  max-width: 320px;      /* control the size in the box */
-  height: auto;
-  border-radius: 8px;
-}
-
-/* Stack nicely on small screens */
-@media (max-width: 900px){
-  .welcome-row{ flex-direction: column; }
-}
-
-</style>
+</section>
+<section id="geospatial-data-wrangling" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="geospatial-data-wrangling"><span class="header-section-number">4</span> Geospatial Data Wrangling</h2>
+<section id="importing-geospatial-data" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="importing-geospatial-data"><span class="header-section-number">4.1</span> Importing geospatial data</h3>
+<p>Three geospatial data will be imported from the data/geospatial sub-folder. They are MP14_SUBZONE_NO_SEA_PL, hexagons and ELDERCARE.</p>
+<p>The code chunk below is used to import these three data sets shapefile by using st_read() of sf packages.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

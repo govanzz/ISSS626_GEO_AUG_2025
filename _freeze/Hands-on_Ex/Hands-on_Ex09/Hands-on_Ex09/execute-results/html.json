@@ -1,0 +1,15 @@
+{
+  "hash": "ee1bbe780d151222a076f6b98a3320c1",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Hands-on_Ex09\"\nauthor: \"Gautamgovan\"\ndate: \"November 6, 2025\"\ndate-modified: \"last-modified\"\nformat: \n  html:\n    toc: true\n    toc-depth: 4\n    number-sections: true\nexecute: \n  eval: true\n  echo: true\n  warning: false\n  freeze: true\n---\n\n## Objective\n\nIn this hands-on exercise, we will gain hands-on experience on how to model geographical accessibility by using R’s geospatial analysis packages.\n\n## The Data\n\nFour data sets will be used in this hands-on exercise, they are:\n\n-   MP14_SUBZONE_NO_SEA_PL: URA Master Plan 2014 subzone boundary GIS data. This data set is downloaded from data.gov.sg.\n\n-   hexagons: A 250m radius hexagons GIS data. This data set was created by using st_make_grid() of sf package. It is in ESRI shapefile format.\n\n-   ELDERCARE: GIS data showing location of eldercare service. This data is downloaded from data.gov.sg. There are two versions. One in ESRI shapefile format. The other one in Google kml file format. For the purpose of this hands-on exercise, ESRI shapefile format is provided.\n\n- OD_Matrix: a distance matrix in csv format. There are six fields in the data file. They are:\n  - origin_id: the unique id values of the origin (i.e. fid of hexagon data set)\n  - destination_id: the unique id values of the destination (i.e. fid of ELDERCARE data set)\n  - entry_cost: the perpendicular distance between the origins and the nearest road\n  - network_cost: the actual network distance from the origin and destination\n  - exit_cost: the perpendicular distance between the destination and the nearest road\n  - total_cost: the summation of entry_cost, network_cost and exit_cost\n  \n## Getting Started\nBefore we getting started, it is important for us to install the necessary R packages and launch them into RStudio environment.\nThe code chunk below installs and launches these R packages into RStudio environment.\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(tmap, SpatialAcc, sf, \n               ggstatsplot, reshape2,\n               tidyverse)\n```\n:::\n\n## Geospatial Data Wrangling \n### Importing geospatial data\nThree geospatial data will be imported from the data/geospatial sub-folder. They are MP14_SUBZONE_NO_SEA_PL, hexagons and ELDERCARE.\n\nThe code chunk below is used to import these three data sets shapefile by using st_read() of sf packages.\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
