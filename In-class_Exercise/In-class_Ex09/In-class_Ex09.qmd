@@ -300,6 +300,24 @@ tm_shape(hexagon_long, bbox = mapex) +
   tm_scalebar() +
   tm_grid(alpha = 0.2)
 ```
+### Analysis of Hansen Accessibility Results
 
+The figure below presents Hansen’s accessibility to eldercare services across five different distance‐decay power values (0.5, 1, 1.5, 2, and 2.5). The power parameter controls how strongly distance influences accessibility. A lower power value assumes that distance has a weak effect on access, while a higher power value increases the importance of proximity.
+
+Key Observations
+
+Higher accessibility is concentrated in the Central and Eastern regions.
+Areas such as Toa Payoh, Kallang, Queenstown, Bedok, and Tampines consistently display higher accessibility scores across all power values. This suggests a higher density of eldercare facilities and/or shorter travel distances within these regions.
+
+Lower accessibility is observed in the North and Western regions.
+Locations including Woodlands, Sembawang, Yishun, Jurong West, and Lim Chu Kang show relatively lower accessibility. This indicates fewer eldercare facilities or greater distance between demand and available capacity in these areas.
+
+Increasing the power value increases the importance of proximity.
+
+At lower power values (e.g., 0.5), accessibility appears more evenly distributed, as distant facilities still contribute significantly.
+
+At moderate power values (1 to 1.5), spatial contrasts become clearer, highlighting differences between well-served and underserved areas.
+
+At higher power values (2 to 2.5), accessibility becomes highly localized. Only areas very close to eldercare facilities score highly, while accessibility declines sharply with distance.
 
 
