@@ -120,4 +120,186 @@ distmat_km <- as.matrix(distmat/1000)
 
 ## Modelling and Visualising Accessibility using Hansen Method
 
-###  Computing Hansen’s accessibility
+###  Computing Hansen’s accessibility power 0.5
+```{r}
+acc_Hansen_1 <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km, 
+                            #d0 = 50,
+                            power = 0.5, 
+                            family = "Hansen"))
+```
+
+```{r}
+colnames(acc_Hansen_1) <- "accHansen_1"
+```
+Next, we will convert the data table into tibble format by using the code chunk below.
+```{r}
+
+acc_Hansen_1 <- as_tibble(acc_Hansen_1)
+```
+
+Lastly, bind_cols() of dplyr will be used to join the acc_Hansen tibble data frame with the hexagons simple feature data frame. The output is called hexagon_Hansen.
+
+```{r}
+
+hexagon_Hansen_1 <- bind_cols(hexagons, acc_Hansen_1)
+```
+
+###  Computing Hansen’s accessibility power 1
+```{r}
+acc_Hansen_2 <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km, 
+                            #d0 = 50,
+                            power = 1, 
+                            family = "Hansen"))
+```
+
+```{r}
+colnames(acc_Hansen_2) <- "accHansen_2"
+```
+Next, we will convert the data table into tibble format by using the code chunk below.
+```{r}
+
+acc_Hansen_2 <- as_tibble(acc_Hansen_2)
+```
+
+Lastly, bind_cols() of dplyr will be used to join the acc_Hansen tibble data frame with the hexagons simple feature data frame. The output is called hexagon_Hansen.
+
+```{r}
+
+hexagon_Hansen_2 <- bind_cols(hexagons, acc_Hansen_2)
+```
+
+
+###  Computing Hansen’s accessibility power 1.5
+```{r}
+acc_Hansen_3 <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km, 
+                            #d0 = 50,
+                            power = 1.5, 
+                            family = "Hansen"))
+```
+
+```{r}
+colnames(acc_Hansen_3) <- "accHansen_3"
+```
+Next, we will convert the data table into tibble format by using the code chunk below.
+```{r}
+
+acc_Hansen_3 <- as_tibble(acc_Hansen_3)
+```
+
+Lastly, bind_cols() of dplyr will be used to join the acc_Hansen tibble data frame with the hexagons simple feature data frame. The output is called hexagon_Hansen.
+
+```{r}
+
+hexagon_Hansen_3 <- bind_cols(hexagons, acc_Hansen_3)
+```
+
+###  Computing Hansen’s accessibility power 2
+```{r}
+acc_Hansen_4 <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km, 
+                            #d0 = 50,
+                            power = 2, 
+                            family = "Hansen"))
+```
+
+```{r}
+colnames(acc_Hansen_4) <- "accHansen_4"
+```
+Next, we will convert the data table into tibble format by using the code chunk below.
+```{r}
+
+acc_Hansen_4 <- as_tibble(acc_Hansen_4)
+```
+
+Lastly, bind_cols() of dplyr will be used to join the acc_Hansen tibble data frame with the hexagons simple feature data frame. The output is called hexagon_Hansen.
+
+```{r}
+
+hexagon_Hansen_4 <- bind_cols(hexagons, acc_Hansen_4)
+```
+
+###  Computing Hansen’s accessibility power 2.5
+```{r}
+acc_Hansen_5 <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km, 
+                            #d0 = 50,
+                            power = 2.5, 
+                            family = "Hansen"))
+```
+
+```{r}
+colnames(acc_Hansen_5) <- "accHansen_5"
+```
+Next, we will convert the data table into tibble format by using the code chunk below.
+```{r}
+
+acc_Hansen_5 <- as_tibble(acc_Hansen_5)
+```
+
+Lastly, bind_cols() of dplyr will be used to join the acc_Hansen tibble data frame with the hexagons simple feature data frame. The output is called hexagon_Hansen.
+
+```{r}
+
+hexagon_Hansen_5 <- bind_cols(hexagons, acc_Hansen_5)
+```
+
+## Visualisation
+```{r}
+library(dplyr)
+library(tidyr)
+library(tmap)
+library(sf)
+
+# 1) Combine the five columns onto hexagons (reuse what you already made)
+hexagon_all <- hexagons %>%
+  bind_cols(
+    acc_Hansen_1,  # col accHansen_1
+    acc_Hansen_2,  # col accHansen_2
+    acc_Hansen_3,  # col accHansen_3
+    acc_Hansen_4,  # col accHansen_4
+    acc_Hansen_5   # col accHansen_5
+  )
+
+# 2) Go long so each power becomes a facet
+hexagon_long <- hexagon_all %>%
+  pivot_longer(
+    cols = starts_with("accHansen_"),
+    names_to = "power",
+    values_to = "acc"
+  ) %>%
+  mutate(power = factor(power,
+                        levels = c("accHansen_1","accHansen_2","accHansen_3","accHansen_4","accHansen_5"),
+                        labels = c("power = 0.5","power = 1","power = 1.5","power = 2","power = 2.5")))
+
+# 3) Build global breaks for a shared color scale
+vals <- hexagon_long$acc
+brks <- quantile(vals, probs = seq(0, 1, length.out = 11), na.rm = TRUE)
+
+# 4) Plot as facets with one legend
+tmap_mode("plot")
+mapex <- st_bbox(hexagons)
+
+tm_shape(hexagon_long, bbox = mapex) +
+  tm_polygons(
+    col = "acc",
+    fill.scale = tm_scale_continuous(breaks = brks, values = "brewer.blues"),
+    title = "Hansen accessibility"
+  ) +
+  tm_facets(by = "power", ncol = 3, free.scales = FALSE) +
+  tm_layout(legend.outside = TRUE, frame = TRUE) +
+  tm_title("Accessibility to eldercare (Hansen) across impedance powers") +
+  tm_compass(type = "8star", size = 1.5) +
+  tm_scalebar() +
+  tm_grid(alpha = 0.2)
+```
+
+
+
