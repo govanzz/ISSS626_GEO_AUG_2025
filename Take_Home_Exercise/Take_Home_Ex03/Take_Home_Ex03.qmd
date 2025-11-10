@@ -1,0 +1,18 @@
+---
+title: "Take Home Exercise 3"
+author: "Gautamgovan"
+date: "October 28, 2025"
+date-modified: "last-modified"
+format: 
+  html:
+    toc: true
+    toc-depth: 4
+    number-sections: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  freeze: true
+---
+## Predictive Modelling of HDB Resale Prices with Geographically Weighted Methods
+

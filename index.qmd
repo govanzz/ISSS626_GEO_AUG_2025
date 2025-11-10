@@ -13,7 +13,7 @@ format:
     <p>This website hosts my coursework for <strong>ISSS626 – Geospatial Analytics and Applications</strong>.</p>
     <ul>
       <li>📝 Hands-on Exercises</li>
-      <li>🧾 Take-home Exercises (coming soon)</li>
+      <li>🧾 Take-home Exercises </li>
     </ul>
   </section>
 
