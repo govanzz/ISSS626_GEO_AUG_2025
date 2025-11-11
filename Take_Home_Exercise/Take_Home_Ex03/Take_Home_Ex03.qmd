@@ -14,5 +14,98 @@ execute:
   warning: false
   freeze: true
 ---
+
 ## Predictive Modelling of HDB Resale Prices with Geographically Weighted Methods
+
+### Objective
+
+Housing is an essential component of household wealth worldwide. Purchasing a home has always represented a major investment for most individuals. The price of housing is influenced by a wide range of factors. Some are macro-level, such as the overall state of the economy or the inflation rate, while others are property-specific. These can be further categorized into structural and locational factors.
+
+Structural factors refer to the characteristics of the property itself, such as size, fittings, and tenure. Locational factors, on the other hand, relate to the neighbourhood context of the property, including proximity to childcare centres, public transport, and shopping facilities.
+
+Traditionally, housing resale price models have been estimated using the Ordinary Least Squares (OLS) method. However, this approach does not account for spatial autocorrelation and spatial heterogeneity, which are commonly present in geographic datasets such as housing transactions. When spatial autocorrelation exists, OLS estimation of housing resale price models may produce biased, inconsistent, or inefficient results (Anselin, 1998). To address these limitations, Geographically Weighted Models (GWMs) have been introduced to more accurately calibrate both explanatory and predictive models for housing resale prices.
+
+The objective of this take-home exercise is to develop a spatially informed model to predict HDB resale prices in Singapore, making use of appropriate geospatial analytics methods.
+
+We will develop a model to predict HDB resale prices for the period July to September 2025, using HDB resale transaction data from July 2024 to June 2025.
+
+## Installing and Loading R packages
+
+```{r}
+pacman::p_load(sf, spdep, GWmodel, SpatialML, 
+               tmap, rsample, Metrics, tidyverse,httr, tidyverse, 
+               jsonlite, progress)
+```
+
+## Data Preparation
+
+### HDB Dataset
+
+#### Selecting Date of Interest 
+This data set comprises of HDB resale transactions from Jan 2017 onwards. For the purpose of the hands on Exercise, the code chunk below will be used to extract a sub-set of transaction records on 5-Room flat transacted from July 2024 to September 2025.
+
+```{r}
+HDBresale <- read_csv(
+  "data/rawdata/HDBresale.csv") %>%
+  filter(flat_type == "5 ROOM") %>%
+  filter(month >= "2024-07" & month < "2025-10")
+```
+
+#### Geocoding HDB resale data
+In this section, we will geocode HDB resale data by using SLA Onemap Geocode API.
+
+Let us prepare a geocoding function by using the code chunk below. It aims to perform the following tasks:
+
+Combining the block and street name into an address. The addresses will be used to geocode instead of postal code that you learned in In-class Exercise 3b,
+Passing the address as the searchVal in our query,
+Sending the query to OneMapSG search. Note: Since we don’t need all the address details, we can set getAddrDetails as ‘N’,
+Converting response (JSON object) to text,
+Saving response in text form as a dataframe, and
+Retain the latitude and longitude for our output.
+
+```{r}
+geocode <- function(block, streetname) {
+  base_url <- "https://onemap.gov.sg/api/common/elastic/search"
+  address <- paste(block, streetname, sep = " ")
+  query <- list("searchVal" = address, 
+                "returnGeom" = "Y",
+                "getAddrDetails" = "N",
+                "pageNum" = "1")
+  
+  res <- GET(base_url, query = query)
+  restext<-content(res, as="text")
+  
+  output <- fromJSON(restext)  %>% 
+    as.data.frame %>%
+    select(results.LATITUDE, results.LONGITUDE)
+
+  return(output)
+}
+```
+Next, the code chunk below will be used to to execute the geocoding function:
+
+```{r}
+#| eval: False
+HDBresale$LATITUDE <- 0
+HDBresale$LONGITUDE <- 0
+
+for (i in 1:nrow(HDBresale)){
+  temp_output <- geocode(HDBresale[i, 4], HDBresale[i, 5])
+  
+  HDBresale$LATITUDE[i] <- temp_output$results.LATITUDE
+  HDBresale$LONGITUDE[i] <- temp_output$results.LONGITUDE
+}
+```
+```{r}
+#| eval: false
+#| include: false
+saveRDS(HDBresale, file = "data/rds/HDBresale_geocoded.rds")
+```
+
+```{r}
+#| include: false
+HDBresale <- readRDS("data/rds/HDBresale_geocoded.rds")
+```
+
+
 
