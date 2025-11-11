@@ -107,5 +107,113 @@ saveRDS(HDBresale, file = "data/rds/HDBresale_geocoded.rds")
 HDBresale <- readRDS("data/rds/HDBresale_geocoded.rds")
 ```
 
+#### Converting storey_range into a Numerical Variable
+### Converting `storey_range` to a Numerical Value (`storey_mid`)
+
+The `storey_range` field in the HDB resale dataset is provided as a text range such as `"07 TO 09"` or `"13 TO 15"`. Since machine learning models require numerical inputs, we convert this range into a single numeric value that approximates the floor level of the unit.
+
+This is done by:
+
+1. **Removing spaces** from the text  
+   - Example: `"07 TO 09"` → `"07TO09"`
+
+2. **Splitting the range** into the lower and upper floor values  
+   - `"07TO09"` → `"07"` and `"09"`
+
+3. **Calculating the midpoint** (average) of the two values  
+   - \[
+     \frac{7 + 9}{2} = 8
+     \]
+
+4. **Creating a new variable** named `storey_mid` to store this midpoint value.
+
+This numeric representation allows the floor level information to be used effectively in statistical and machine learning models.
+
+5. Remove the original storey_range column, as it is no longer needed.
+
+
+```{r}
+storey_mid <- function(x) {
+  x %>%
+    str_replace_all(" ", "") %>%    # remove spaces
+    str_split("TO") %>%             # split into lower and upper floors
+    sapply(\(v) mean(as.numeric(v)))  # convert to numeric and take midpoint
+}
+
+HDBresale <- HDBresale %>%
+  mutate(storey_mid = storey_mid(storey_range)) %>%  # create numeric floor feature
+  select(-storey_range)                              # remove the original text column
+
+```
+
+#### Converting `remaining_lease` to a Numeric Value (`remaining_lease_yrs`)
+
+The `remaining_lease` field is provided as text (e.g., `"87 years 4 months"`). To use this information in modelling, we convert it into a numeric value representing the total lease remaining in **years**.
+
+The function `convert_remaining_lease()`:
+
+1. Extracts the number of **years**.
+2. Extracts the number of **months** (or uses 0 if not specified).
+3. Converts months into a fraction of a year (`months / 12`).
+4. Adds the two together to get a single numeric value.
+
+We then apply the function to create a new column `remaining_lease_yrs` and drop the original text column.
+
+```{r}
+convert_remaining_lease <- function(x) {
+  years <- as.numeric(str_extract(x, "\\d+(?=\\syear)"))
+  months <- str_extract(x, "(?<=years?\\s)\\d+(?=\\smonth)") %>% as.numeric()
+  months[is.na(months)] <- 0
+  years + months/12
+}
+
+HDBresale <- HDBresale %>%
+  mutate(remaining_lease_yrs = convert_remaining_lease(remaining_lease)) %>%
+  select(-remaining_lease)
+```
+
+### Proximity Analysis
+In this section, we will learn how to count the number of geographic entities located within a defined distance from each HDB property.
+
+#### Converting to an sf object
+Before performing proximity analysis, it is important to ensure that:
+
+- input data sets must be in sf objects, and
+- they must be in similar projected coordinates systems.
+
+In the code chunk below,
+
+- st_as_sf() is used to convert HDBresale tibble data.frame to sf object by using values from LONGITUDE and LATITUDE columns to form the geometry features.
+- st_transform() is then used to transform the sf object into svy21 projected coordinates system.
+- the output sf object is called HDBresale_sf. It is in sf data.frame format.
+
+
+```{r}
+HDBresale_sf <- HDBresale %>%
+  st_as_sf(
+    coords = c("LONGITUDE", "LATITUDE"),
+    crs=4326) %>%
+  st_transform(crs = 3414)
+```
+#### PreSchool Location 
+Next, we will locate and download Pre-Schools Location data from Singapore’s open data portal. There are both geojson and kml version. In this exercise, the kml version will be used.
+
+Then, code chunk below will be used to import the preschool location data into R environment by using st_read() of readr package.
+
+```{r}
+preschool = st_read(
+  "data/rawdata/PreSchoolsLocation.kml") %>%
+  st_transform(crs= 3414)
+```
+Lastly, code chunk below will be used to count the number of pre-schools located within 350m of each HDB property.
+
+```{r}
+within_350m <- st_is_within_distance(
+  HDBresale_sf, preschool, dist = 350)
+
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(WITHIN_350M_PRESCHOOL = map_int(within_350m, length))
+```
+
 
 

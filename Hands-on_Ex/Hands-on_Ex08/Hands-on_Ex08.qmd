@@ -254,32 +254,4 @@ gwr_bw_test_adaptive
 ```
 
 
-### Computing predicted values of the test data
-```{r}
-#| eval: false
-gwr_pred <- gwr.predict(
-  formula = resale_price ~ floor_area_sqm + 
-    storey_order + remaining_lease_mths + 
-    PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER + 
-    PROX_MRT + PROX_PARK + PROX_MALL + 
-    PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
-    WITHIN_350M_CHILDCARE + WITHIN_350M_BUS + 
-    WITHIN_1KM_PRISCH, 
-  data=train_data, 
-  predictdata = test_data, 
-  bw=80, 
-  kernel = 'gaussian', 
-  adaptive=TRUE, 
-  longlat = FALSE)
 
-
-
-
-
-write_rds(gwr_pred, 
-          "data/model/gwr_pred.rds")
-
-```
-
-```
-`
