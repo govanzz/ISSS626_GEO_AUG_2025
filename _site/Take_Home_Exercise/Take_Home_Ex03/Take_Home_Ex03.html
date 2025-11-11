@@ -264,16 +264,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#selecting-date-of-interest" id="toc-selecting-date-of-interest" class="nav-link" data-scroll-target="#selecting-date-of-interest"><span class="header-section-number">3.1.1</span> Selecting Date of Interest</a></li>
   <li><a href="#geocoding-hdb-resale-data" id="toc-geocoding-hdb-resale-data" class="nav-link" data-scroll-target="#geocoding-hdb-resale-data"><span class="header-section-number">3.1.2</span> Geocoding HDB resale data</a></li>
-  <li><a href="#converting-storey_range-into-a-numerical-variable" id="toc-converting-storey_range-into-a-numerical-variable" class="nav-link" data-scroll-target="#converting-storey_range-into-a-numerical-variable"><span class="header-section-number">3.1.3</span> Converting storey_range into a Numerical Variable</a></li>
+  <li><a href="#converting-storey_range-to-a-numerical-value-storey_mid" id="toc-converting-storey_range-to-a-numerical-value-storey_mid" class="nav-link" data-scroll-target="#converting-storey_range-to-a-numerical-value-storey_mid"><span class="header-section-number">3.1.3</span> Converting <code>storey_range</code> to a Numerical Value (<code>storey_mid</code>)</a></li>
+  <li><a href="#converting-remaining_lease-to-a-numeric-value-remaining_lease_yrs" id="toc-converting-remaining_lease-to-a-numeric-value-remaining_lease_yrs" class="nav-link" data-scroll-target="#converting-remaining_lease-to-a-numeric-value-remaining_lease_yrs"><span class="header-section-number">3.1.4</span> Converting <code>remaining_lease</code> to a Numeric Value (<code>remaining_lease_yrs</code>)</a></li>
   </ul></li>
-  <li><a href="#converting-storey_range-to-a-numerical-value-storey_mid" id="toc-converting-storey_range-to-a-numerical-value-storey_mid" class="nav-link" data-scroll-target="#converting-storey_range-to-a-numerical-value-storey_mid"><span class="header-section-number">3.2</span> Converting <code>storey_range</code> to a Numerical Value (<code>storey_mid</code>)</a>
+  <li><a href="#proximity-analysis" id="toc-proximity-analysis" class="nav-link" data-scroll-target="#proximity-analysis"><span class="header-section-number">3.2</span> Proximity Analysis</a>
   <ul class="collapse">
-  <li><a href="#converting-remaining_lease-to-a-numeric-value-remaining_lease_yrs" id="toc-converting-remaining_lease-to-a-numeric-value-remaining_lease_yrs" class="nav-link" data-scroll-target="#converting-remaining_lease-to-a-numeric-value-remaining_lease_yrs"><span class="header-section-number">3.2.1</span> Converting <code>remaining_lease</code> to a Numeric Value (<code>remaining_lease_yrs</code>)</a></li>
-  </ul></li>
-  <li><a href="#proximity-analysis" id="toc-proximity-analysis" class="nav-link" data-scroll-target="#proximity-analysis"><span class="header-section-number">3.3</span> Proximity Analysis</a>
-  <ul class="collapse">
-  <li><a href="#converting-to-an-sf-object" id="toc-converting-to-an-sf-object" class="nav-link" data-scroll-target="#converting-to-an-sf-object"><span class="header-section-number">3.3.1</span> Converting to an sf object</a></li>
-  <li><a href="#preschool-location" id="toc-preschool-location" class="nav-link" data-scroll-target="#preschool-location"><span class="header-section-number">3.3.2</span> PreSchool Location</a></li>
+  <li><a href="#converting-to-an-sf-object" id="toc-converting-to-an-sf-object" class="nav-link" data-scroll-target="#converting-to-an-sf-object"><span class="header-section-number">3.2.1</span> Converting to an sf object</a></li>
+  <li><a href="#preschool-location" id="toc-preschool-location" class="nav-link" data-scroll-target="#preschool-location"><span class="header-section-number">3.2.2</span> PreSchool Location</a></li>
   </ul></li>
   </ul></li>
   </ul>
@@ -389,12 +386,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="converting-storey_range-into-a-numerical-variable" class="level4" data-number="3.1.3">
-<h4 data-number="3.1.3" class="anchored" data-anchor-id="converting-storey_range-into-a-numerical-variable"><span class="header-section-number">3.1.3</span> Converting storey_range into a Numerical Variable</h4>
-</section>
-</section>
-<section id="converting-storey_range-to-a-numerical-value-storey_mid" class="level3" data-number="3.2">
-<h3 data-number="3.2" class="anchored" data-anchor-id="converting-storey_range-to-a-numerical-value-storey_mid"><span class="header-section-number">3.2</span> Converting <code>storey_range</code> to a Numerical Value (<code>storey_mid</code>)</h3>
+<section id="converting-storey_range-to-a-numerical-value-storey_mid" class="level4" data-number="3.1.3">
+<h4 data-number="3.1.3" class="anchored" data-anchor-id="converting-storey_range-to-a-numerical-value-storey_mid"><span class="header-section-number">3.1.3</span> Converting <code>storey_range</code> to a Numerical Value (<code>storey_mid</code>)</h4>
 <p>The <code>storey_range</code> field in the HDB resale dataset is provided as a text range such as <code>"07 TO 09"</code> or <code>"13 TO 15"</code>. Since machine learning models require numerical inputs, we convert this range into a single numeric value that approximates the floor level of the unit.</p>
 <p>This is done by:</p>
 <ol type="1">
@@ -428,8 +421,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">storey_mid =</span> <span class="fu">storey_mid</span>(storey_range)) <span class="sc">%&gt;%</span>  <span class="co"># create numeric floor feature</span></span>
 <span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>storey_range)                              <span class="co"># remove the original text column</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<section id="converting-remaining_lease-to-a-numeric-value-remaining_lease_yrs" class="level4" data-number="3.2.1">
-<h4 data-number="3.2.1" class="anchored" data-anchor-id="converting-remaining_lease-to-a-numeric-value-remaining_lease_yrs"><span class="header-section-number">3.2.1</span> Converting <code>remaining_lease</code> to a Numeric Value (<code>remaining_lease_yrs</code>)</h4>
+</section>
+<section id="converting-remaining_lease-to-a-numeric-value-remaining_lease_yrs" class="level4" data-number="3.1.4">
+<h4 data-number="3.1.4" class="anchored" data-anchor-id="converting-remaining_lease-to-a-numeric-value-remaining_lease_yrs"><span class="header-section-number">3.1.4</span> Converting <code>remaining_lease</code> to a Numeric Value (<code>remaining_lease_yrs</code>)</h4>
 <p>The <code>remaining_lease</code> field is provided as text (e.g., <code>"87 years 4 months"</code>). To use this information in modelling, we convert it into a numeric value representing the total lease remaining in <strong>years</strong>.</p>
 <p>The function <code>convert_remaining_lease()</code>:</p>
 <ol type="1">
@@ -453,11 +447,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </section>
 </section>
-<section id="proximity-analysis" class="level3" data-number="3.3">
-<h3 data-number="3.3" class="anchored" data-anchor-id="proximity-analysis"><span class="header-section-number">3.3</span> Proximity Analysis</h3>
+<section id="proximity-analysis" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="proximity-analysis"><span class="header-section-number">3.2</span> Proximity Analysis</h3>
 <p>In this section, we will learn how to count the number of geographic entities located within a defined distance from each HDB property.</p>
-<section id="converting-to-an-sf-object" class="level4" data-number="3.3.1">
-<h4 data-number="3.3.1" class="anchored" data-anchor-id="converting-to-an-sf-object"><span class="header-section-number">3.3.1</span> Converting to an sf object</h4>
+<section id="converting-to-an-sf-object" class="level4" data-number="3.2.1">
+<h4 data-number="3.2.1" class="anchored" data-anchor-id="converting-to-an-sf-object"><span class="header-section-number">3.2.1</span> Converting to an sf object</h4>
 <p>Before performing proximity analysis, it is important to ensure that:</p>
 <ul>
 <li>input data sets must be in sf objects, and</li>
@@ -477,8 +471,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">3414</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="preschool-location" class="level4" data-number="3.3.2">
-<h4 data-number="3.3.2" class="anchored" data-anchor-id="preschool-location"><span class="header-section-number">3.3.2</span> PreSchool Location</h4>
+<section id="preschool-location" class="level4" data-number="3.2.2">
+<h4 data-number="3.2.2" class="anchored" data-anchor-id="preschool-location"><span class="header-section-number">3.2.2</span> PreSchool Location</h4>
 <p>Next, we will locate and download Pre-Schools Location data from Singapore’s open data portal. There are both geojson and kml version. In this exercise, the kml version will be used.</p>
 <p>Then, code chunk below will be used to import the preschool location data into R environment by using st_read() of readr package.</p>
 <div class="cell">
