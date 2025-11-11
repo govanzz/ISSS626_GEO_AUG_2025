@@ -107,8 +107,7 @@ saveRDS(HDBresale, file = "data/rds/HDBresale_geocoded.rds")
 HDBresale <- readRDS("data/rds/HDBresale_geocoded.rds")
 ```
 
-#### Converting storey_range into a Numerical Variable
-### Converting `storey_range` to a Numerical Value (`storey_mid`)
+#### Converting `storey_range` to a Numerical Value (`storey_mid`)
 
 The `storey_range` field in the HDB resale dataset is provided as a text range such as `"07 TO 09"` or `"13 TO 15"`. Since machine learning models require numerical inputs, we convert this range into a single numeric value that approximates the floor level of the unit.
 
