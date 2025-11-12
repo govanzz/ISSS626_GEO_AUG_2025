@@ -349,5 +349,150 @@ HDBresale_sf <- HDBresale_sf %>%
   )
 ```
 
+#### Proximity to MRT/LRT stations
+
+This code safely loads and processes MRT/LRT station geometries to calculate each HDB flat’s distance to its nearest station.
+It first reads the shapefile with error handling and removes invalid geometries.
+For any problematic shapes, it extracts a representative point using a safe function (safe_point).
+Next, it groups polygons by station name, merges them, and ensures each has one valid point in SVY21 coordinates.
+Finally, it computes straight-line distances (in kilometers) from each HDB flat to its nearest station and adds this as dist_mrt_km to the dataset.
+
+
+
+```{r}
+
+# 1) Try reading; if a few polygons fail, catch and skip
+mrt_raw <- tryCatch(
+  st_read("data/rawdata/RapidTransitSystemStation.shp", quiet = TRUE),
+  error = function(e) {
+    message("Some polygons failed to load; attempting partial recovery")
+    st_read("data/rawdata/RapidTransitSystemStation.shp", quiet = TRUE, stringsAsFactors = FALSE)
+  }
+)
+
+# 2) Drop any completely invalid geometries
+mrt_valid <- mrt_raw[st_is_valid(mrt_raw), ]
+
+# 3) For any remaining invalid shapes, use try() on point extraction
+safe_point <- function(geom) {
+  pt <- try(st_point_on_surface(geom), silent = TRUE)
+  if (inherits(pt, "try-error")) NA else pt
+}
+
+# 4) Create one point per station safely
+mrt_pts <- mrt_valid %>%
+  group_by(STN_NAM_DE) %>%
+  summarise(geometry = {
+    # combine all parts and get a safe point
+    geom <- st_combine(geometry)
+    safe_point(geom)
+  }, .groups = "drop") %>%
+  filter(!st_is_empty(geometry))
+
+st_crs(mrt_pts) <- 3414  # ensure CRS SVY21
+
+# 5) Compute distance to nearest MRT/LRT (km)
+nn_idx <- st_nearest_feature(HDBresale_sf, mrt_pts)
+dist_mrt_km <- as.numeric(st_distance(HDBresale_sf, mrt_pts[nn_idx, ], by_element = TRUE)) / 1000
+
+# 6) Add to HDB dataset
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(dist_mrt_km = dist_mrt_km)
+
+```
+
+#### Proximity to Parks
+Read ParkFacilities (GeoJSON) and ensure CRS
+```{r}
+parks <- st_read("data/rawdata/ParkFacilities.geojson", quiet = TRUE) %>%
+  st_transform(3414)               # SVY21 metres
+```
+
+Compute distance to the nearest park (km) and add to dataset
+```{r}
+# Distance to nearest park facility (km)
+nn_idx <- st_nearest_feature(HDBresale_sf, parks)
+dist_park_km <- as.numeric(
+  st_distance(HDBresale_sf, parks[nn_idx, ], by_element = TRUE)
+) / 1000
+
+# Add to main dataset
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(dist_park_km = dist_park_km)
+```
+
+#### Proximity to Malls
+Read the malls CSV (mall_name, postal_code)
+```{r}
+malls <- readr::read_csv("data/rawdata/singapore_malls_postal_codes.csv",
+                         show_col_types = FALSE) %>%
+  dplyr::mutate(postal_code = stringr::str_pad(as.character(postal_code), 6, pad = "0"))
+```
+
+Geocode mall postal codes with OneMap (SVY21 X/Y)
+
+```{r}
+#| eval: false
+#| 
+onemap_lookup <- function(pc){
+  resp <- httr::RETRY("GET", "https://onemap.gov.sg/api/common/elastic/search",
+                      query = list(searchVal = pc,
+                                   returnGeom = "Y",
+                                   getAddrDetails = "Y",
+                                   pageNum = "1"),
+                      quiet = TRUE)
+  js <- httr::content(resp, as = "parsed")
+  if (!is.null(js$found) && js$found > 0) {
+    r <- js$results[[1]]
+    tibble::tibble(POSTAL = r$POSTAL,
+                   X = as.numeric(r$X),   # SVY21 easting
+                   Y = as.numeric(r$Y))   # SVY21 northing
+  } else {
+    tibble::tibble(POSTAL = pc, X = NA_real_, Y = NA_real_)
+  }
+}
+
+pcs <- unique(malls$postal_code)
+mall_geo_tbl <- purrr::map_dfr(
+  pcs,
+  ~ tryCatch(onemap_lookup(.x),
+             error = function(e) tibble::tibble(POSTAL=.x, X=NA_real_, Y=NA_real_))
+)
+
+readr::write_rds(mall_geo_tbl, "data/rds/malls_postal_geocode.rds")
+```
+
+Join geocodes and create an sf layer (SVY21 / EPSG:3414)
+
+```{r}
+mall_geo_tbl <- readr::read_rds("data/rds/malls_postal_geocode.rds")
+
+malls_sf <- malls %>%
+  dplyr::left_join(mall_geo_tbl, by = c("postal_code" = "POSTAL")) %>%
+  dplyr::filter(!is.na(X), !is.na(Y)) %>%
+  sf::st_as_sf(coords = c("X","Y"), crs = 3414)
+```
+
+Derive proximity features to malls
+```{r}
+# Distance to nearest mall (km)
+mall_nn_idx <- sf::st_nearest_feature(HDBresale_sf, malls_sf)
+dist_mall_km <- as.numeric(sf::st_distance(HDBresale_sf, malls_sf[mall_nn_idx, ], by_element = TRUE)) / 1000
+
+# Count of malls within 1 km (adjust if you prefer another radius)
+malls_within_1km <- sf::st_is_within_distance(HDBresale_sf, malls_sf, dist = 1000)
+cnt_malls_1km <- lengths(malls_within_1km)
+
+# Add to main dataset
+HDBresale_sf <- HDBresale_sf %>%
+  dplyr::mutate(
+    dist_mall_km       = dist_mall_km,
+    WITHIN_1KM_MALLS   = cnt_malls_1km
+  )
+```
+
+
+
+
 
 
