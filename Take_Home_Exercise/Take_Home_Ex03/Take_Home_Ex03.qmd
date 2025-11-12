@@ -491,6 +491,108 @@ HDBresale_sf <- HDBresale_sf %>%
   )
 ```
 
+#### Proximity to CHAS clinics
+Read Chas data and ensure CRS
+```{r}
+chas <- st_read("data/rawdata/CHASClinics.geojson", quiet = TRUE) %>%
+  st_transform(3414)
+```
+
+```{r}
+# Distance to nearest CHAS clinic (km)
+chas_nn_idx <- st_nearest_feature(HDBresale_sf, chas)
+dist_chas_km <- as.numeric(st_distance(HDBresale_sf, chas[chas_nn_idx, ], by_element = TRUE)) / 1000
+
+# Count of CHAS clinics within 350 m
+chas_within_350m <- st_is_within_distance(HDBresale_sf, chas, dist = 350)
+cnt_chas_350m <- lengths(chas_within_350m)
+
+# Add to main dataset
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(
+    dist_chas_km    = dist_chas_km,
+    WITHIN_350M_CHAS = cnt_chas_350m
+  )
+
+```
+
+#### Proximity to Hawker Centres
+
+
+Read Hawker Centres GeoJSON and check CRS 
+```{r}
+hawker <- st_read("data/rawdata/HawkerCentresGEOJSON.geojson", quiet = TRUE)%>%
+  st_transform(3414)
+
+st_crs(hawker)
+```
+Compute distance to nearest hawker centre (in km) ---
+```{r}
+hawker_nn_idx <- st_nearest_feature(HDBresale_sf, hawker)
+dist_hawker_km <- as.numeric(st_distance(HDBresale_sf, hawker[hawker_nn_idx, ], by_element = TRUE)) / 1000
+
+#  Add distance feature to HDB resale dataset
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(dist_hawker_km = dist_hawker_km)
+```
+
+#### Childcare Centres within 350 metres
+Read ChildCare Services (GeoJSON) and ensure SVY21:
+
+```{r}
+childcare <- st_read("data/rawdata/ChildCareServices.geojson", quiet = TRUE)%>%st_transform(3414)
+
+st_crs(hawker)
+
+```
+
+Compute count within 350 m and add to main data
+```{r}
+within_350m_cc <- st_is_within_distance(HDBresale_sf, childcare, dist = 350)
+
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(WITHIN_350M_CHILDCARE = lengths(within_350m_cc))
+```
+
+
+```{r}
+#| eval: false
+#| include: false
+colnames(HDBresale_sf)
+```
+### Calculate Correlation Matrix 
+Before loading the predictors into a predictive model, it is always a good practice to use correlation matrix to examine if there is sign of multicollinearity. 
+```{r}
+# 1) Drop geometry
+HDBresale_nogeo <- HDBresale_sf %>%
+  st_drop_geometry()
+
+# 2) Select only numeric columns for correlation
+numeric_cols <- HDBresale_nogeo %>%
+  select(where(is.numeric))
+
+# 3) Compute correlation matrix
+corr_matrix <- cor(numeric_cols, use = "complete.obs")
+
+# 4) Plot correlation matrix
+corrplot::corrplot(corr_matrix,
+                   diag = FALSE,
+                   order = "AOE",
+                   tl.pos = "td",
+                   tl.cex = 0.6,
+                   method = "number",
+                   type = "upper")
+```
+Drop Highly correlated Values 
+```{r}
+HDBresale_sf <- HDBresale_sf %>%
+  select(-WITHIN_350M_PRESCHOOL,
+         -lease_commence_date,
+         -WITHIN_1KM_MALLS,
+         -WITHIN_1KM_GOOD_PS)
+```
+
+
 
 
 
