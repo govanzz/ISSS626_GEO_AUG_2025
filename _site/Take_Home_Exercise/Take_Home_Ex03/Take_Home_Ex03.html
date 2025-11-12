@@ -271,6 +271,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#converting-to-an-sf-object" id="toc-converting-to-an-sf-object" class="nav-link" data-scroll-target="#converting-to-an-sf-object"><span class="header-section-number">3.2.1</span> Converting to an sf object</a></li>
   <li><a href="#preschool-location" id="toc-preschool-location" class="nav-link" data-scroll-target="#preschool-location"><span class="header-section-number">3.2.2</span> PreSchool Location</a></li>
+  <li><a href="#proximity-to-cbd" id="toc-proximity-to-cbd" class="nav-link" data-scroll-target="#proximity-to-cbd"><span class="header-section-number">3.2.3</span> Proximity to CBD</a></li>
+  <li><a href="#bus-stops-within-350-metres" id="toc-bus-stops-within-350-metres" class="nav-link" data-scroll-target="#bus-stops-within-350-metres"><span class="header-section-number">3.2.4</span> Bus Stops within 350 metres</a></li>
+  <li><a href="#elder-care-within-350-metres" id="toc-elder-care-within-350-metres" class="nav-link" data-scroll-target="#elder-care-within-350-metres"><span class="header-section-number">3.2.5</span> Elder care within 350 metres</a></li>
+  <li><a href="#proximity-to-good-primary-schools" id="toc-proximity-to-good-primary-schools" class="nav-link" data-scroll-target="#proximity-to-good-primary-schools"><span class="header-section-number">3.2.6</span> Proximity to Good Primary Schools</a></li>
   </ul></li>
   </ul></li>
   </ul>
@@ -305,7 +309,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">November 12, 2025</p>
+      <p class="date-modified">November 13, 2025</p>
     </div>
   </div>
     
@@ -498,6 +502,210 @@ Geodetic CRS:  WGS 84</code></pre>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>HDBresale_sf <span class="ot">&lt;-</span> HDBresale_sf <span class="sc">%&gt;%</span></span>
 <span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">WITHIN_350M_PRESCHOOL =</span> <span class="fu">map_int</span>(within_350m, length))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="proximity-to-cbd" class="level4" data-number="3.2.3">
+<h4 data-number="3.2.3" class="anchored" data-anchor-id="proximity-to-cbd"><span class="header-section-number">3.2.3</span> Proximity to CBD</h4>
+<p>The code chunk below computes the Euclidean (straight-line) distance between each flat and the Downtown Core (CBD) centroid using Singapore’s projected coordinate system (EPSG:3414, SVY21). The resulting columns proximity_to_cbd_m and proximity_to_cbd_km represent the flat’s distance to the CBD in meters and kilometers respectively</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Define Downtown Core (CBD) coordinates (WGS84) ---</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>cbd_lon <span class="ot">&lt;-</span> <span class="fl">103.85</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>cbd_lat <span class="ot">&lt;-</span> <span class="fl">1.28967</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Create CBD point and transform to SVY21 (3414) ---</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>cbd_wgs84 <span class="ot">&lt;-</span> <span class="fu">st_sfc</span>(<span class="fu">st_point</span>(<span class="fu">c</span>(cbd_lon, cbd_lat)), <span class="at">crs =</span> <span class="dv">4326</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>cbd_3414  <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(cbd_wgs84, <span class="dv">3414</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Compute straight-line distance to CBD (meters / km) ---</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>HDBresale_sf <span class="ot">&lt;-</span> HDBresale_sf <span class="sc">%&gt;%</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">proximity_to_cbd_m  =</span> <span class="fu">as.numeric</span>(<span class="fu">st_distance</span>(geometry, cbd_3414)[, <span class="dv">1</span>]),</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">proximity_to_cbd_km =</span> proximity_to_cbd_m <span class="sc">/</span> <span class="dv">1000</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="bus-stops-within-350-metres" class="level4" data-number="3.2.4">
+<h4 data-number="3.2.4" class="anchored" data-anchor-id="bus-stops-within-350-metres"><span class="header-section-number">3.2.4</span> Bus Stops within 350 metres</h4>
+<p>Read Bustops shp file and check CRS</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>busstops <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"data/rawdata/BusStop.shp"</span>, <span class="at">quiet =</span> <span class="cn">TRUE</span>)<span class="sc">%&gt;%</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs=</span> <span class="dv">3414</span>)</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(busstops)  <span class="co"># check the CRS</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Coordinate Reference System:
+  User input: EPSG:3414 
+  wkt:
+PROJCRS["SVY21 / Singapore TM",
+    BASEGEOGCRS["SVY21",
+        DATUM["SVY21",
+            ELLIPSOID["WGS 84",6378137,298.257223563,
+                LENGTHUNIT["metre",1]]],
+        PRIMEM["Greenwich",0,
+            ANGLEUNIT["degree",0.0174532925199433]],
+        ID["EPSG",4757]],
+    CONVERSION["Singapore Transverse Mercator",
+        METHOD["Transverse Mercator",
+            ID["EPSG",9807]],
+        PARAMETER["Latitude of natural origin",1.36666666666667,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8801]],
+        PARAMETER["Longitude of natural origin",103.833333333333,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8802]],
+        PARAMETER["Scale factor at natural origin",1,
+            SCALEUNIT["unity",1],
+            ID["EPSG",8805]],
+        PARAMETER["False easting",28001.642,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8806]],
+        PARAMETER["False northing",38744.572,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8807]]],
+    CS[Cartesian,2],
+        AXIS["northing (N)",north,
+            ORDER[1],
+            LENGTHUNIT["metre",1]],
+        AXIS["easting (E)",east,
+            ORDER[2],
+            LENGTHUNIT["metre",1]],
+    USAGE[
+        SCOPE["Cadastre, engineering survey, topographic mapping."],
+        AREA["Singapore - onshore and offshore."],
+        BBOX[1.13,103.59,1.47,104.07]],
+    ID["EPSG",3414]]</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Count number of bus stops within 350 m for each HDB point</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>within_350m <span class="ot">&lt;-</span> <span class="fu">st_is_within_distance</span>(HDBresale_sf, busstops, <span class="at">dist =</span> <span class="dv">350</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Add count column to main dataset</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>HDBresale_sf <span class="ot">&lt;-</span> HDBresale_sf <span class="sc">%&gt;%</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">WITHIN_350M_BUSSTOP =</span> purrr<span class="sc">::</span><span class="fu">map_int</span>(within_350m, length))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="elder-care-within-350-metres" class="level4" data-number="3.2.5">
+<h4 data-number="3.2.5" class="anchored" data-anchor-id="elder-care-within-350-metres"><span class="header-section-number">3.2.5</span> Elder care within 350 metres</h4>
+<p>Read Eldercare shapefile and check CRS</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>eldercare <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"data/rawdata/ELDERCARE.shp"</span>, <span class="at">quiet =</span> <span class="cn">TRUE</span>)<span class="sc">%&gt;%</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs=</span> <span class="dv">3414</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="fu">st_crs</span>(eldercare)  <span class="co"># check the CRS</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Coordinate Reference System:
+  User input: EPSG:3414 
+  wkt:
+PROJCRS["SVY21 / Singapore TM",
+    BASEGEOGCRS["SVY21",
+        DATUM["SVY21",
+            ELLIPSOID["WGS 84",6378137,298.257223563,
+                LENGTHUNIT["metre",1]]],
+        PRIMEM["Greenwich",0,
+            ANGLEUNIT["degree",0.0174532925199433]],
+        ID["EPSG",4757]],
+    CONVERSION["Singapore Transverse Mercator",
+        METHOD["Transverse Mercator",
+            ID["EPSG",9807]],
+        PARAMETER["Latitude of natural origin",1.36666666666667,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8801]],
+        PARAMETER["Longitude of natural origin",103.833333333333,
+            ANGLEUNIT["degree",0.0174532925199433],
+            ID["EPSG",8802]],
+        PARAMETER["Scale factor at natural origin",1,
+            SCALEUNIT["unity",1],
+            ID["EPSG",8805]],
+        PARAMETER["False easting",28001.642,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8806]],
+        PARAMETER["False northing",38744.572,
+            LENGTHUNIT["metre",1],
+            ID["EPSG",8807]]],
+    CS[Cartesian,2],
+        AXIS["northing (N)",north,
+            ORDER[1],
+            LENGTHUNIT["metre",1]],
+        AXIS["easting (E)",east,
+            ORDER[2],
+            LENGTHUNIT["metre",1]],
+    USAGE[
+        SCOPE["Cadastre, engineering survey, topographic mapping."],
+        AREA["Singapore - onshore and offshore."],
+        BBOX[1.13,103.59,1.47,104.07]],
+    ID["EPSG",3414]]</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>within_350m <span class="ot">&lt;-</span> <span class="fu">st_is_within_distance</span>(HDBresale_sf, eldercare, <span class="at">dist =</span> <span class="dv">350</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co">#Add count column to main dataset</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>HDBresale_sf <span class="ot">&lt;-</span> HDBresale_sf <span class="sc">%&gt;%</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">WITHIN_350M_ELDERCARE =</span> purrr<span class="sc">::</span><span class="fu">map_int</span>(within_350m, length))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="proximity-to-good-primary-schools" class="level4" data-number="3.2.6">
+<h4 data-number="3.2.6" class="anchored" data-anchor-id="proximity-to-good-primary-schools"><span class="header-section-number">3.2.6</span> Proximity to Good Primary Schools</h4>
+<p>For this part we have collected top 20 Primary Schools from Singapore in a CSV file along with its postal code , we will use One map API to geo-encode using postal code</p>
+<p>The below code chunk gets the latitude and longitude of the school using postal codes</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 1) Read the CSV (school_name, postal_code) ---</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>good_ps <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/rawdata/good_primary_schools.csv"</span>,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                    <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">postal_code =</span> <span class="fu">str_pad</span>(<span class="fu">as.character</span>(postal_code), <span class="dv">6</span>, <span class="at">pad =</span> <span class="st">"0"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 2) OneMap postal-code geocoder (returns SVY21 X/Y) ---</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>onemap_lookup <span class="ot">&lt;-</span> <span class="cf">function</span>(pc){</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  resp <span class="ot">&lt;-</span> <span class="fu">RETRY</span>(<span class="st">"GET"</span>, <span class="st">"https://onemap.gov.sg/api/common/elastic/search"</span>,</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>                <span class="at">query =</span> <span class="fu">list</span>(<span class="at">searchVal =</span> pc,</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>                             <span class="at">returnGeom =</span> <span class="st">"Y"</span>,</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>                             <span class="at">getAddrDetails =</span> <span class="st">"Y"</span>,</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>                             <span class="at">pageNum =</span> <span class="st">"1"</span>),</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>  js <span class="ot">&lt;-</span> <span class="fu">content</span>(resp, <span class="at">as =</span> <span class="st">"parsed"</span>)</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="sc">!</span><span class="fu">is.null</span>(js<span class="sc">$</span>found) <span class="sc">&amp;&amp;</span> js<span class="sc">$</span>found <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>    r <span class="ot">&lt;-</span> js<span class="sc">$</span>results[[<span class="dv">1</span>]]</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tibble</span>(<span class="at">POSTAL =</span> r<span class="sc">$</span>POSTAL,</span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>           <span class="at">X =</span> <span class="fu">as.numeric</span>(r<span class="sc">$</span>X),   <span class="co"># SVY21 easting</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>           <span class="at">Y =</span> <span class="fu">as.numeric</span>(r<span class="sc">$</span>Y))   <span class="co"># SVY21 northing</span></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">tibble</span>(<span class="at">POSTAL =</span> pc, <span class="at">X =</span> <span class="cn">NA_real_</span>, <span class="at">Y =</span> <span class="cn">NA_real_</span>)</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 3) Geocode unique postcodes </span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>pcs <span class="ot">&lt;-</span> <span class="fu">unique</span>(good_ps<span class="sc">$</span>postal_code)</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>geo_tbl <span class="ot">&lt;-</span> <span class="fu">map_dfr</span>(pcs, <span class="sc">~</span> <span class="fu">tryCatch</span>(<span class="fu">onemap_lookup</span>(.x),</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>                                   <span class="at">error =</span> <span class="cf">function</span>(e) <span class="fu">tibble</span>(<span class="at">POSTAL=</span>.x, <span class="at">X=</span><span class="cn">NA_real_</span>, <span class="at">Y=</span><span class="cn">NA_real_</span>)))</span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a><span class="fu">write_rds</span>(geo_tbl, <span class="st">"data/rds/good_ps_postal_geocode.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>geo_tbl <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">"data/rds/good_ps_postal_geocode.rds"</span>)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 4) Join back &amp; keep geocoded rows; make sf in SVY21 (EPSG:3414) ---</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>good_ps_sf <span class="ot">&lt;-</span> good_ps <span class="sc">%&gt;%</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(geo_tbl, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"postal_code"</span> <span class="ot">=</span> <span class="st">"POSTAL"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(X), <span class="sc">!</span><span class="fu">is.na</span>(Y)) <span class="sc">%&gt;%</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_as_sf</span>(<span class="at">coords =</span> <span class="fu">c</span>(<span class="st">"X"</span>,<span class="st">"Y"</span>), <span class="at">crs =</span> <span class="dv">3414</span>)  <span class="co"># OneMap X/Y are SVY21</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now the below code chunk is used to derive proximity columns to good primary schools</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 5) Proximity features  ---</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Count of good schools within 1 km</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>idx_1km <span class="ot">&lt;-</span> <span class="fu">st_is_within_distance</span>(HDBresale_sf, good_ps_sf, <span class="at">dist =</span> <span class="dv">1000</span>)</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>cnt_1km <span class="ot">&lt;-</span> <span class="fu">lengths</span>(idx_1km)</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Distance to nearest good school (km)</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>nearest_idx <span class="ot">&lt;-</span> <span class="fu">st_nearest_feature</span>(HDBresale_sf, good_ps_sf)</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>nearest_dist_km <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">st_distance</span>(HDBresale_sf, good_ps_sf[nearest_idx, ], <span class="at">by_element =</span> <span class="cn">TRUE</span>))<span class="sc">/</span><span class="dv">1000</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Add to main dataset</span></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>HDBresale_sf <span class="ot">&lt;-</span> HDBresale_sf <span class="sc">%&gt;%</span></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">WITHIN_1KM_GOOD_PS =</span> cnt_1km,</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">dist_good_ps_km    =</span> nearest_dist_km</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 
 

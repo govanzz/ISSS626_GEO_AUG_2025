@@ -214,5 +214,140 @@ HDBresale_sf <- HDBresale_sf %>%
   mutate(WITHIN_350M_PRESCHOOL = map_int(within_350m, length))
 ```
 
+#### Proximity to CBD 
+The code chunk below  computes the Euclidean (straight-line) distance between each flat and the Downtown Core (CBD) centroid using Singapore’s projected coordinate system (EPSG:3414, SVY21). The resulting columns proximity_to_cbd_m and proximity_to_cbd_km represent the flat’s distance to the CBD in meters and kilometers respectively
+
+```{r}
+# --- Define Downtown Core (CBD) coordinates (WGS84) ---
+cbd_lon <- 103.85
+cbd_lat <- 1.28967
+
+# --- Create CBD point and transform to SVY21 (3414) ---
+cbd_wgs84 <- st_sfc(st_point(c(cbd_lon, cbd_lat)), crs = 4326)
+cbd_3414  <- st_transform(cbd_wgs84, 3414)
+
+# --- Compute straight-line distance to CBD (meters / km) ---
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(
+    proximity_to_cbd_m  = as.numeric(st_distance(geometry, cbd_3414)[, 1]),
+    proximity_to_cbd_km = proximity_to_cbd_m / 1000
+  )
+```
+
+```{r}
+#| include: false
+HDBresale_sf <- HDBresale_sf %>%
+  select(-proximity_to_cbd_m)
+```
+
+#### Bus Stops within 350 metres
+
+Read Bustops shp file and check CRS 
+
+```{r}
+busstops <- st_read("data/rawdata/BusStop.shp", quiet = TRUE)%>%
+  st_transform(crs= 3414)
+st_crs(busstops)  # check the CRS
+```
+```{r}
+# Count number of bus stops within 350 m for each HDB point
+within_350m <- st_is_within_distance(HDBresale_sf, busstops, dist = 350)
+
+# Add count column to main dataset
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(WITHIN_350M_BUSSTOP = purrr::map_int(within_350m, length))
+```
+
+#### Elder care within 350 metres
+
+Read Eldercare shapefile and check CRS
+
+```{r}
+eldercare <- st_read("data/rawdata/ELDERCARE.shp", quiet = TRUE)%>%
+  st_transform(crs= 3414)
+st_crs(eldercare)  # check the CRS
+```
+```{r}
+within_350m <- st_is_within_distance(HDBresale_sf, eldercare, dist = 350)
+
+#Add count column to main dataset
+
+HDBresale_sf <- HDBresale_sf %>%
+mutate(WITHIN_350M_ELDERCARE = purrr::map_int(within_350m, length))
+```
+
+#### Proximity to Good Primary Schools
+
+For this part we have collected top 20 Primary Schools from Singapore in a CSV file along with its postal code , we will use One map API to geo-encode using postal code 
+
+The below code chunk gets the latitude and longitude of the school using postal codes 
+
+```{r}
+# --- 1) Read the CSV (school_name, postal_code) ---
+good_ps <- read_csv("data/rawdata/good_primary_schools.csv",
+                    show_col_types = FALSE) %>%
+  mutate(postal_code = str_pad(as.character(postal_code), 6, pad = "0"))
+```
+
+```{r}
+#| eval: false
+
+# --- 2) OneMap postal-code geocoder (returns SVY21 X/Y) ---
+onemap_lookup <- function(pc){
+  resp <- RETRY("GET", "https://onemap.gov.sg/api/common/elastic/search",
+                query = list(searchVal = pc,
+                             returnGeom = "Y",
+                             getAddrDetails = "Y",
+                             pageNum = "1"),
+                quiet = TRUE)
+  js <- content(resp, as = "parsed")
+  if (!is.null(js$found) && js$found > 0) {
+    r <- js$results[[1]]
+    tibble(POSTAL = r$POSTAL,
+           X = as.numeric(r$X),   # SVY21 easting
+           Y = as.numeric(r$Y))   # SVY21 northing
+  } else {
+    tibble(POSTAL = pc, X = NA_real_, Y = NA_real_)
+  }
+}
+
+# --- 3) Geocode unique postcodes 
+pcs <- unique(good_ps$postal_code)
+geo_tbl <- map_dfr(pcs, ~ tryCatch(onemap_lookup(.x),
+                                   error = function(e) tibble(POSTAL=.x, X=NA_real_, Y=NA_real_)))
+
+write_rds(geo_tbl, "data/rds/good_ps_postal_geocode.rds")
+
+```
+
+```{r}
+geo_tbl <- read_rds("data/rds/good_ps_postal_geocode.rds")
+# --- 4) Join back & keep geocoded rows; make sf in SVY21 (EPSG:3414) ---
+good_ps_sf <- good_ps %>%
+  left_join(geo_tbl, by = c("postal_code" = "POSTAL")) %>%
+  filter(!is.na(X), !is.na(Y)) %>%
+  st_as_sf(coords = c("X","Y"), crs = 3414)  # OneMap X/Y are SVY21
+```
+
+Now the below code chunk is used to derive proximity columns to good primary schools 
+
+```{r}
+# --- 5) Proximity features  ---
+# Count of good schools within 1 km
+idx_1km <- st_is_within_distance(HDBresale_sf, good_ps_sf, dist = 1000)
+cnt_1km <- lengths(idx_1km)
+
+# Distance to nearest good school (km)
+nearest_idx <- st_nearest_feature(HDBresale_sf, good_ps_sf)
+nearest_dist_km <- as.numeric(st_distance(HDBresale_sf, good_ps_sf[nearest_idx, ], by_element = TRUE))/1000
+
+# Add to main dataset
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(
+    WITHIN_1KM_GOOD_PS = cnt_1km,
+    dist_good_ps_km    = nearest_dist_km
+  )
+```
+
 
 
