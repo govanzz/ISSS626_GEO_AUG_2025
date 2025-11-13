@@ -283,6 +283,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#childcare-centres-within-350-metres" id="toc-childcare-centres-within-350-metres" class="nav-link" data-scroll-target="#childcare-centres-within-350-metres"><span class="header-section-number">3.2.12</span> Childcare Centres within 350 metres</a></li>
   </ul></li>
   <li><a href="#calculate-correlation-matrix" id="toc-calculate-correlation-matrix" class="nav-link" data-scroll-target="#calculate-correlation-matrix"><span class="header-section-number">3.3</span> Calculate Correlation Matrix</a></li>
+  <li><a href="#traintest-split-for-hdb-resale-modelling" id="toc-traintest-split-for-hdb-resale-modelling" class="nav-link" data-scroll-target="#traintest-split-for-hdb-resale-modelling"><span class="header-section-number">3.4</span> Train–Test Split for HDB Resale Modelling</a></li>
+  </ul></li>
+  <li><a href="#building-a-non-spatial-multiple-linear-regression" id="toc-building-a-non-spatial-multiple-linear-regression" class="nav-link" data-scroll-target="#building-a-non-spatial-multiple-linear-regression"><span class="header-section-number">4</span> Building a non-spatial multiple linear regression</a>
+  <ul>
+  <li><a href="#ols-residual-diagnostics-spatial-dependence-check" id="toc-ols-residual-diagnostics-spatial-dependence-check" class="nav-link" data-scroll-target="#ols-residual-diagnostics-spatial-dependence-check"><span class="header-section-number">4.1</span> OLS Residual Diagnostics &amp; Spatial Dependence Check</a>
+  <ul class="collapse">
+  <li><a href="#summary-of-the-model" id="toc-summary-of-the-model" class="nav-link" data-scroll-target="#summary-of-the-model"><span class="header-section-number">4.1.1</span> Summary of the model</a></li>
+  <li><a href="#spatial-autocorrelation-of-residuals-morans-i" id="toc-spatial-autocorrelation-of-residuals-morans-i" class="nav-link" data-scroll-target="#spatial-autocorrelation-of-residuals-morans-i"><span class="header-section-number">4.1.2</span> Spatial autocorrelation of residuals (Moran’s I)</a></li>
+  </ul></li>
+  <li><a href="#predict-on-the-test-set-julsep-2025" id="toc-predict-on-the-test-set-julsep-2025" class="nav-link" data-scroll-target="#predict-on-the-test-set-julsep-2025"><span class="header-section-number">4.2</span> Predict on the test set (Jul–Sep 2025)</a></li>
+  <li><a href="#evaluate-predictive-performance" id="toc-evaluate-predictive-performance" class="nav-link" data-scroll-target="#evaluate-predictive-performance"><span class="header-section-number">4.3</span> Evaluate predictive performance</a></li>
+  <li><a href="#map-residuals" id="toc-map-residuals" class="nav-link" data-scroll-target="#map-residuals"><span class="header-section-number">4.4</span> Map residuals</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -316,7 +328,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">November 13, 2025</p>
+      <p class="date-modified">November 14, 2025</p>
     </div>
   </div>
     
@@ -343,7 +355,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, spdep, GWmodel, SpatialML, </span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>               tmap, rsample, Metrics, tidyverse,httr, tidyverse, </span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>               jsonlite, progress)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>               jsonlite, progress,ggplot2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="data-preparation" class="level2" data-number="3">
@@ -1027,6 +1039,275 @@ PROJCRS["SVY21 / Singapore TM",
 <span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>         <span class="sc">-</span>WITHIN_1KM_MALLS,</span>
 <span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>         <span class="sc">-</span>WITHIN_1KM_GOOD_PS)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
+<section id="traintest-split-for-hdb-resale-modelling" class="level3" data-number="3.4">
+<h3 data-number="3.4" class="anchored" data-anchor-id="traintest-split-for-hdb-resale-modelling"><span class="header-section-number">3.4</span> Train–Test Split for HDB Resale Modelling</h3>
+<p>This code chunk separates the dataset into <strong>training</strong> and <strong>testing</strong> periods and removes geometry for modelling.</p>
+<ol type="1">
+<li><p>Training Set (Jul 2024 – Jun 2025) Filters <code>HDBresale_sf</code> to include resale transactions from July 2024 to June 2025, storing it as <code>HDB_train_sf</code>.</p></li>
+<li><p>Test Set (Jul 2025 – Sep 2025) Filters the same dataset for resale transactions from July 2025 to September 2025, creating <code>HDB_test_sf</code>.</p></li>
+<li><p>Drop Geometry for Modelling Converts both <code>sf</code> objects into regular data frames (<code>hdb_train</code>, <code>hdb_test</code>) by removing spatial geometry columns using <code>st_drop_geometry()</code>, preparing them for statistical or machine-learning models.</p></li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Training: Jul 2024 – Jun 2025</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>HDB_train_sf <span class="ot">&lt;-</span> HDBresale_sf <span class="sc">%&gt;%</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(month <span class="sc">&gt;=</span> <span class="st">"2024-07"</span> <span class="sc">&amp;</span> month <span class="sc">&lt;=</span> <span class="st">"2025-06"</span>)</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Test (prediction period): Jul 2025 – Sep 2025</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>HDB_test_sf <span class="ot">&lt;-</span> HDBresale_sf <span class="sc">%&gt;%</span></span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(month <span class="sc">&gt;=</span> <span class="st">"2025-07"</span> <span class="sc">&amp;</span> month <span class="sc">&lt;=</span> <span class="st">"2025-09"</span>)</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a><span class="co"># For modelling (no geometry)</span></span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>hdb_train <span class="ot">&lt;-</span> HDB_train_sf <span class="sc">%&gt;%</span> sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>()</span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>hdb_test  <span class="ot">&lt;-</span> HDB_test_sf  <span class="sc">%&gt;%</span> sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(hdb_train, <span class="fu">aes</span>(<span class="at">x =</span> resale_price)) <span class="sc">+</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="at">bins =</span> <span class="dv">40</span>, <span class="at">fill =</span> <span class="st">"steelblue"</span>, <span class="at">color =</span> <span class="st">"white"</span>) <span class="sc">+</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Distribution of HDB Resale Prices (Raw)"</span>,</span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="st">"Resale Price (SGD)"</span>,</span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Count"</span></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex03_files/figure-html/unnamed-chunk-39-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="building-a-non-spatial-multiple-linear-regression" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="building-a-non-spatial-multiple-linear-regression"><span class="header-section-number">4</span> Building a non-spatial multiple linear regression</h2>
+<p>This code chunk fits a linear regression model (<code>lm_ols</code>) using the <code>lm()</code> function, where the log-transformed HDB resale price is the dependent variable. The model includes structural attributes (e.g., floor area, storey level, remaining lease, flat model) and locational factors such as proximity to CBD, MRT stations, parks, malls, and amenities like bus stops, childcare, eldercare, and CHAS clinics. The independent variables are selected based on their potential influence on resale price. The model is trained on the <code>hdb_train</code> dataset.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>lm_ols <span class="ot">&lt;-</span> <span class="fu">lm</span>(</span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">log</span>(resale_price) <span class="sc">~</span> </span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>    floor_area_sqm <span class="sc">+</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    storey_mid <span class="sc">+</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>    remaining_lease_yrs <span class="sc">+</span></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>    flat_model <span class="sc">+</span></span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>    proximity_to_cbd_km <span class="sc">+</span></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>    WITHIN_350M_BUSSTOP <span class="sc">+</span></span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>    WITHIN_350M_ELDERCARE <span class="sc">+</span></span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>    dist_good_ps_km <span class="sc">+</span></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>    dist_mrt_km <span class="sc">+</span></span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>    dist_park_km <span class="sc">+</span></span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>    dist_mall_km <span class="sc">+</span></span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>    dist_hawker_km <span class="sc">+</span></span>
+<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a>    WITHIN_350M_CHILDCARE <span class="sc">+</span></span>
+<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>    WITHIN_350M_CHAS,</span>
+<span id="cb41-17"><a href="#cb41-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> hdb_train</span>
+<span id="cb41-18"><a href="#cb41-18" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="ols-residual-diagnostics-spatial-dependence-check" class="level3" data-number="4.1">
+<h3 data-number="4.1" class="anchored" data-anchor-id="ols-residual-diagnostics-spatial-dependence-check"><span class="header-section-number">4.1</span> OLS Residual Diagnostics &amp; Spatial Dependence Check</h3>
+<section id="summary-of-the-model" class="level4" data-number="4.1.1">
+<h4 data-number="4.1.1" class="anchored" data-anchor-id="summary-of-the-model"><span class="header-section-number">4.1.1</span> Summary of the model</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(lm_ols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Call:
+lm(formula = log(resale_price) ~ floor_area_sqm + storey_mid + 
+    remaining_lease_yrs + flat_model + proximity_to_cbd_km + 
+    WITHIN_350M_BUSSTOP + WITHIN_350M_ELDERCARE + dist_good_ps_km + 
+    dist_mrt_km + dist_park_km + dist_mall_km + dist_hawker_km + 
+    WITHIN_350M_CHILDCARE + WITHIN_350M_CHAS, data = hdb_train)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.43400 -0.06047  0.00075  0.05693  0.51111 
+
+Coefficients:
+                                   Estimate Std. Error t value Pr(&gt;|t|)    
+(Intercept)                      11.6412985  0.0460781 252.643  &lt; 2e-16 ***
+floor_area_sqm                    0.0119593  0.0002794  42.802  &lt; 2e-16 ***
+storey_mid                        0.0067450  0.0002085  32.344  &lt; 2e-16 ***
+remaining_lease_yrs               0.0096932  0.0001422  68.147  &lt; 2e-16 ***
+flat_modelAdjoined flat           0.1500658  0.0257293   5.832 5.73e-09 ***
+flat_modelDBSS                    0.3520370  0.0198220  17.760  &lt; 2e-16 ***
+flat_modelImproved                0.1456072  0.0183570   7.932 2.54e-15 ***
+flat_modelImproved-Maisonette     0.2274638  0.0488404   4.657 3.27e-06 ***
+flat_modelModel A                 0.0719954  0.0191073   3.768 0.000166 ***
+flat_modelModel A-Maisonette      0.1469783  0.0229551   6.403 1.64e-10 ***
+flat_modelPremium Apartment       0.1247742  0.0185675   6.720 1.98e-11 ***
+flat_modelPremium Apartment Loft  0.1722584  0.0490544   3.512 0.000449 ***
+flat_modelStandard                0.1895470  0.0200546   9.452  &lt; 2e-16 ***
+flat_modelType S2                 0.2664948  0.0303128   8.791  &lt; 2e-16 ***
+proximity_to_cbd_km              -0.0306116  0.0003747 -81.691  &lt; 2e-16 ***
+WITHIN_350M_BUSSTOP               0.0008806  0.0004133   2.131 0.033144 *  
+WITHIN_350M_ELDERCARE            -0.0011384  0.0021181  -0.537 0.590980    
+dist_good_ps_km                   0.0043525  0.0009893   4.399 1.10e-05 ***
+dist_mrt_km                      -0.0234161  0.0038393  -6.099 1.13e-09 ***
+dist_park_km                     -0.0439363  0.0052353  -8.392  &lt; 2e-16 ***
+dist_mall_km                     -0.0272724  0.0026156 -10.427  &lt; 2e-16 ***
+dist_hawker_km                   -0.0374014  0.0025713 -14.546  &lt; 2e-16 ***
+WITHIN_350M_CHILDCARE            -0.0035940  0.0005290  -6.793 1.20e-11 ***
+WITHIN_350M_CHAS                  0.0076947  0.0006133  12.547  &lt; 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Residual standard error: 0.09011 on 6240 degrees of freedom
+Multiple R-squared:  0.7797,    Adjusted R-squared:  0.7788 
+F-statistic:   960 on 23 and 6240 DF,  p-value: &lt; 2.2e-16</code></pre>
+</div>
+</div>
+<p>The OLS model explains resale prices well, with strong effects from floor area, storey height, lease, and proximity to key amenities. Significant spatial patterns remain, motivating geographically weighted modelling.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Add residuals and run standard OLS diagnostics</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>hdb_train<span class="sc">$</span>residuals <span class="ot">&lt;-</span> <span class="fu">residuals</span>(lm_ols)</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">2</span>, <span class="dv">2</span>))</span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(lm_ols)   <span class="co"># includes Residuals vs Fitted, Q-Q plot, etc.</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex03_files/figure-html/unnamed-chunk-42-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check multicollinearity</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>car<span class="sc">::</span><span class="fu">vif</span>(lm_ols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          GVIF Df GVIF^(1/(2*Df))
+floor_area_sqm        3.118910  1        1.766044
+storey_mid            1.181940  1        1.087171
+remaining_lease_yrs   2.315321  1        1.521618
+flat_model            3.688964 10        1.067444
+proximity_to_cbd_km   1.675233  1        1.294308
+WITHIN_350M_BUSSTOP   1.185193  1        1.088666
+WITHIN_350M_ELDERCARE 1.136285  1        1.065967
+dist_good_ps_km       1.236676  1        1.112059
+dist_mrt_km           1.600478  1        1.265100
+dist_park_km          1.183862  1        1.088054
+dist_mall_km          1.443975  1        1.201655
+dist_hawker_km        1.220523  1        1.104773
+WITHIN_350M_CHILDCARE 1.212859  1        1.101299
+WITHIN_350M_CHAS      1.254051  1        1.119844</code></pre>
+</div>
+</div>
+</section>
+<section id="spatial-autocorrelation-of-residuals-morans-i" class="level4" data-number="4.1.2">
+<h4 data-number="4.1.2" class="anchored" data-anchor-id="spatial-autocorrelation-of-residuals-morans-i"><span class="header-section-number">4.1.2</span> Spatial autocorrelation of residuals (Moran’s I)</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Build neighbour structure and spatial weights</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>coords <span class="ot">&lt;-</span> <span class="fu">st_coordinates</span>(HDB_train_sf)</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>nb     <span class="ot">&lt;-</span> <span class="fu">knn2nb</span>(<span class="fu">knearneigh</span>(coords, <span class="at">k =</span> <span class="dv">8</span>))</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>lw     <span class="ot">&lt;-</span> <span class="fu">nb2listw</span>(nb, <span class="at">style =</span> <span class="st">"W"</span>)</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Test for spatial autocorrelation in OLS residuals</span></span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a><span class="fu">moran.test</span>(hdb_train<span class="sc">$</span>residuals, lw)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Moran I test under randomisation
+
+data:  hdb_train$residuals  
+weights: lw    
+
+Moran I statistic standard deviate = 112.58, p-value &lt; 2.2e-16
+alternative hypothesis: greater
+sample estimates:
+Moran I statistic       Expectation          Variance 
+     6.686585e-01     -1.596679e-04      3.529028e-05 </code></pre>
+</div>
+</div>
+<p>OLS residuals exhibit strong and significant spatial autocorrelation (Moran’s I = 0.668, p &lt; 0.001), indicating substantial spatial heterogeneity and justifying the use of geographically weighted models.</p>
+</section>
+</section>
+<section id="predict-on-the-test-set-julsep-2025" class="level3" data-number="4.2">
+<h3 data-number="4.2" class="anchored" data-anchor-id="predict-on-the-test-set-julsep-2025"><span class="header-section-number">4.2</span> Predict on the test set (Jul–Sep 2025)</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>hdb_test<span class="sc">$</span>pred_log <span class="ot">&lt;-</span> <span class="fu">predict</span>(lm_ols, <span class="at">newdata =</span> hdb_test)</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>hdb_test<span class="sc">$</span>pred_price <span class="ot">&lt;-</span> <span class="fu">exp</span>(hdb_test<span class="sc">$</span>pred_log)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="evaluate-predictive-performance" class="level3" data-number="4.3">
+<h3 data-number="4.3" class="anchored" data-anchor-id="evaluate-predictive-performance"><span class="header-section-number">4.3</span> Evaluate predictive performance</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(Metrics)</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>rmse_ols <span class="ot">&lt;-</span> <span class="fu">rmse</span>(hdb_test<span class="sc">$</span>resale_price, hdb_test<span class="sc">$</span>pred_price)</span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>mae_ols  <span class="ot">&lt;-</span> <span class="fu">mae</span>(hdb_test<span class="sc">$</span>resale_price, hdb_test<span class="sc">$</span>pred_price)</span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>r2_ols   <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">sum</span>((hdb_test<span class="sc">$</span>resale_price <span class="sc">-</span> hdb_test<span class="sc">$</span>pred_price)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span></span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">sum</span>((hdb_test<span class="sc">$</span>resale_price <span class="sc">-</span> <span class="fu">mean</span>(hdb_test<span class="sc">$</span>resale_price))<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>rmse_ols</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 81415.55</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>mae_ols</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 58801.82</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>r2_ols</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.7814982</code></pre>
+</div>
+</div>
+</section>
+<section id="map-residuals" class="level3" data-number="4.4">
+<h3 data-number="4.4" class="anchored" data-anchor-id="map-residuals"><span class="header-section-number">4.4</span> Map residuals</h3>
+<p>This code first reads the <strong>Master Plan 2019 subzone boundaries</strong> from a KML file and transforms them into Singapore’s projected coordinate system (EPSG:3414). All subzones are dissolved into a <strong>single outline polygon of Singapore</strong> (<code>sg_outline</code>) using <code>summarise()</code>.</p>
+<p>Two maps are generated using the <strong>tmap</strong> package:</p>
+<ul>
+<li><strong>Map A</strong> displays only the Singapore outline as a base map, styled with a light grey fill and black borders.</li>
+<li><strong>Map B</strong> overlays the residuals from the OLS model (<code>hdb_train$residuals</code>) onto the Singapore map using the <code>HDB_train_sf</code> spatial dataset. Points are coloured using a diverging Red-Blue palette (<code>-RdBu</code>) centered at zero, allowing for quick visual inspection of over- and under-predicted areas in the training set.</li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1) Read Master Plan 2019 subzones and convert to EPSG:3414</span></span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>subzones <span class="ot">&lt;-</span> <span class="fu">st_read</span>(</span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"data/rawdata/MasterPlan2019SubzoneBoundaryNoSeaKML.kml"</span>,</span>
+<span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">quiet =</span> <span class="cn">TRUE</span></span>
+<span id="cb56-5"><a href="#cb56-5" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb56-6"><a href="#cb56-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="dv">3414</span>)</span>
+<span id="cb56-7"><a href="#cb56-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-8"><a href="#cb56-8" aria-hidden="true" tabindex="-1"></a><span class="co"># 2) Make a single Singapore outline polygon (dissolve all subzones)</span></span>
+<span id="cb56-9"><a href="#cb56-9" aria-hidden="true" tabindex="-1"></a>sg_outline <span class="ot">&lt;-</span> subzones <span class="sc">%&gt;%</span></span>
+<span id="cb56-10"><a href="#cb56-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>()   <span class="co"># dissolves into one multipart polygon</span></span>
+<span id="cb56-11"><a href="#cb56-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-12"><a href="#cb56-12" aria-hidden="true" tabindex="-1"></a><span class="co"># --- A) Just the Singapore outline map ----------------------------</span></span>
+<span id="cb56-13"><a href="#cb56-13" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb56-14"><a href="#cb56-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb56-15"><a href="#cb56-15" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(sg_outline) <span class="sc">+</span></span>
+<span id="cb56-16"><a href="#cb56-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"grey90"</span>, <span class="at">border.col =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb56-17"><a href="#cb56-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">title =</span> <span class="st">"Singapore Outline (Master Plan 2019)"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex03_files/figure-html/unnamed-chunk-46-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- B) Outline + your residual dots ------------------------------</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>train_resid_sf <span class="ot">&lt;-</span> HDB_train_sf <span class="sc">%&gt;%</span></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">residuals =</span> hdb_train<span class="sc">$</span>residuals)</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(sg_outline) <span class="sc">+</span></span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"grey95"</span>, <span class="at">border.col =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(train_resid_sf) <span class="sc">+</span></span>
+<span id="cb57-8"><a href="#cb57-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"residuals"</span>,</span>
+<span id="cb57-9"><a href="#cb57-9" aria-hidden="true" tabindex="-1"></a>          <span class="at">palette =</span> <span class="st">"-RdBu"</span>,</span>
+<span id="cb57-10"><a href="#cb57-10" aria-hidden="true" tabindex="-1"></a>          <span class="at">midpoint =</span> <span class="dv">0</span>,</span>
+<span id="cb57-11"><a href="#cb57-11" aria-hidden="true" tabindex="-1"></a>          <span class="at">size =</span> <span class="fl">0.23</span>) <span class="sc">+</span></span>
+<span id="cb57-12"><a href="#cb57-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">title =</span> <span class="st">"OLS Residuals (Train Set) with Singapore Outline"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex03_files/figure-html/unnamed-chunk-46-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The residuals map overlays the OLS model’s training-set residuals onto the Singapore outline to reveal where the model systematically over- or under-predicts HDB resale prices. Each point represents an individual transaction, coloured by the magnitude and direction of its residual.</p>
+<p>Blue tones indicate negative residuals, meaning the model predicted prices higher than the actual transacted values. These typically appear in clusters across parts of the north, west, and eastern regions, suggesting local market characteristics—such as older stock, lower amenity access, or neighbourhood-specific effects—not fully captured by the model.</p>
+<p>Conversely, orange to red tones represent positive residuals, where actual prices exceeded predictions. These are concentrated in pockets of central, northeastern, and western estates, potentially reflecting unmodelled premiums such as micro-location desirability, school quality, renovation levels, or nearby upcoming developments.</p>
+<p>The presence of spatially clustered residuals signals spatial autocorrelation, implying that HDB prices are influenced by local neighbourhood effects beyond the global OLS assumptions. This suggests that spatial models (e.g., GWR or spatial lag/error models) may better capture underlying patterns.</p>
+<p>Overall, this residual map helps diagnose model limitations and highlights geographic areas where predictive accuracy can be improved.</p>
 
 
 </section>

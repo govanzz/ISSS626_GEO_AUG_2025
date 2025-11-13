@@ -34,7 +34,7 @@ We will develop a model to predict HDB resale prices for the period July to Sept
 ```{r}
 pacman::p_load(sf, spdep, GWmodel, SpatialML, 
                tmap, rsample, Metrics, tidyverse,httr, tidyverse, 
-               jsonlite, progress)
+               jsonlite, progress,ggplot2)
 ```
 
 ## Data Preparation
@@ -592,9 +592,169 @@ HDBresale_sf <- HDBresale_sf %>%
          -WITHIN_1KM_GOOD_PS)
 ```
 
+### Train–Test Split for HDB Resale Modelling
+
+This code  chunk separates the dataset into **training** and **testing** periods and removes geometry for modelling.
+
+1. Training Set (Jul 2024 – Jun 2025)
+Filters `HDBresale_sf` to include resale transactions from July 2024 to June 2025, storing it as `HDB_train_sf`.
+
+2. Test Set (Jul 2025 – Sep 2025)
+Filters the same dataset for resale transactions from July 2025 to September 2025, creating `HDB_test_sf`.
+
+3. Drop Geometry for Modelling
+Converts both `sf` objects into regular data frames (`hdb_train`, `hdb_test`) by removing spatial geometry columns using `st_drop_geometry()`, preparing them for statistical or machine-learning models.
+
+```{r}
+
+# Training: Jul 2024 – Jun 2025
+HDB_train_sf <- HDBresale_sf %>%
+  dplyr::filter(month >= "2024-07" & month <= "2025-06")
+
+# Test (prediction period): Jul 2025 – Sep 2025
+HDB_test_sf <- HDBresale_sf %>%
+  dplyr::filter(month >= "2025-07" & month <= "2025-09")
+
+# For modelling (no geometry)
+hdb_train <- HDB_train_sf %>% sf::st_drop_geometry()
+hdb_test  <- HDB_test_sf  %>% sf::st_drop_geometry()
+```
+
+```{r}
+
+ggplot(hdb_train, aes(x = resale_price)) +
+  geom_histogram(bins = 40, fill = "steelblue", color = "white") +
+  scale_x_continuous(labels = scales::comma) +
+  labs(
+    title = "Distribution of HDB Resale Prices (Raw)",
+    x = "Resale Price (SGD)",
+    y = "Count"
+  ) +
+  theme_minimal()
+```
+## Building a non-spatial multiple linear regression
+This code chunk fits a linear regression model (`lm_ols`) using the `lm()` function, where the log-transformed HDB resale price is the dependent variable. The model includes structural attributes (e.g., floor area, storey level, remaining lease, flat model) and locational factors such as proximity to CBD, MRT stations, parks, malls, and amenities like bus stops, childcare, eldercare, and CHAS clinics. The independent variables are selected based on their potential influence on resale price. The model is trained on the `hdb_train` dataset.
+```{r}
+lm_ols <- lm(
+  log(resale_price) ~ 
+    floor_area_sqm +
+    storey_mid +
+    remaining_lease_yrs +
+    flat_model +
+    proximity_to_cbd_km +
+    WITHIN_350M_BUSSTOP +
+    WITHIN_350M_ELDERCARE +
+    dist_good_ps_km +
+    dist_mrt_km +
+    dist_park_km +
+    dist_mall_km +
+    dist_hawker_km +
+    WITHIN_350M_CHILDCARE +
+    WITHIN_350M_CHAS,
+  data = hdb_train
+)
+```
+
+### OLS Residual Diagnostics & Spatial Dependence Check
+#### Summary of the model 
+```{r}
+summary(lm_ols)
+```
+The OLS model explains resale prices well, with strong effects from floor area, storey height, lease, and proximity to key amenities. Significant spatial patterns remain, motivating geographically weighted modelling.
+
+```{r}
+# Add residuals and run standard OLS diagnostics
+hdb_train$residuals <- residuals(lm_ols)
+
+par(mfrow = c(2, 2))
+plot(lm_ols)   # includes Residuals vs Fitted, Q-Q plot, etc.
+
+# Check multicollinearity
+car::vif(lm_ols)
+```
+#### Spatial autocorrelation of residuals (Moran’s I)
 
 
+```{r}
 
+# Build neighbour structure and spatial weights
+coords <- st_coordinates(HDB_train_sf)
+nb     <- knn2nb(knearneigh(coords, k = 8))
+lw     <- nb2listw(nb, style = "W")
 
+# Test for spatial autocorrelation in OLS residuals
+moran.test(hdb_train$residuals, lw)
+```
+OLS residuals exhibit strong and significant spatial autocorrelation (Moran’s I = 0.668, p < 0.001), indicating substantial spatial heterogeneity and justifying the use of geographically weighted models.
+
+### Predict on the test set (Jul–Sep 2025)
+
+```{r}
+hdb_test$pred_log <- predict(lm_ols, newdata = hdb_test)
+hdb_test$pred_price <- exp(hdb_test$pred_log)
+```
+
+### Evaluate predictive performance
+```{r}
+library(Metrics)
+
+rmse_ols <- rmse(hdb_test$resale_price, hdb_test$pred_price)
+mae_ols  <- mae(hdb_test$resale_price, hdb_test$pred_price)
+r2_ols   <- 1 - sum((hdb_test$resale_price - hdb_test$pred_price)^2) /
+                 sum((hdb_test$resale_price - mean(hdb_test$resale_price))^2)
+
+rmse_ols
+mae_ols
+r2_ols
+```
+### Map residuals
+
+This code first reads the **Master Plan 2019 subzone boundaries** from a KML file and transforms them into Singapore’s projected coordinate system (EPSG:3414). All subzones are dissolved into a **single outline polygon of Singapore** (`sg_outline`) using `summarise()`.
+
+Two maps are generated using the **tmap** package:
+
+- **Map A** displays only the Singapore outline as a base map, styled with a light grey fill and black borders.
+- **Map B** overlays the residuals from the OLS model (`hdb_train$residuals`) onto the Singapore map using the `HDB_train_sf` spatial dataset. Points are coloured using a diverging Red-Blue palette (`-RdBu`) centered at zero, allowing for quick visual inspection of over- and under-predicted areas in the training set.
+```{r}
+# 1) Read Master Plan 2019 subzones and convert to EPSG:3414
+subzones <- st_read(
+  "data/rawdata/MasterPlan2019SubzoneBoundaryNoSeaKML.kml",
+  quiet = TRUE
+) %>%
+  st_transform(3414)
+
+# 2) Make a single Singapore outline polygon (dissolve all subzones)
+sg_outline <- subzones %>%
+  summarise()   # dissolves into one multipart polygon
+
+# --- A) Just the Singapore outline map ----------------------------
+tmap_mode("plot")
+
+tm_shape(sg_outline) +
+  tm_polygons(col = "grey90", border.col = "black") +
+  tm_layout(title = "Singapore Outline (Master Plan 2019)")
+
+# --- B) Outline + your residual dots ------------------------------
+train_resid_sf <- HDB_train_sf %>%
+  mutate(residuals = hdb_train$residuals)
+
+tm_shape(sg_outline) +
+  tm_polygons(col = "grey95", border.col = "black") +
+tm_shape(train_resid_sf) +
+  tm_dots(col = "residuals",
+          palette = "-RdBu",
+          midpoint = 0,
+          size = 0.23) +
+  tm_layout(title = "OLS Residuals (Train Set) with Singapore Outline")
+```
+The residuals map overlays the OLS model’s training-set residuals onto the Singapore outline to reveal where the model systematically over- or under-predicts HDB resale prices. Each point represents an individual transaction, coloured by the magnitude and direction of its residual.
+
+Blue tones indicate negative residuals, meaning the model predicted prices higher than the actual transacted values. These typically appear in clusters across parts of the north, west, and eastern regions, suggesting local market characteristics—such as older stock, lower amenity access, or neighbourhood-specific effects—not fully captured by the model.
+
+Conversely, orange to red tones represent positive residuals, where actual prices exceeded predictions. These are concentrated in pockets of central, northeastern, and western estates, potentially reflecting unmodelled premiums such as micro-location desirability, school quality, renovation levels, or nearby upcoming developments.
+
+The presence of spatially clustered residuals signals spatial autocorrelation, implying that HDB prices are influenced by local neighbourhood effects beyond the global OLS assumptions. This suggests that spatial models (e.g., GWR or spatial lag/error models) may better capture underlying patterns.
+
+Overall, this residual map helps diagnose model limitations and highlights geographic areas where predictive accuracy can be improved.
 
 
