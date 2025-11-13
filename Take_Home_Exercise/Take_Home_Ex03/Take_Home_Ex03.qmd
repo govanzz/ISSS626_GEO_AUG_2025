@@ -672,6 +672,8 @@ plot(lm_ols)   # includes Residuals vs Fitted, Q-Q plot, etc.
 # Check multicollinearity
 car::vif(lm_ols)
 ```
+These OLS diagnostic plots show several issues with model assumptions. The Residuals vs Fitted plot indicates slight non-linearity and heteroscedasticity. The Q-Q plot shows heavy tails, meaning residuals are not normally distributed. The Scale-Location plot confirms non-constant variance, while the Residuals vs Leverage plot shows a few high-leverage points that may disproportionately influence the model.
+
 #### Spatial autocorrelation of residuals (Moran’s I)
 
 
@@ -734,7 +736,7 @@ tm_shape(sg_outline) +
   tm_polygons(col = "grey90", border.col = "black") +
   tm_layout(title = "Singapore Outline (Master Plan 2019)")
 
-# --- B) Outline + your residual dots ------------------------------
+# --- B) Outline + residual dots ------------------------------
 train_resid_sf <- HDB_train_sf %>%
   mutate(residuals = hdb_train$residuals)
 
