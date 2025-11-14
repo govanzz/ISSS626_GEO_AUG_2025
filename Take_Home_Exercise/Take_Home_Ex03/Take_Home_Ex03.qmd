@@ -1064,4 +1064,178 @@ rmse_rf
 mae_rf
 r2_rf
 ```
+## Geographically Weighted Random Forest (GRF)
 
+### Response + predictor variables from the RF formula
+```{r}
+grf_vars <- all.vars(rf_formula)
+resp_var <- grf_vars[1] # "resale_price"
+pred_vars <- grf_vars[-1]
+```
+
+### Training dataframe for GRF (no geometry)
+```{r}
+hdb_train_grf <- HDB_train_sf_sub %>%
+sf::st_drop_geometry() %>%
+dplyr::select(all_of(c(resp_var, pred_vars)))
+```
+
+### Coordinates matrix (X, Y) for GRF
+```{r}
+coords_grf <- sf::st_coordinates(HDB_train_sf_sub)
+
+nrow(hdb_train_grf)
+head(hdb_train_grf)
+```
+
+### Select optimal GRF bandwidth
+
+```{r}
+#| eval: false
+set.seed(123)
+grf_bw <- grf.bw(
+formula = rf_formula,
+dataset = hdb_train_grf,
+coords = coords_grf,
+kernel = "adaptive",
+bw.min = 50,
+bw.max = 400,
+step = 25,
+trees = 500,
+importance = "impurity",
+nthreads = parallel::detectCores() - 1,
+forests = FALSE,
+geo.weighted = TRUE
+)
+
+grf_bw$best.bw
+```
+
+```{r}
+#| eval: false
+#| include: false
+best_bw_grf <- 375
+saveRDS(grf_bw, file = "data/rds/grf_bw.rds")
+
+```
+
+```{r}
+best_bw_grf <- readRDS("data/rds/grf_bw.rds")
+best_bw_grf
+
+```
+
+### Fit GRF model on the training set
+Using the optimal bandwidth, we calibrate the geographically weighted random forest. The fitted object contains both a global RF and a set of local RF models, plus local goodness-of-fit and variable importance metrics.
+```{r}
+#| eval: false
+set.seed(123)
+
+grf_fit <- grf(
+formula = rf_formula,
+dframe = hdb_train_grf,
+bw = 375,
+kernel = "adaptive",
+coords = coords_grf,
+ntree = 500,
+mtry = NULL, # default p/3
+importance = "impurity",
+nthreads = parallel::detectCores() - 1,
+forests = TRUE, # TRUE if you want all local forests
+geo.weighted = TRUE,
+print.results = TRUE
+)
+
+saveRDS(grf_fit, "data/rds/grf_fit.rds")
+```
+```{r}
+#| eval: false
+grf_fit <- readRDS("data/rds/grf_fit.rds")
+```
+Quick look at local goodness-of-fit summary
+
+
+```{r}
+#| eval: false
+class(grf_fit) <- c("GRF", "list")
+```
+
+```{r}
+#| eval: false
+class(grf_fit)
+
+
+```
+
+
+```{r}
+#| eval: false
+
+str(grf_fit$LGofFit)
+head(grf_fit$lModelSummary)
+```
+### Predict with GRF on the test set (Jul–Sep 2025)
+We now use predict.grf() to obtain spatially varying predictions on the test period, using the nearest local RF model for each test location.
+
+#### Test predictors and coordinates
+```{r}
+#| eval: false
+# 1. Drop geometry but keep all predictors
+test_data_nogeom <- HDB_test_sf %>%
+  sf::st_drop_geometry()
+
+# 2. Add X / Y columns from the sf geometry
+coords_test <- sf::st_coordinates(HDB_test_sf)
+test_data_nogeom$X <- coords_test[, 1]
+test_data_nogeom$Y <- coords_test[, 2]
+
+```
+
+#### GRF predictions (resale_price)
+
+```{r}
+#| eval: false
+grf_pred <- predict.grf(
+  grf_fit,
+  test_data_nogeom,
+  x.var.name = "X",
+  y.var.name = "Y",
+  local.w    = 1,
+  global.w   = 0
+)
+```
+
+```{r}
+#| eval: false
+HDB_test_results_grf <- hdb_test %>%
+  dplyr::mutate(grf_pred_price = as.numeric(grf_pred))
+```
+
+```{r}
+#| eval: false
+#| include: false
+readr::write_rds(HDB_test_results_grf, "data/rds/HDB_test_results_grf.rds")
+```
+
+```{r}
+HDB_test_results_grf <- readr::read_rds("data/rds/HDB_test_results_grf.rds")
+```
+
+### Metrics 
+```{r}
+rmse_grf <- rmse(HDB_test_results_grf$resale_price,
+HDB_test_results_grf$grf_pred_price)
+
+mae_grf <- mae(HDB_test_results_grf$resale_price,
+HDB_test_results_grf$grf_pred_price)
+
+r2_grf <- 1 - sum((HDB_test_results_grf$resale_price -
+HDB_test_results_grf$grf_pred_price)^2) /
+sum((HDB_test_results_grf$resale_price -
+mean(HDB_test_results_grf$resale_price))^2)
+
+rmse_grf
+mae_grf
+r2_grf
+```
+## Comparison of models 
