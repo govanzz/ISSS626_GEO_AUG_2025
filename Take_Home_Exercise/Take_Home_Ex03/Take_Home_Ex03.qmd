@@ -34,7 +34,7 @@ We will develop a model to predict HDB resale prices for the period July to Sept
 ```{r}
 pacman::p_load(sf, spdep, GWmodel, SpatialML, 
                tmap, rsample, Metrics, tidyverse,httr, tidyverse, 
-               jsonlite, progress,ggplot2)
+               jsonlite, progress,ggplot2,caret, ranger)
 ```
 
 ## Data Preparation
@@ -974,4 +974,94 @@ lw_test <- nb2listw(nb_test, style = "W")
 moran.test(HDB_test_results_sf$gwr_residual, lw_test)
 ```
 The Moran’s I statistic for the GWR residuals is 0.227 (p < 0.001), substantially lower than the OLS residual Moran’s I of approximately 0.668. This indicates that GWR captures a significant portion of the spatial structure in HDB resale prices that the global OLS model fails to account for. While some positive spatial autocorrelation remains, the large reduction in Moran’s I demonstrates that geographically varying relationships—such as differing effects of proximity to amenities and structural attributes across neighbourhoods—play an important role in price formation. Therefore, GWR provides a more spatially appropriate residual pattern and better represents local market heterogeneity compared to OLS.
+
+## Non Spatial Random Forest
+
+### Define predictors 
+```{r}
+rf_formula <- resale_price ~
+floor_area_sqm +
+storey_mid +
+remaining_lease_yrs +
+flat_model +
+proximity_to_cbd_km +
+WITHIN_350M_BUSSTOP +
+WITHIN_350M_ELDERCARE +
+dist_good_ps_km +
+dist_mrt_km +
+dist_park_km +
+dist_mall_km +
+dist_hawker_km +
+WITHIN_350M_CHILDCARE +
+WITHIN_350M_CHAS
+```
+
+### Set up cross-validation and tuning grid
+
+```{r}
+set.seed(123)
+
+#5-fold cross-validation
+
+rf_ctrl <- trainControl(
+method = "cv",
+number = 5,
+verboseIter = FALSE
+)
+
+#Hyperparameter grid for calibration
+
+rf_grid <- expand.grid(
+mtry = c(3, 5, 7, 9), # number of variables tried at each split
+splitrule = "variance", # regression split rule
+min.node.size = c(5, 10, 20) # minimum node size
+)
+```
+
+### Train and calibrate the Random Forest
+
+```{r}
+#| eval: false
+set.seed(123)
+
+rf_model <- train(
+rf_formula,
+data = hdb_train,
+method = "ranger",
+trControl = rf_ctrl,
+tuneGrid = rf_grid,
+importance = "permutation",
+num.trees = 500
+)
+
+rf_model
+rf_model$bestTune
+```
+```{r}
+#| eval: false
+#| include: false
+saveRDS(rf_model, file = "data/rds/rf_model.rds")
+```
+
+```{r}
+#| include: false
+rf_model <- readRDS("data/rds/rf_model.rds")
+```
+
+### Predict on the test set (Jul–Sep 2025)
+```{r}
+hdb_test$rf_pred_price <- predict(rf_model, newdata = hdb_test)
+```
+
+### Evaluate Random Forest predictive performance 
+```{r}
+rmse_rf <- rmse(hdb_test$resale_price, hdb_test$rf_pred_price)
+mae_rf <- mae(hdb_test$resale_price, hdb_test$rf_pred_price)
+r2_rf <- 1 - sum((hdb_test$resale_price - hdb_test$rf_pred_price)^2) /
+sum((hdb_test$resale_price - mean(hdb_test$resale_price))^2)
+
+rmse_rf
+mae_rf
+r2_rf
+```
 

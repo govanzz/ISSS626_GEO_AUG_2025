@@ -309,6 +309,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#evaulate-the-model" id="toc-evaulate-the-model" class="nav-link" data-scroll-target="#evaulate-the-model"><span class="header-section-number">5.5</span> Evaulate the model</a></li>
   <li><a href="#compute-morans-i-for-gwr-residuals" id="toc-compute-morans-i-for-gwr-residuals" class="nav-link" data-scroll-target="#compute-morans-i-for-gwr-residuals"><span class="header-section-number">5.6</span> Compute Moran’s I for GWR residuals</a></li>
   </ul></li>
+  <li><a href="#non-spatial-random-forest" id="toc-non-spatial-random-forest" class="nav-link" data-scroll-target="#non-spatial-random-forest"><span class="header-section-number">6</span> Non Spatial Random Forest</a>
+  <ul>
+  <li><a href="#define-predictors" id="toc-define-predictors" class="nav-link" data-scroll-target="#define-predictors"><span class="header-section-number">6.1</span> Define predictors</a></li>
+  <li><a href="#set-up-cross-validation-and-tuning-grid" id="toc-set-up-cross-validation-and-tuning-grid" class="nav-link" data-scroll-target="#set-up-cross-validation-and-tuning-grid"><span class="header-section-number">6.2</span> Set up cross-validation and tuning grid</a></li>
+  <li><a href="#train-and-calibrate-the-random-forest" id="toc-train-and-calibrate-the-random-forest" class="nav-link" data-scroll-target="#train-and-calibrate-the-random-forest"><span class="header-section-number">6.3</span> Train and calibrate the Random Forest</a></li>
+  <li><a href="#predict-on-the-test-set-julsep-2025-1" id="toc-predict-on-the-test-set-julsep-2025-1" class="nav-link" data-scroll-target="#predict-on-the-test-set-julsep-2025-1"><span class="header-section-number">6.4</span> Predict on the test set (Jul–Sep 2025)</a></li>
+  <li><a href="#evaluate-random-forest-predictive-performance" id="toc-evaluate-random-forest-predictive-performance" class="nav-link" data-scroll-target="#evaluate-random-forest-predictive-performance"><span class="header-section-number">6.5</span> Evaluate Random Forest predictive performance</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -368,7 +376,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, spdep, GWmodel, SpatialML, </span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>               tmap, rsample, Metrics, tidyverse,httr, tidyverse, </span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>               jsonlite, progress,ggplot2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>               jsonlite, progress,ggplot2,caret, ranger)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="data-preparation" class="level2" data-number="3">
@@ -1567,6 +1575,98 @@ Moran I statistic       Expectation          Variance
 </div>
 </div>
 <p>The Moran’s I statistic for the GWR residuals is 0.227 (p &lt; 0.001), substantially lower than the OLS residual Moran’s I of approximately 0.668. This indicates that GWR captures a significant portion of the spatial structure in HDB resale prices that the global OLS model fails to account for. While some positive spatial autocorrelation remains, the large reduction in Moran’s I demonstrates that geographically varying relationships—such as differing effects of proximity to amenities and structural attributes across neighbourhoods—play an important role in price formation. Therefore, GWR provides a more spatially appropriate residual pattern and better represents local market heterogeneity compared to OLS.</p>
+</section>
+</section>
+<section id="non-spatial-random-forest" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="non-spatial-random-forest"><span class="header-section-number">6</span> Non Spatial Random Forest</h2>
+<section id="define-predictors" class="level3" data-number="6.1">
+<h3 data-number="6.1" class="anchored" data-anchor-id="define-predictors"><span class="header-section-number">6.1</span> Define predictors</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>rf_formula <span class="ot">&lt;-</span> resale_price <span class="sc">~</span></span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>floor_area_sqm <span class="sc">+</span></span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>storey_mid <span class="sc">+</span></span>
+<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>remaining_lease_yrs <span class="sc">+</span></span>
+<span id="cb83-5"><a href="#cb83-5" aria-hidden="true" tabindex="-1"></a>flat_model <span class="sc">+</span></span>
+<span id="cb83-6"><a href="#cb83-6" aria-hidden="true" tabindex="-1"></a>proximity_to_cbd_km <span class="sc">+</span></span>
+<span id="cb83-7"><a href="#cb83-7" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_BUSSTOP <span class="sc">+</span></span>
+<span id="cb83-8"><a href="#cb83-8" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_ELDERCARE <span class="sc">+</span></span>
+<span id="cb83-9"><a href="#cb83-9" aria-hidden="true" tabindex="-1"></a>dist_good_ps_km <span class="sc">+</span></span>
+<span id="cb83-10"><a href="#cb83-10" aria-hidden="true" tabindex="-1"></a>dist_mrt_km <span class="sc">+</span></span>
+<span id="cb83-11"><a href="#cb83-11" aria-hidden="true" tabindex="-1"></a>dist_park_km <span class="sc">+</span></span>
+<span id="cb83-12"><a href="#cb83-12" aria-hidden="true" tabindex="-1"></a>dist_mall_km <span class="sc">+</span></span>
+<span id="cb83-13"><a href="#cb83-13" aria-hidden="true" tabindex="-1"></a>dist_hawker_km <span class="sc">+</span></span>
+<span id="cb83-14"><a href="#cb83-14" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_CHILDCARE <span class="sc">+</span></span>
+<span id="cb83-15"><a href="#cb83-15" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_CHAS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="set-up-cross-validation-and-tuning-grid" class="level3" data-number="6.2">
+<h3 data-number="6.2" class="anchored" data-anchor-id="set-up-cross-validation-and-tuning-grid"><span class="header-section-number">6.2</span> Set up cross-validation and tuning grid</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a><span class="co">#5-fold cross-validation</span></span>
+<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a>rf_ctrl <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(</span>
+<span id="cb84-6"><a href="#cb84-6" aria-hidden="true" tabindex="-1"></a><span class="at">method =</span> <span class="st">"cv"</span>,</span>
+<span id="cb84-7"><a href="#cb84-7" aria-hidden="true" tabindex="-1"></a><span class="at">number =</span> <span class="dv">5</span>,</span>
+<span id="cb84-8"><a href="#cb84-8" aria-hidden="true" tabindex="-1"></a><span class="at">verboseIter =</span> <span class="cn">FALSE</span></span>
+<span id="cb84-9"><a href="#cb84-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb84-10"><a href="#cb84-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-11"><a href="#cb84-11" aria-hidden="true" tabindex="-1"></a><span class="co">#Hyperparameter grid for calibration</span></span>
+<span id="cb84-12"><a href="#cb84-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-13"><a href="#cb84-13" aria-hidden="true" tabindex="-1"></a>rf_grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
+<span id="cb84-14"><a href="#cb84-14" aria-hidden="true" tabindex="-1"></a><span class="at">mtry =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">7</span>, <span class="dv">9</span>), <span class="co"># number of variables tried at each split</span></span>
+<span id="cb84-15"><a href="#cb84-15" aria-hidden="true" tabindex="-1"></a><span class="at">splitrule =</span> <span class="st">"variance"</span>, <span class="co"># regression split rule</span></span>
+<span id="cb84-16"><a href="#cb84-16" aria-hidden="true" tabindex="-1"></a><span class="at">min.node.size =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>) <span class="co"># minimum node size</span></span>
+<span id="cb84-17"><a href="#cb84-17" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="train-and-calibrate-the-random-forest" class="level3" data-number="6.3">
+<h3 data-number="6.3" class="anchored" data-anchor-id="train-and-calibrate-the-random-forest"><span class="header-section-number">6.3</span> Train and calibrate the Random Forest</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a>rf_model <span class="ot">&lt;-</span> <span class="fu">train</span>(</span>
+<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>rf_formula,</span>
+<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a><span class="at">data =</span> hdb_train,</span>
+<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a><span class="at">method =</span> <span class="st">"ranger"</span>,</span>
+<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a><span class="at">trControl =</span> rf_ctrl,</span>
+<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a><span class="at">tuneGrid =</span> rf_grid,</span>
+<span id="cb85-9"><a href="#cb85-9" aria-hidden="true" tabindex="-1"></a><span class="at">importance =</span> <span class="st">"permutation"</span>,</span>
+<span id="cb85-10"><a href="#cb85-10" aria-hidden="true" tabindex="-1"></a><span class="at">num.trees =</span> <span class="dv">500</span></span>
+<span id="cb85-11"><a href="#cb85-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb85-12"><a href="#cb85-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-13"><a href="#cb85-13" aria-hidden="true" tabindex="-1"></a>rf_model</span>
+<span id="cb85-14"><a href="#cb85-14" aria-hidden="true" tabindex="-1"></a>rf_model<span class="sc">$</span>bestTune</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="predict-on-the-test-set-julsep-2025-1" class="level3" data-number="6.4">
+<h3 data-number="6.4" class="anchored" data-anchor-id="predict-on-the-test-set-julsep-2025-1"><span class="header-section-number">6.4</span> Predict on the test set (Jul–Sep 2025)</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a>hdb_test<span class="sc">$</span>rf_pred_price <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_model, <span class="at">newdata =</span> hdb_test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="evaluate-random-forest-predictive-performance" class="level3" data-number="6.5">
+<h3 data-number="6.5" class="anchored" data-anchor-id="evaluate-random-forest-predictive-performance"><span class="header-section-number">6.5</span> Evaluate Random Forest predictive performance</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a>rmse_rf <span class="ot">&lt;-</span> <span class="fu">rmse</span>(hdb_test<span class="sc">$</span>resale_price, hdb_test<span class="sc">$</span>rf_pred_price)</span>
+<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>mae_rf <span class="ot">&lt;-</span> <span class="fu">mae</span>(hdb_test<span class="sc">$</span>resale_price, hdb_test<span class="sc">$</span>rf_pred_price)</span>
+<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a>r2_rf <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">sum</span>((hdb_test<span class="sc">$</span>resale_price <span class="sc">-</span> hdb_test<span class="sc">$</span>rf_pred_price)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span></span>
+<span id="cb87-4"><a href="#cb87-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>((hdb_test<span class="sc">$</span>resale_price <span class="sc">-</span> <span class="fu">mean</span>(hdb_test<span class="sc">$</span>resale_price))<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb87-5"><a href="#cb87-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-6"><a href="#cb87-6" aria-hidden="true" tabindex="-1"></a>rmse_rf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 48468.14</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a>mae_rf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 33797.92</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a>r2_rf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.9225622</code></pre>
+</div>
+</div>
 
 
 </section>
