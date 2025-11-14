@@ -760,3 +760,218 @@ The presence of spatially clustered residuals signals spatial autocorrelation, i
 Overall, this residual map helps diagnose model limitations and highlights geographic areas where predictive accuracy can be improved.
 
 
+## GWR Modelling
+### Data prep
+Randomly sample up to 5,000 training points
+
+```{r}
+set.seed(123)  # reproducible sampling
+
+n_target <- 5000   # maximum allowed size for GWR
+
+if (nrow(HDB_train_sf) > n_target) {
+HDB_train_sf_sub <- HDB_train_sf %>%
+dplyr::slice_sample(n = n_target)
+} else {
+HDB_train_sf_sub <- HDB_train_sf
+}
+
+nrow(HDB_train_sf_sub)  # check actual sample size
+```
+
+
+### Select optimal GWR bandwidth
+```{r}
+#| eval: false
+
+bw_gwr <- bw.gwr(
+formula = resale_price ~
+floor_area_sqm + storey_mid + remaining_lease_yrs + flat_model +
+proximity_to_cbd_km + WITHIN_350M_BUSSTOP + WITHIN_350M_ELDERCARE +
+dist_good_ps_km + dist_mrt_km + dist_park_km + dist_mall_km +
+dist_hawker_km + WITHIN_350M_CHILDCARE + WITHIN_350M_CHAS,
+data = HDB_train_sp_sub,
+kernel = 'gaussian',
+adaptive = TRUE,
+longlat = FALSE
+)
+bw_gwr
+```
+```{r}
+#| eval: false
+#| include: false
+saveRDS(bw_gwr, file = "data/rds/bw_gwr.rds")
+```
+
+```{r}
+#| include: false
+bw_gwr <- readRDS("data/rds/bw_gwr.rds")
+```
+
+
+### Fit GWR model on sampled training set
+
+```{r}
+#| eval: false
+gwr_fit <- gwr.basic(
+formula  = resale_price ~
+floor_area_sqm + storey_mid + remaining_lease_yrs + flat_model +
+proximity_to_cbd_km + WITHIN_350M_BUSSTOP + WITHIN_350M_ELDERCARE +
+dist_good_ps_km + dist_mrt_km + dist_park_km + dist_mall_km +
+dist_hawker_km + WITHIN_350M_CHILDCARE + WITHIN_350M_CHAS,
+data     = HDB_train_sp_sub,
+bw       = bw_gwr,
+kernel   = "gaussian",
+adaptive = TRUE,
+longlat  = FALSE
+)
+
+
+# Save GWR model
+saveRDS(gwr_fit, file = "data/rds/gwr_fit.rds")
+
+```
+
+```{r}
+gwr_fit <- readRDS("data/rds/gwr_fit.rds")
+
+# Diagnostics
+gwr_fit$GW.diagnostic
+```
+### Use GWR Model to Predict on Test Data
+#### Convert test set to Spatial
+```{r}
+HDB_test_sp <- as(HDB_test_sf, "Spatial")
+```
+
+#### Predict using the fitted GWR model (gwr_fit)
+
+In code chunks below 
+- A GWR formula (`gwr_formula`) is defined with `resale_price` as the dependent variable and multiple structural and locational predictors on the right-hand side.
+- Variables include attributes like `floor_area_sqm`, `storey_mid`, and distances to amenities such as `dist_mrt_km`, `dist_park_km`, and `WITHIN_350M_CHILDCARE`.
+- `gwr_vars` extracts all variable names on the RHS of the formula using `all.vars()` and excludes the dependent variable using `[-1]`.
+- `test_cols` retrieves the column names of the `HDB_test_sp@data` SpatialPointsDataFrame, which will be used to apply the trained GWR model.
+- The `setdiff()` function compares `gwr_vars` against `test_cols` to find any missing predictor columns in the test set.
+- This acts as a **safeguard** to ensure the test data contains all required variables for prediction, avoiding runtime errors in GWR modelling.
+
+```{r}
+gwr_formula <- resale_price ~
+  floor_area_sqm + storey_mid + remaining_lease_yrs +
+  proximity_to_cbd_km + WITHIN_350M_BUSSTOP + WITHIN_350M_ELDERCARE +
+  dist_good_ps_km + dist_mrt_km + dist_park_km + dist_mall_km +
+  dist_hawker_km + WITHIN_350M_CHILDCARE + WITHIN_350M_CHAS
+
+```
+
+```{r}
+# variables used on the RHS of the formula
+gwr_vars <- all.vars(gwr_formula)[-1]   # drop response
+
+# columns in your test SpatialPointsDataFrame
+test_cols <- names(HDB_test_sp@data)
+
+setdiff(gwr_vars, test_cols)
+```
+The code chunk below does the following 
+- `vars_all` stores all variables required for GWR: both the response (`resale_price`) and all predictors from `gwr_vars`.
+- The `@data` slot of the `HDB_test_sp` SpatialPointsDataFrame is extracted and a `row_id` is added to preserve row positions after filtering.
+- `test_df` keeps only the necessary columns (`row_id` + `vars_all`) to be used for prediction.
+- `test_df_clean` filters out any rows that contain missing values in the selected columns using `complete.cases()`.
+- The `valid_rows` vector stores row indices of complete observations and is used to subset `HDB_test_sp` into `HDB_test_sp_clean`, which is safe for GWR prediction.
+
+
+- The second chunk (set to not evaluate with `eval: false`) calls `gwr.predict()` to make predictions on the cleaned test spatial data, using the trained model from `HDB_train_sp_sub` and a bandwidth `bw_gwr`.
+- The predicted prices are stored in a new column `gwr_pred_price` in the original `hdb_test` dataframe.
+- Only the rows corresponding to `valid_rows` are populated with predicted values to maintain alignment with the full test dataset.
+```{r}
+# All variables needed for GWR (response + predictors)
+vars_all <- c("resale_price", gwr_vars)
+
+# Work on the data slot of HDB_test_sp
+test_df <- HDB_test_sp@data %>%
+  mutate(row_id = row_number()) %>%
+  select(row_id, all_of(vars_all))
+
+# Keep only complete rows
+test_df_clean <- test_df %>%
+  filter(complete.cases(across(all_of(vars_all))))
+
+valid_rows <- test_df_clean$row_id
+
+# Subset SpatialPointsDataFrame to these rows
+HDB_test_sp_clean <- HDB_test_sp[valid_rows, ]
+```
+- This code chunk (set to not evaluate with `eval: false`) calls `gwr.predict()` to make predictions on the cleaned test spatial data, using the trained model from `HDB_train_sp_sub` and a bandwidth `bw_gwr`.
+- The predicted prices are stored in a new column `gwr_pred_price` in the original `hdb_test` dataframe.
+- Only the rows corresponding to `valid_rows` are populated with predicted values to maintain alignment with the full test dataset.
+```{r}
+#| eval: false
+gwr_pred <- gwr.predict(
+  formula     = gwr_formula,
+  data        = HDB_train_sp_sub,
+  predictdata = HDB_test_sp_clean,
+  bw          = bw_gwr,
+  kernel      = "gaussian",
+  adaptive    = TRUE,
+  longlat     = FALSE
+)
+
+# Add predictions back to hdb_test
+hdb_test$gwr_pred_price <- NA_real_
+hdb_test$gwr_pred_price[valid_rows] <- gwr_pred$SDF$prediction
+```
+
+```{r}
+nrow(HDB_test_sp)        # original test size
+nrow(HDB_test_sp_clean)  # rows used for GWR prediction
+```
+```{r}
+#| eval: false
+#| include: false
+saveRDS(gwr_pred, file = "data/rds/gwr_pred.rds")
+saveRDS(hdb_test, "data/rds/hdb_test_with_gwr_pred.rds")
+```
+
+```{r}
+gwr_pred <- readRDS("data/rds/gwr_pred.rds")
+HDB_test_results <- readRDS("data/rds/hdb_test_with_gwr_pred.rds")
+```
+
+### Evaulate the model 
+```{r}
+library(Metrics)
+
+idx <- !is.na(HDB_test_results$gwr_pred_price)
+
+rmse_gwr <- rmse(HDB_test_results$resale_price[idx],
+                 HDB_test_results$gwr_pred_price[idx])
+
+mae_gwr  <- mae(HDB_test_results$resale_price[idx],
+                HDB_test_results$gwr_pred_price[idx])
+
+r2_gwr   <- 1 - sum((HDB_test_results$resale_price[idx] -
+                     HDB_test_results$gwr_pred_price[idx])^2) /
+                 sum((HDB_test_results$resale_price[idx] -
+                      mean(HDB_test_results$resale_price[idx]))^2)
+
+rmse_gwr
+mae_gwr
+r2_gwr
+```
+### Compute Moran’s I for GWR residuals
+
+```{r}
+HDB_test_results_sf <- HDB_test_sf %>%
+  mutate(
+    gwr_pred_price = HDB_test_results$gwr_pred_price,
+    gwr_residual   = resale_price - gwr_pred_price
+  )
+
+coords_test <- st_coordinates(HDB_test_results_sf)
+nb_test <- knn2nb(knearneigh(coords_test, k = 8))
+lw_test <- nb2listw(nb_test, style = "W")
+
+moran.test(HDB_test_results_sf$gwr_residual, lw_test)
+```
+The Moran’s I statistic for the GWR residuals is 0.227 (p < 0.001), substantially lower than the OLS residual Moran’s I of approximately 0.668. This indicates that GWR captures a significant portion of the spatial structure in HDB resale prices that the global OLS model fails to account for. While some positive spatial autocorrelation remains, the large reduction in Moran’s I demonstrates that geographically varying relationships—such as differing effects of proximity to amenities and structural attributes across neighbourhoods—play an important role in price formation. Therefore, GWR provides a more spatially appropriate residual pattern and better represents local market heterogeneity compared to OLS.
+
