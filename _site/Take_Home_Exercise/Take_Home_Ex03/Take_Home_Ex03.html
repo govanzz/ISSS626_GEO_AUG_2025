@@ -331,7 +331,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#metrics" id="toc-metrics" class="nav-link" data-scroll-target="#metrics"><span class="header-section-number">7.7</span> Metrics</a></li>
   </ul></li>
-  <li><a href="#comparison-of-models" id="toc-comparison-of-models" class="nav-link" data-scroll-target="#comparison-of-models"><span class="header-section-number">8</span> Comparison of models</a></li>
+  <li><a href="#comparison-of-models" id="toc-comparison-of-models" class="nav-link" data-scroll-target="#comparison-of-models"><span class="header-section-number">8</span> Comparison of models</a>
+  <ul>
+  <li><a href="#summary-table-of-model-performance" id="toc-summary-table-of-model-performance" class="nav-link" data-scroll-target="#summary-table-of-model-performance"><span class="header-section-number">8.1</span> Summary table of model performance</a></li>
+  <li><a href="#bar-chart-comparison-of-rmse-mae-r²" id="toc-bar-chart-comparison-of-rmse-mae-r²" class="nav-link" data-scroll-target="#bar-chart-comparison-of-rmse-mae-r²"><span class="header-section-number">8.2</span> Bar chart comparison of RMSE / MAE / R²</a></li>
+  <li><a href="#actual-vs-predicted-scatter-by-model" id="toc-actual-vs-predicted-scatter-by-model" class="nav-link" data-scroll-target="#actual-vs-predicted-scatter-by-model"><span class="header-section-number">8.3</span> Actual vs predicted scatter by model</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -388,10 +393,38 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="installing-and-loading-r-packages" class="level2" data-number="2">
 <h2 data-number="2" class="anchored" data-anchor-id="installing-and-loading-r-packages"><span class="header-section-number">2</span> Installing and Loading R packages</h2>
+<ul>
+<li><p><strong><code>sf</code></strong> — Provides modern spatial data handling in R.<br>
+Used to create, transform, and manipulate spatial features (points, polygons), and perform operations like distance calculation, coordinate transformation, and spatial joins.</p></li>
+<li><p><strong><code>spdep</code></strong> — Supports spatial dependence analysis.<br>
+Used to create neighbour lists and spatial weights, and compute Moran’s I to detect spatial autocorrelation in model residuals.</p></li>
+<li><p><strong><code>GWmodel</code></strong> — Core package for Geographically Weighted Regression (GWR).<br>
+Used for selecting optimal bandwidths, calibrating GWR models, and generating spatially varying predictions.</p></li>
+<li><p><strong><code>SpatialML</code></strong> — Enables Geographically Weighted Machine Learning models such as Geographically Weighted Random Forest (GRF).<br>
+Used for bandwidth selection, model fitting, and local prediction in GRF.</p></li>
+<li><p><strong><code>tmap</code></strong> — Thematic mapping package for spatial data visualisation.<br>
+Used to visualise spatial layers, including Singapore outline maps and the spatial distribution of model residuals.</p></li>
+<li><p><strong><code>rsample</code></strong> — Infrastructure for resampling and splitting data.<br>
+Used here for creating random subsets (e.g., for GWR calibration).</p></li>
+<li><p><strong><code>Metrics</code></strong> — Provides standard model evaluation metrics.<br>
+Used to compute predictive accuracy measures such as RMSE and MAE for various models.</p></li>
+<li><p><strong><code>tidyverse</code></strong> — Collection of packages for data wrangling and visualisation (e.g., <code>dplyr</code>, <code>ggplot2</code>, <code>readr</code>, <code>stringr</code>, <code>purrr</code>).<br>
+Used extensively for data cleaning, transformation, joining, and plotting.</p></li>
+<li><p><strong><code>httr</code></strong> — Makes HTTP requests from R.<br>
+Used to query the OneMap API for address and postal code geocoding.</p></li>
+<li><p><strong><code>jsonlite</code></strong> — Converts JSON responses into R-friendly data structures.<br>
+Used to parse JSON responses from OneMap into usable data frames.</p></li>
+<li><p><strong><code>progress</code></strong> — Adds progress bars to loops and long-running operations.<br>
+Used to visually track geocoding progress during OneMap queries.</p></li>
+<li><p><strong><code>ggplot2</code></strong> — Grammar of graphics for data visualisation.<br>
+Used to create histograms, bar charts, and model comparison plots.</p></li>
+<li><p><strong><code>caret</code></strong> — Unified machine learning framework.<br>
+Used to train and tune the non-spatial Random Forest model (<code>ranger</code>) with cross-validation and hyperparameter control.</p></li>
+</ul>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, spdep, GWmodel, SpatialML, </span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>               tmap, rsample, Metrics, tidyverse,httr, tidyverse, </span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>               jsonlite, progress,ggplot2,caret, ranger)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>               jsonlite, progress,ggplot2,caret,gt)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="data-preparation" class="level2" data-number="3">
@@ -412,7 +445,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h4 data-number="3.1.2" class="anchored" data-anchor-id="geocoding-hdb-resale-data"><span class="header-section-number">3.1.2</span> Geocoding HDB resale data</h4>
 <p>In this section, we will geocode HDB resale data by using SLA Onemap Geocode API.</p>
 <p>Let us prepare a geocoding function by using the code chunk below. It aims to perform the following tasks:</p>
-<p>Combining the block and street name into an address. The addresses will be used to geocode instead of postal code that you learned in In-class Exercise 3b, Passing the address as the searchVal in our query, Sending the query to OneMapSG search. Note: Since we don’t need all the address details, we can set getAddrDetails as ‘N’, Converting response (JSON object) to text, Saving response in text form as a dataframe, and Retain the latitude and longitude for our output.</p>
+<p>Combining the block and street name into an address. The addresses will be used to geocode instead of postal code that was learned in In-class Exercise 3b, Passing the address as the searchVal in our query, Sending the query to OneMapSG search. Note: Since we don’t need all the address details, we can set getAddrDetails as ‘N’, Converting response (JSON object) to text, Saving response in text form as a dataframe, and Retain the latitude and longitude for our output.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>geocode <span class="ot">&lt;-</span> <span class="cf">function</span>(block, streetname) {</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  base_url <span class="ot">&lt;-</span> <span class="st">"https://onemap.gov.sg/api/common/elastic/search"</span></span>
@@ -1352,6 +1385,7 @@ Moran I statistic       Expectation          Variance
 <section id="data-prep" class="level3" data-number="5.1">
 <h3 data-number="5.1" class="anchored" data-anchor-id="data-prep"><span class="header-section-number">5.1</span> Data prep</h3>
 <p>Randomly sample up to 5,000 training points</p>
+<p>We limit the GWR training sample to 5,000 points because GWR is computationally heavy—it fits a local regression at every data point, making runtime and memory usage grow rapidly with larger datasets. A 5,000-point sample provides sufficient spatial coverage across Singapore while keeping bandwidth selection and model fitting fast, stable, and computationally feasible.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb58"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)  <span class="co"># reproducible sampling</span></span>
 <span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -1372,6 +1406,7 @@ Moran I statistic       Expectation          Variance
 </section>
 <section id="select-optimal-gwr-bandwidth" class="level3" data-number="5.2">
 <h3 data-number="5.2" class="anchored" data-anchor-id="select-optimal-gwr-bandwidth"><span class="header-section-number">5.2</span> Select optimal GWR bandwidth</h3>
+<p>This code uses bw.gwr() to automatically select the optimal bandwidth for the GWR model. The formula specifies resale price and all predictor variables, while data = HDB_train_sp_sub supplies the sampled training points. A Gaussian kernel and adaptive bandwidth are used, meaning each location uses a variable number of neighbours. longlat = FALSE ensures distances are computed in the SVY21 projected coordinate system. The resulting bw_gwr is the best-fitting bandwidth for the GWR model.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>bw_gwr <span class="ot">&lt;-</span> <span class="fu">bw.gwr</span>(</span>
 <span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a><span class="at">formula =</span> resale_price <span class="sc">~</span></span>
@@ -1616,6 +1651,13 @@ Moran I statistic       Expectation          Variance
 </section>
 <section id="set-up-cross-validation-and-tuning-grid" class="level3" data-number="6.2">
 <h3 data-number="6.2" class="anchored" data-anchor-id="set-up-cross-validation-and-tuning-grid"><span class="header-section-number">6.2</span> Set up cross-validation and tuning grid</h3>
+<p>This code chunk prepares the Random Forest model for training and hyperparameter tuning.<br>
+<code>trainControl()</code> sets up 5-fold cross-validation, ensuring the model is evaluated on five different train–validation splits for reliable performance.<br>
+The <code>expand.grid()</code> block defines the hyperparameter search space:<br>
+- <code>mtry</code> controls how many predictors are considered at each split,<br>
+- <code>splitrule = "variance"</code> specifies the regression splitting criterion, and<br>
+- <code>min.node.size</code> sets the minimum number of samples allowed in terminal nodes.<br>
+These combinations are systematically tested to identify the best-performing Random Forest model.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
 <span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -1883,8 +1925,626 @@ $Best.BW
 </section>
 <section id="comparison-of-models" class="level2" data-number="8">
 <h2 data-number="8" class="anchored" data-anchor-id="comparison-of-models"><span class="header-section-number">8</span> Comparison of models</h2>
+<section id="summary-table-of-model-performance" class="level3" data-number="8.1">
+<h3 data-number="8.1" class="anchored" data-anchor-id="summary-table-of-model-performance"><span class="header-section-number">8.1</span> Summary table of model performance</h3>
+<p>This code chunk creates a summary table comparing the performance of all four models.<br>
+A tibble (<code>model_metrics</code>) stores RMSE, MAE, and R² values for OLS, GWR, Random Forest, and Geographically Weighted RF.<br>
+The table is then sorted by RMSE and formatted using <code>gt()</code>, which rounds the numeric values and adds a title and subtitle.<br>
+The result is a clean, publication-ready performance summary table suitable for reporting and analysis.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb117"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a>model_metrics <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a><span class="at">Model =</span> <span class="fu">c</span>(<span class="st">"OLS"</span>, <span class="st">"GWR"</span>, <span class="st">"Random Forest"</span>, <span class="st">"Geog. Weighted RF"</span>),</span>
+<span id="cb117-3"><a href="#cb117-3" aria-hidden="true" tabindex="-1"></a><span class="at">RMSE =</span> <span class="fu">c</span>(rmse_ols, rmse_gwr, rmse_rf, rmse_grf),</span>
+<span id="cb117-4"><a href="#cb117-4" aria-hidden="true" tabindex="-1"></a><span class="at">MAE =</span> <span class="fu">c</span>(mae_ols, mae_gwr, mae_rf, mae_grf),</span>
+<span id="cb117-5"><a href="#cb117-5" aria-hidden="true" tabindex="-1"></a><span class="at">R2 =</span> <span class="fu">c</span>(r2_ols, r2_gwr, r2_rf, r2_grf)</span>
+<span id="cb117-6"><a href="#cb117-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb117-7"><a href="#cb117-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb117-8"><a href="#cb117-8" aria-hidden="true" tabindex="-1"></a>model_metrics <span class="sc">%&gt;%</span></span>
+<span id="cb117-9"><a href="#cb117-9" aria-hidden="true" tabindex="-1"></a><span class="fu">arrange</span>(RMSE) <span class="sc">%&gt;%</span></span>
+<span id="cb117-10"><a href="#cb117-10" aria-hidden="true" tabindex="-1"></a><span class="fu">gt</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb117-11"><a href="#cb117-11" aria-hidden="true" tabindex="-1"></a><span class="fu">fmt_number</span>(<span class="at">columns =</span> <span class="fu">c</span>(RMSE, MAE), <span class="at">decimals =</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb117-12"><a href="#cb117-12" aria-hidden="true" tabindex="-1"></a><span class="fu">fmt_number</span>(<span class="at">columns =</span> R2, <span class="at">decimals =</span> <span class="dv">3</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb117-13"><a href="#cb117-13" aria-hidden="true" tabindex="-1"></a><span class="fu">tab_header</span>(<span class="at">title =</span> <span class="st">"Predictive Performance Across Models"</span>,</span>
+<span id="cb117-14"><a href="#cb117-14" aria-hidden="true" tabindex="-1"></a><span class="at">subtitle =</span> <span class="st">"Test period: Jul–Sep 2025"</span></span>
+<span id="cb117-15"><a href="#cb117-15" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div id="osncjrvket" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#osncjrvket table {
+  font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#osncjrvket thead, #osncjrvket tbody, #osncjrvket tfoot, #osncjrvket tr, #osncjrvket td, #osncjrvket th {
+  border-style: none;
+}
+
+#osncjrvket p {
+  margin: 0;
+  padding: 0;
+}
+
+#osncjrvket .gt_table {
+  display: table;
+  border-collapse: collapse;
+  line-height: normal;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333333;
+  font-size: 16px;
+  font-weight: normal;
+  font-style: normal;
+  background-color: #FFFFFF;
+  width: auto;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #A8A8A8;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #A8A8A8;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+}
+
+#osncjrvket .gt_caption {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+#osncjrvket .gt_title {
+  color: #333333;
+  font-size: 125%;
+  font-weight: initial;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-color: #FFFFFF;
+  border-bottom-width: 0;
+}
+
+#osncjrvket .gt_subtitle {
+  color: #333333;
+  font-size: 85%;
+  font-weight: initial;
+  padding-top: 3px;
+  padding-bottom: 5px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-color: #FFFFFF;
+  border-top-width: 0;
+}
+
+#osncjrvket .gt_heading {
+  background-color: #FFFFFF;
+  text-align: center;
+  border-bottom-color: #FFFFFF;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#osncjrvket .gt_bottom_border {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#osncjrvket .gt_col_headings {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+}
+
+#osncjrvket .gt_col_heading {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 6px;
+  padding-left: 5px;
+  padding-right: 5px;
+  overflow-x: hidden;
+}
+
+#osncjrvket .gt_column_spanner_outer {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: normal;
+  text-transform: inherit;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#osncjrvket .gt_column_spanner_outer:first-child {
+  padding-left: 0;
+}
+
+#osncjrvket .gt_column_spanner_outer:last-child {
+  padding-right: 0;
+}
+
+#osncjrvket .gt_column_spanner {
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: bottom;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow-x: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+#osncjrvket .gt_spanner_row {
+  border-bottom-style: hidden;
+}
+
+#osncjrvket .gt_group_heading {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#osncjrvket .gt_empty_group_heading {
+  padding: 0.5px;
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  vertical-align: middle;
+}
+
+#osncjrvket .gt_from_md > :first-child {
+  margin-top: 0;
+}
+
+#osncjrvket .gt_from_md > :last-child {
+  margin-bottom: 0;
+}
+
+#osncjrvket .gt_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  margin: 10px;
+  border-top-style: solid;
+  border-top-width: 1px;
+  border-top-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 1px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 1px;
+  border-right-color: #D3D3D3;
+  vertical-align: middle;
+  overflow-x: hidden;
+}
+
+#osncjrvket .gt_stub {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#osncjrvket .gt_stub_row_group {
+  color: #333333;
+  background-color: #FFFFFF;
+  font-size: 100%;
+  font-weight: initial;
+  text-transform: inherit;
+  border-right-style: solid;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+  padding-left: 5px;
+  padding-right: 5px;
+  vertical-align: top;
+}
+
+#osncjrvket .gt_row_group_first td {
+  border-top-width: 2px;
+}
+
+#osncjrvket .gt_row_group_first th {
+  border-top-width: 2px;
+}
+
+#osncjrvket .gt_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#osncjrvket .gt_first_summary_row {
+  border-top-style: solid;
+  border-top-color: #D3D3D3;
+}
+
+#osncjrvket .gt_first_summary_row.thick {
+  border-top-width: 2px;
+}
+
+#osncjrvket .gt_last_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#osncjrvket .gt_grand_summary_row {
+  color: #333333;
+  background-color: #FFFFFF;
+  text-transform: inherit;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#osncjrvket .gt_first_grand_summary_row {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-top-style: double;
+  border-top-width: 6px;
+  border-top-color: #D3D3D3;
+}
+
+#osncjrvket .gt_last_grand_summary_row_top {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
+  border-bottom-style: double;
+  border-bottom-width: 6px;
+  border-bottom-color: #D3D3D3;
+}
+
+#osncjrvket .gt_striped {
+  background-color: rgba(128, 128, 128, 0.05);
+}
+
+#osncjrvket .gt_table_body {
+  border-top-style: solid;
+  border-top-width: 2px;
+  border-top-color: #D3D3D3;
+  border-bottom-style: solid;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+}
+
+#osncjrvket .gt_footnotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#osncjrvket .gt_footnote {
+  margin: 0px;
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#osncjrvket .gt_sourcenotes {
+  color: #333333;
+  background-color: #FFFFFF;
+  border-bottom-style: none;
+  border-bottom-width: 2px;
+  border-bottom-color: #D3D3D3;
+  border-left-style: none;
+  border-left-width: 2px;
+  border-left-color: #D3D3D3;
+  border-right-style: none;
+  border-right-width: 2px;
+  border-right-color: #D3D3D3;
+}
+
+#osncjrvket .gt_sourcenote {
+  font-size: 90%;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+#osncjrvket .gt_left {
+  text-align: left;
+}
+
+#osncjrvket .gt_center {
+  text-align: center;
+}
+
+#osncjrvket .gt_right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#osncjrvket .gt_font_normal {
+  font-weight: normal;
+}
+
+#osncjrvket .gt_font_bold {
+  font-weight: bold;
+}
+
+#osncjrvket .gt_font_italic {
+  font-style: italic;
+}
+
+#osncjrvket .gt_super {
+  font-size: 65%;
+}
+
+#osncjrvket .gt_footnote_marks {
+  font-size: 75%;
+  vertical-align: 0.4em;
+  position: initial;
+}
+
+#osncjrvket .gt_asterisk {
+  font-size: 100%;
+  vertical-align: 0;
+}
+
+#osncjrvket .gt_indent_1 {
+  text-indent: 5px;
+}
+
+#osncjrvket .gt_indent_2 {
+  text-indent: 10px;
+}
+
+#osncjrvket .gt_indent_3 {
+  text-indent: 15px;
+}
+
+#osncjrvket .gt_indent_4 {
+  text-indent: 20px;
+}
+
+#osncjrvket .gt_indent_5 {
+  text-indent: 25px;
+}
+
+#osncjrvket .katex-display {
+  display: inline-flex !important;
+  margin-bottom: 0.75em !important;
+}
+
+#osncjrvket div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+  height: 0px !important;
+}
+</style>
+
+<table class="gt_table caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-quarto-disable-processing="false" data-quarto-bootstrap="false">
+<thead>
+<tr class="gt_heading header">
+<th colspan="4" class="gt_heading gt_title gt_font_normal">Predictive Performance Across Models</th>
+</tr>
+<tr class="gt_heading even">
+<th colspan="4" class="gt_heading gt_subtitle gt_font_normal gt_bottom_border">Test period: Jul–Sep 2025</th>
+</tr>
+<tr class="gt_col_headings header">
+<th id="Model" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">Model</th>
+<th id="RMSE" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">RMSE</th>
+<th id="MAE" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">MAE</th>
+<th id="R2" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">R2</th>
+</tr>
+</thead>
+<tbody class="gt_table_body">
+<tr class="odd">
+<td class="gt_row gt_left" headers="Model">Random Forest</td>
+<td class="gt_row gt_right" headers="RMSE">48,468</td>
+<td class="gt_row gt_right" headers="MAE">33,798</td>
+<td class="gt_row gt_right" headers="R2">0.923</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Model">GWR</td>
+<td class="gt_row gt_right" headers="RMSE">56,689</td>
+<td class="gt_row gt_right" headers="MAE">40,019</td>
+<td class="gt_row gt_right" headers="R2">0.894</td>
+</tr>
+<tr class="odd">
+<td class="gt_row gt_left" headers="Model">OLS</td>
+<td class="gt_row gt_right" headers="RMSE">81,416</td>
+<td class="gt_row gt_right" headers="MAE">58,802</td>
+<td class="gt_row gt_right" headers="R2">0.781</td>
+</tr>
+<tr class="even">
+<td class="gt_row gt_left" headers="Model">Geog. Weighted RF</td>
+<td class="gt_row gt_right" headers="RMSE">123,421</td>
+<td class="gt_row gt_right" headers="MAE">94,785</td>
+<td class="gt_row gt_right" headers="R2">0.498</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+</section>
+<section id="bar-chart-comparison-of-rmse-mae-r²" class="level3" data-number="8.2">
+<h3 data-number="8.2" class="anchored" data-anchor-id="bar-chart-comparison-of-rmse-mae-r²"><span class="header-section-number">8.2</span> Bar chart comparison of RMSE / MAE / R²</h3>
+<p>This code chunk reshapes the model performance table into a long format using <code>pivot_longer()</code>, so each metric (RMSE, MAE, R²) becomes a separate row.<br>
+A bar chart is then created using <code>ggplot2</code> to display model performance side-by-side.<br>
+<code>facet_wrap()</code> creates individual panels for each metric, allowing easy comparison across models.<br>
+<code>geom_text()</code> overlays the numeric values on top of each bar to enhance readability.<br>
+The plot is styled with a minimal theme, angled x-axis labels for clarity, and bold facet titles.<br>
+This produces a clean and visually effective comparison of model performance.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb118"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a>metrics_long <span class="ot">&lt;-</span> model_metrics <span class="sc">%&gt;%</span></span>
+<span id="cb118-2"><a href="#cb118-2" aria-hidden="true" tabindex="-1"></a>tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(</span>
+<span id="cb118-3"><a href="#cb118-3" aria-hidden="true" tabindex="-1"></a><span class="at">cols =</span> <span class="fu">c</span>(RMSE, MAE, R2),</span>
+<span id="cb118-4"><a href="#cb118-4" aria-hidden="true" tabindex="-1"></a><span class="at">names_to =</span> <span class="st">"Metric"</span>,</span>
+<span id="cb118-5"><a href="#cb118-5" aria-hidden="true" tabindex="-1"></a><span class="at">values_to =</span> <span class="st">"Value"</span></span>
+<span id="cb118-6"><a href="#cb118-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb118-7"><a href="#cb118-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb118-8"><a href="#cb118-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(metrics_long, <span class="fu">aes</span>(<span class="at">x =</span> Model, <span class="at">y =</span> Value)) <span class="sc">+</span></span>
+<span id="cb118-9"><a href="#cb118-9" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb118-10"><a href="#cb118-10" aria-hidden="true" tabindex="-1"></a><span class="fu">facet_wrap</span>(<span class="sc">~</span> Metric, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span></span>
+<span id="cb118-11"><a href="#cb118-11" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(Value, <span class="fu">ifelse</span>(Metric <span class="sc">==</span> <span class="st">"R2"</span>, <span class="dv">3</span>, <span class="dv">0</span>))),</span>
+<span id="cb118-12"><a href="#cb118-12" aria-hidden="true" tabindex="-1"></a><span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.4</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb118-13"><a href="#cb118-13" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(</span>
+<span id="cb118-14"><a href="#cb118-14" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Model Performance Comparison"</span>,</span>
+<span id="cb118-15"><a href="#cb118-15" aria-hidden="true" tabindex="-1"></a><span class="at">x =</span> <span class="cn">NULL</span>,</span>
+<span id="cb118-16"><a href="#cb118-16" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="cn">NULL</span></span>
+<span id="cb118-17"><a href="#cb118-17" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb118-18"><a href="#cb118-18" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
+<span id="cb118-19"><a href="#cb118-19" aria-hidden="true" tabindex="-1"></a><span class="fu">theme</span>(</span>
+<span id="cb118-20"><a href="#cb118-20" aria-hidden="true" tabindex="-1"></a><span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>),</span>
+<span id="cb118-21"><a href="#cb118-21" aria-hidden="true" tabindex="-1"></a><span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">20</span>, <span class="at">hjust =</span> <span class="dv">1</span>)</span>
+<span id="cb118-22"><a href="#cb118-22" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex03_files/figure-html/bar chart-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The bar graph compares the out-of-sample performance of four models on HDB resale prices for Jul–Sep 2025. Random Forest (RF) is the best-performing model, achieving the lowest RMSE (48,468) and lowest MAE (33,798), with the highest R² (0.923). This indicates that a non-spatial, nonlinear ensemble can already capture most of the variation in resale prices by flexibly modelling interactions between structural and locational variables.</p>
+<p>The Geographically Weighted Regression (GWR) model performs second best, with RMSE 56,689, MAE 40,019, and R² 0.894. GWR improves clearly over the global OLS model, confirming that allowing coefficients to vary across space helps capture local housing market differences, even within a linear framework.</p>
+<p>The OLS model yields RMSE 81,416, MAE 58,802, and R² 0.781. Although it provides a reasonable baseline, its lower R² and higher errors reflect the limitations of a single global linear relationship in the presence of spatial heterogeneity and nonlinear effects.</p>
+<p>Finally, the Geographically Weighted Random Forest (GRF) performs the weakest (RMSE 123,421, MAE 94,785, R² 0.498) in this implementation. This suggests that the added model complexity and local forest fitting did not translate into better generalisation on the test period—likely due to bandwidth choice, overfitting to local noise, or the relatively limited sample size for each local model.</p>
+<p>Overall, these results indicate that a well-tuned global Random Forest provides the most accurate and stable predictions, while GWR offers a strong spatially explicit alternative that still outperforms traditional OLS.</p>
+</section>
+<section id="actual-vs-predicted-scatter-by-model" class="level3" data-number="8.3">
+<h3 data-number="8.3" class="anchored" data-anchor-id="actual-vs-predicted-scatter-by-model"><span class="header-section-number">8.3</span> Actual vs predicted scatter by model</h3>
+<p>This code chunk creates a scatterplot comparing actual and predicted resale prices for all four models.<br>
+A tibble (<code>compare_df</code>) is first constructed containing the actual prices and each model’s predictions.<br>
+<code>pivot_longer()</code> converts the data into long format so each model appears as a separate row.<br>
+<code>ggplot()</code> then plots actual vs.&nbsp;predicted prices, adds a 45-degree reference line to indicate perfect prediction,<br>
+and uses <code>facet_wrap()</code> to display one panel per model.<br>
+The result visually shows how closely each model’s predictions match the actual resale prices.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb119"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1" aria-hidden="true" tabindex="-1"></a>compare_df <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb119-2"><a href="#cb119-2" aria-hidden="true" tabindex="-1"></a><span class="at">resale_price =</span> HDB_test_results_grf<span class="sc">$</span>resale_price,</span>
+<span id="cb119-3"><a href="#cb119-3" aria-hidden="true" tabindex="-1"></a><span class="at">OLS =</span> HDB_test_results<span class="sc">$</span>pred_price,</span>
+<span id="cb119-4"><a href="#cb119-4" aria-hidden="true" tabindex="-1"></a><span class="at">GWR =</span> HDB_test_results<span class="sc">$</span>gwr_pred_price,</span>
+<span id="cb119-5"><a href="#cb119-5" aria-hidden="true" tabindex="-1"></a><span class="st">`</span><span class="at">Random Forest</span><span class="st">`</span> <span class="ot">=</span> hdb_test<span class="sc">$</span>rf_pred_price,</span>
+<span id="cb119-6"><a href="#cb119-6" aria-hidden="true" tabindex="-1"></a><span class="st">`</span><span class="at">Geog. Weighted RF</span><span class="st">`</span> <span class="ot">=</span> HDB_test_results_grf<span class="sc">$</span>grf_pred_price</span>
+<span id="cb119-7"><a href="#cb119-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb119-8"><a href="#cb119-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-9"><a href="#cb119-9" aria-hidden="true" tabindex="-1"></a>compare_long <span class="ot">&lt;-</span> compare_df <span class="sc">%&gt;%</span></span>
+<span id="cb119-10"><a href="#cb119-10" aria-hidden="true" tabindex="-1"></a>tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(</span>
+<span id="cb119-11"><a href="#cb119-11" aria-hidden="true" tabindex="-1"></a><span class="at">cols =</span> <span class="sc">-</span>resale_price,</span>
+<span id="cb119-12"><a href="#cb119-12" aria-hidden="true" tabindex="-1"></a><span class="at">names_to =</span> <span class="st">"Model"</span>,</span>
+<span id="cb119-13"><a href="#cb119-13" aria-hidden="true" tabindex="-1"></a><span class="at">values_to =</span> <span class="st">"pred_price"</span></span>
+<span id="cb119-14"><a href="#cb119-14" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb119-15"><a href="#cb119-15" aria-hidden="true" tabindex="-1"></a><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(pred_price))</span>
+<span id="cb119-16"><a href="#cb119-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb119-17"><a href="#cb119-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(compare_long,</span>
+<span id="cb119-18"><a href="#cb119-18" aria-hidden="true" tabindex="-1"></a><span class="fu">aes</span>(<span class="at">x =</span> resale_price, <span class="at">y =</span> pred_price)) <span class="sc">+</span></span>
+<span id="cb119-19"><a href="#cb119-19" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb119-20"><a href="#cb119-20" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_abline</span>(<span class="at">slope =</span> <span class="dv">1</span>, <span class="at">intercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb119-21"><a href="#cb119-21" aria-hidden="true" tabindex="-1"></a><span class="fu">facet_wrap</span>(<span class="sc">~</span> Model, <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span></span>
+<span id="cb119-22"><a href="#cb119-22" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
+<span id="cb119-23"><a href="#cb119-23" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
+<span id="cb119-24"><a href="#cb119-24" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(</span>
+<span id="cb119-25"><a href="#cb119-25" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Actual vs Predicted HDB Resale Prices"</span>,</span>
+<span id="cb119-26"><a href="#cb119-26" aria-hidden="true" tabindex="-1"></a><span class="at">x =</span> <span class="st">"Actual price (SGD)"</span>,</span>
+<span id="cb119-27"><a href="#cb119-27" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="st">"Predicted price (SGD)"</span></span>
+<span id="cb119-28"><a href="#cb119-28" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb119-29"><a href="#cb119-29" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex03_files/figure-html/unnamed-chunk-88-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The scatterplots provide a visual assessment of how well each model predicts resale prices for the Jul–Sep 2025 test period. The 45-degree dashed line represents perfect prediction, where predicted values exactly match actual transaction prices. Deviations from this line indicate under- or over-prediction.</p>
+<p>The Random Forest model exhibits the tightest clustering around the reference line, reflecting its strong predictive performance. Most points lie very close to the 45-degree line across the full price range (approximately $600,000 to $1.6 million), indicating that the RF model captures nonlinear effects and complex interactions effectively. This visual pattern aligns with its top performance metrics (lowest RMSE and highest R²).</p>
+<p>The GWR model also shows relatively close alignment to the reference line, though with slightly wider dispersion than Random Forest. While GWR captures spatial heterogeneity well, its linear structure limits its ability to fully model nonlinear price dynamics, leading to moderate under- and over-prediction in mid- and high-priced units.</p>
+<p>The OLS model shows noticeably larger spread around the reference line, indicating weaker predictive accuracy. High-priced transactions above $1.2 million tend to be systematically under-predicted, suggesting that a global linear specification does not accommodate varying relationships across neighbourhoods or price tiers. This visual pattern aligns with OLS having the third-best R² and higher errors.</p>
+<p>The Geographically Weighted Random Forest (GRF) shows the weakest fit, with a wide horizontal spread and clear bias in the upper price ranges where predictions flatten. This suggests that the GRF configuration used may be overfitting to local noise or using suboptimal bandwidth settings, resulting in poorer generalisation.</p>
+<p>Overall, the scatterplots reinforce the quantitative results: Random Forest provides the most accurate and stable predictions, while GWR improves over OLS but remains limited by linearity. GRF underperforms in this implementation, indicating that additional tuning may be required for effective spatial machine learning.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

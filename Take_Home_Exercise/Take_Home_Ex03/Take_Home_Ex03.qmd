@@ -31,17 +31,57 @@ We will develop a model to predict HDB resale prices for the period July to Sept
 
 ## Installing and Loading R packages
 
+- **`sf`** — Provides modern spatial data handling in R.  
+  Used to create, transform, and manipulate spatial features (points, polygons), and perform operations like distance calculation, coordinate transformation, and spatial joins.
+
+- **`spdep`** — Supports spatial dependence analysis.  
+  Used to create neighbour lists and spatial weights, and compute Moran’s I to detect spatial autocorrelation in model residuals.
+
+- **`GWmodel`** — Core package for Geographically Weighted Regression (GWR).  
+  Used for selecting optimal bandwidths, calibrating GWR models, and generating spatially varying predictions.
+
+- **`SpatialML`** — Enables Geographically Weighted Machine Learning models such as Geographically Weighted Random Forest (GRF).  
+  Used for bandwidth selection, model fitting, and local prediction in GRF.
+
+- **`tmap`** — Thematic mapping package for spatial data visualisation.  
+  Used to visualise spatial layers, including Singapore outline maps and the spatial distribution of model residuals.
+
+- **`rsample`** — Infrastructure for resampling and splitting data.  
+  Used here for creating random subsets (e.g., for GWR calibration).
+
+- **`Metrics`** — Provides standard model evaluation metrics.  
+  Used to compute predictive accuracy measures such as RMSE and MAE for various models.
+
+- **`tidyverse`** — Collection of packages for data wrangling and visualisation (e.g., `dplyr`, `ggplot2`, `readr`, `stringr`, `purrr`).  
+  Used extensively for data cleaning, transformation, joining, and plotting.
+
+- **`httr`** — Makes HTTP requests from R.  
+  Used to query the OneMap API for address and postal code geocoding.
+
+- **`jsonlite`** — Converts JSON responses into R-friendly data structures.  
+  Used to parse JSON responses from OneMap into usable data frames.
+
+- **`progress`** — Adds progress bars to loops and long-running operations.  
+  Used to visually track geocoding progress during OneMap queries.
+
+- **`ggplot2`** — Grammar of graphics for data visualisation.  
+  Used to create histograms, bar charts, and model comparison plots.
+
+- **`caret`** — Unified machine learning framework.  
+  Used to train and tune the non-spatial Random Forest model (`ranger`) with cross-validation and hyperparameter control.
+
 ```{r}
 pacman::p_load(sf, spdep, GWmodel, SpatialML, 
                tmap, rsample, Metrics, tidyverse,httr, tidyverse, 
-               jsonlite, progress,ggplot2,caret, ranger)
+               jsonlite, progress,ggplot2,caret,gt)
 ```
 
 ## Data Preparation
 
 ### HDB Dataset
 
-#### Selecting Date of Interest 
+#### Selecting Date of Interest
+
 This data set comprises of HDB resale transactions from Jan 2017 onwards. For the purpose of the hands on Exercise, the code chunk below will be used to extract a sub-set of transaction records on 5-Room flat transacted from July 2024 to September 2025.
 
 ```{r}
@@ -52,16 +92,12 @@ HDBresale <- read_csv(
 ```
 
 #### Geocoding HDB resale data
+
 In this section, we will geocode HDB resale data by using SLA Onemap Geocode API.
 
 Let us prepare a geocoding function by using the code chunk below. It aims to perform the following tasks:
 
-Combining the block and street name into an address. The addresses will be used to geocode instead of postal code that you learned in In-class Exercise 3b,
-Passing the address as the searchVal in our query,
-Sending the query to OneMapSG search. Note: Since we don’t need all the address details, we can set getAddrDetails as ‘N’,
-Converting response (JSON object) to text,
-Saving response in text form as a dataframe, and
-Retain the latitude and longitude for our output.
+Combining the block and street name into an address. The addresses will be used to geocode instead of postal code that was learned in In-class Exercise 3b, Passing the address as the searchVal in our query, Sending the query to OneMapSG search. Note: Since we don’t need all the address details, we can set getAddrDetails as ‘N’, Converting response (JSON object) to text, Saving response in text form as a dataframe, and Retain the latitude and longitude for our output.
 
 ```{r}
 geocode <- function(block, streetname) {
@@ -82,6 +118,7 @@ geocode <- function(block, streetname) {
   return(output)
 }
 ```
+
 Next, the code chunk below will be used to to execute the geocoding function:
 
 ```{r}
@@ -96,6 +133,7 @@ for (i in 1:nrow(HDBresale)){
   HDBresale$LONGITUDE[i] <- temp_output$results.LONGITUDE
 }
 ```
+
 ```{r}
 #| eval: false
 #| include: false
@@ -113,23 +151,17 @@ The `storey_range` field in the HDB resale dataset is provided as a text range s
 
 This is done by:
 
-1. **Removing spaces** from the text  
-   - Example: `"07 TO 09"` → `"07TO09"`
-
-2. **Splitting the range** into the lower and upper floor values  
-   - `"07TO09"` → `"07"` and `"09"`
-
-3. **Calculating the midpoint** (average) of the two values  
-   - \[
-     \frac{7 + 9}{2} = 8
-     \]
-
-4. **Creating a new variable** named `storey_mid` to store this midpoint value.
+1.  **Removing spaces** from the text
+    -   Example: `"07 TO 09"` → `"07TO09"`
+2.  **Splitting the range** into the lower and upper floor values
+    -   `"07TO09"` → `"07"` and `"09"`
+3.  **Calculating the midpoint** (average) of the two values
+    -   \[ \frac{7 + 9}{2} = 8 \]
+4.  **Creating a new variable** named `storey_mid` to store this midpoint value.
 
 This numeric representation allows the floor level information to be used effectively in statistical and machine learning models.
 
-5. Remove the original storey_range column, as it is no longer needed.
-
+5.  Remove the original storey_range column, as it is no longer needed.
 
 ```{r}
 storey_mid <- function(x) {
@@ -151,10 +183,10 @@ The `remaining_lease` field is provided as text (e.g., `"87 years 4 months"`). T
 
 The function `convert_remaining_lease()`:
 
-1. Extracts the number of **years**.
-2. Extracts the number of **months** (or uses 0 if not specified).
-3. Converts months into a fraction of a year (`months / 12`).
-4. Adds the two together to get a single numeric value.
+1.  Extracts the number of **years**.
+2.  Extracts the number of **months** (or uses 0 if not specified).
+3.  Converts months into a fraction of a year (`months / 12`).
+4.  Adds the two together to get a single numeric value.
 
 We then apply the function to create a new column `remaining_lease_yrs` and drop the original text column.
 
@@ -172,20 +204,21 @@ HDBresale <- HDBresale %>%
 ```
 
 ### Proximity Analysis
+
 In this section, we will learn how to count the number of geographic entities located within a defined distance from each HDB property.
 
 #### Converting to an sf object
+
 Before performing proximity analysis, it is important to ensure that:
 
-- input data sets must be in sf objects, and
-- they must be in similar projected coordinates systems.
+-   input data sets must be in sf objects, and
+-   they must be in similar projected coordinates systems.
 
 In the code chunk below,
 
-- st_as_sf() is used to convert HDBresale tibble data.frame to sf object by using values from LONGITUDE and LATITUDE columns to form the geometry features.
-- st_transform() is then used to transform the sf object into svy21 projected coordinates system.
-- the output sf object is called HDBresale_sf. It is in sf data.frame format.
-
+-   st_as_sf() is used to convert HDBresale tibble data.frame to sf object by using values from LONGITUDE and LATITUDE columns to form the geometry features.
+-   st_transform() is then used to transform the sf object into svy21 projected coordinates system.
+-   the output sf object is called HDBresale_sf. It is in sf data.frame format.
 
 ```{r}
 HDBresale_sf <- HDBresale %>%
@@ -194,7 +227,9 @@ HDBresale_sf <- HDBresale %>%
     crs=4326) %>%
   st_transform(crs = 3414)
 ```
-#### PreSchool Location 
+
+#### PreSchool Location
+
 Next, we will locate and download Pre-Schools Location data from Singapore’s open data portal. There are both geojson and kml version. In this exercise, the kml version will be used.
 
 Then, code chunk below will be used to import the preschool location data into R environment by using st_read() of readr package.
@@ -204,6 +239,7 @@ preschool = st_read(
   "data/rawdata/PreSchoolsLocation.kml") %>%
   st_transform(crs= 3414)
 ```
+
 Lastly, code chunk below will be used to count the number of pre-schools located within 350m of each HDB property.
 
 ```{r}
@@ -214,8 +250,9 @@ HDBresale_sf <- HDBresale_sf %>%
   mutate(WITHIN_350M_PRESCHOOL = map_int(within_350m, length))
 ```
 
-#### Proximity to CBD 
-The code chunk below  computes the Euclidean (straight-line) distance between each flat and the Downtown Core (CBD) centroid using Singapore’s projected coordinate system (EPSG:3414, SVY21). The resulting columns proximity_to_cbd_m and proximity_to_cbd_km represent the flat’s distance to the CBD in meters and kilometers respectively
+#### Proximity to CBD
+
+The code chunk below computes the Euclidean (straight-line) distance between each flat and the Downtown Core (CBD) centroid using Singapore’s projected coordinate system (EPSG:3414, SVY21). The resulting columns proximity_to_cbd_m and proximity_to_cbd_km represent the flat’s distance to the CBD in meters and kilometers respectively
 
 ```{r}
 # --- Define Downtown Core (CBD) coordinates (WGS84) ---
@@ -242,13 +279,14 @@ HDBresale_sf <- HDBresale_sf %>%
 
 #### Bus Stops within 350 metres
 
-Read Bustops shp file and check CRS 
+Read Bustops shp file and check CRS
 
 ```{r}
 busstops <- st_read("data/rawdata/BusStop.shp", quiet = TRUE)%>%
   st_transform(crs= 3414)
 st_crs(busstops)  # check the CRS
 ```
+
 ```{r}
 # Count number of bus stops within 350 m for each HDB point
 within_350m <- st_is_within_distance(HDBresale_sf, busstops, dist = 350)
@@ -267,6 +305,7 @@ eldercare <- st_read("data/rawdata/ELDERCARE.shp", quiet = TRUE)%>%
   st_transform(crs= 3414)
 st_crs(eldercare)  # check the CRS
 ```
+
 ```{r}
 within_350m <- st_is_within_distance(HDBresale_sf, eldercare, dist = 350)
 
@@ -278,9 +317,9 @@ mutate(WITHIN_350M_ELDERCARE = purrr::map_int(within_350m, length))
 
 #### Proximity to Good Primary Schools
 
-For this part we have collected top 20 Primary Schools from Singapore in a CSV file along with its postal code , we will use One map API to geo-encode using postal code 
+For this part we have collected top 20 Primary Schools from Singapore in a CSV file along with its postal code , we will use One map API to geo-encode using postal code
 
-The below code chunk gets the latitude and longitude of the school using postal codes 
+The below code chunk gets the latitude and longitude of the school using postal codes
 
 ```{r}
 # --- 1) Read the CSV (school_name, postal_code) ---
@@ -329,7 +368,7 @@ good_ps_sf <- good_ps %>%
   st_as_sf(coords = c("X","Y"), crs = 3414)  # OneMap X/Y are SVY21
 ```
 
-Now the below code chunk is used to derive proximity columns to good primary schools 
+Now the below code chunk is used to derive proximity columns to good primary schools
 
 ```{r}
 # --- 5) Proximity features  ---
@@ -351,13 +390,7 @@ HDBresale_sf <- HDBresale_sf %>%
 
 #### Proximity to MRT/LRT stations
 
-This code safely loads and processes MRT/LRT station geometries to calculate each HDB flat’s distance to its nearest station.
-It first reads the shapefile with error handling and removes invalid geometries.
-For any problematic shapes, it extracts a representative point using a safe function (safe_point).
-Next, it groups polygons by station name, merges them, and ensures each has one valid point in SVY21 coordinates.
-Finally, it computes straight-line distances (in kilometers) from each HDB flat to its nearest station and adds this as dist_mrt_km to the dataset.
-
-
+This code safely loads and processes MRT/LRT station geometries to calculate each HDB flat’s distance to its nearest station. It first reads the shapefile with error handling and removes invalid geometries. For any problematic shapes, it extracts a representative point using a safe function (safe_point). Next, it groups polygons by station name, merges them, and ensures each has one valid point in SVY21 coordinates. Finally, it computes straight-line distances (in kilometers) from each HDB flat to its nearest station and adds this as dist_mrt_km to the dataset.
 
 ```{r}
 
@@ -402,13 +435,16 @@ HDBresale_sf <- HDBresale_sf %>%
 ```
 
 #### Proximity to Parks
+
 Read ParkFacilities (GeoJSON) and ensure CRS
+
 ```{r}
 parks <- st_read("data/rawdata/ParkFacilities.geojson", quiet = TRUE) %>%
   st_transform(3414)               # SVY21 metres
 ```
 
 Compute distance to the nearest park (km) and add to dataset
+
 ```{r}
 # Distance to nearest park facility (km)
 nn_idx <- st_nearest_feature(HDBresale_sf, parks)
@@ -422,7 +458,9 @@ HDBresale_sf <- HDBresale_sf %>%
 ```
 
 #### Proximity to Malls
+
 Read the malls CSV (mall_name, postal_code)
+
 ```{r}
 malls <- readr::read_csv("data/rawdata/singapore_malls_postal_codes.csv",
                          show_col_types = FALSE) %>%
@@ -474,6 +512,7 @@ malls_sf <- malls %>%
 ```
 
 Derive proximity features to malls
+
 ```{r}
 # Distance to nearest mall (km)
 mall_nn_idx <- sf::st_nearest_feature(HDBresale_sf, malls_sf)
@@ -492,7 +531,9 @@ HDBresale_sf <- HDBresale_sf %>%
 ```
 
 #### Proximity to CHAS clinics
+
 Read Chas data and ensure CRS
+
 ```{r}
 chas <- st_read("data/rawdata/CHASClinics.geojson", quiet = TRUE) %>%
   st_transform(3414)
@@ -518,15 +559,17 @@ HDBresale_sf <- HDBresale_sf %>%
 
 #### Proximity to Hawker Centres
 
+Read Hawker Centres GeoJSON and check CRS
 
-Read Hawker Centres GeoJSON and check CRS 
 ```{r}
 hawker <- st_read("data/rawdata/HawkerCentresGEOJSON.geojson", quiet = TRUE)%>%
   st_transform(3414)
 
 st_crs(hawker)
 ```
+
 Compute distance to nearest hawker centre (in km) ---
+
 ```{r}
 hawker_nn_idx <- st_nearest_feature(HDBresale_sf, hawker)
 dist_hawker_km <- as.numeric(st_distance(HDBresale_sf, hawker[hawker_nn_idx, ], by_element = TRUE)) / 1000
@@ -537,6 +580,7 @@ HDBresale_sf <- HDBresale_sf %>%
 ```
 
 #### Childcare Centres within 350 metres
+
 Read ChildCare Services (GeoJSON) and ensure SVY21:
 
 ```{r}
@@ -547,6 +591,7 @@ st_crs(hawker)
 ```
 
 Compute count within 350 m and add to main data
+
 ```{r}
 within_350m_cc <- st_is_within_distance(HDBresale_sf, childcare, dist = 350)
 
@@ -554,14 +599,16 @@ HDBresale_sf <- HDBresale_sf %>%
   mutate(WITHIN_350M_CHILDCARE = lengths(within_350m_cc))
 ```
 
-
 ```{r}
 #| eval: false
 #| include: false
 colnames(HDBresale_sf)
 ```
-### Calculate Correlation Matrix 
-Before loading the predictors into a predictive model, it is always a good practice to use correlation matrix to examine if there is sign of multicollinearity. 
+
+### Calculate Correlation Matrix
+
+Before loading the predictors into a predictive model, it is always a good practice to use correlation matrix to examine if there is sign of multicollinearity.
+
 ```{r}
 # 1) Drop geometry
 HDBresale_nogeo <- HDBresale_sf %>%
@@ -583,7 +630,9 @@ corrplot::corrplot(corr_matrix,
                    method = "number",
                    type = "upper")
 ```
-Drop Highly correlated Values 
+
+Drop Highly correlated Values
+
 ```{r}
 HDBresale_sf <- HDBresale_sf %>%
   select(-WITHIN_350M_PRESCHOOL,
@@ -594,16 +643,13 @@ HDBresale_sf <- HDBresale_sf %>%
 
 ### Train–Test Split for HDB Resale Modelling
 
-This code  chunk separates the dataset into **training** and **testing** periods and removes geometry for modelling.
+This code chunk separates the dataset into **training** and **testing** periods and removes geometry for modelling.
 
-1. Training Set (Jul 2024 – Jun 2025)
-Filters `HDBresale_sf` to include resale transactions from July 2024 to June 2025, storing it as `HDB_train_sf`.
+1.  Training Set (Jul 2024 – Jun 2025) Filters `HDBresale_sf` to include resale transactions from July 2024 to June 2025, storing it as `HDB_train_sf`.
 
-2. Test Set (Jul 2025 – Sep 2025)
-Filters the same dataset for resale transactions from July 2025 to September 2025, creating `HDB_test_sf`.
+2.  Test Set (Jul 2025 – Sep 2025) Filters the same dataset for resale transactions from July 2025 to September 2025, creating `HDB_test_sf`.
 
-3. Drop Geometry for Modelling
-Converts both `sf` objects into regular data frames (`hdb_train`, `hdb_test`) by removing spatial geometry columns using `st_drop_geometry()`, preparing them for statistical or machine-learning models.
+3.  Drop Geometry for Modelling Converts both `sf` objects into regular data frames (`hdb_train`, `hdb_test`) by removing spatial geometry columns using `st_drop_geometry()`, preparing them for statistical or machine-learning models.
 
 ```{r}
 
@@ -632,8 +678,11 @@ ggplot(hdb_train, aes(x = resale_price)) +
   ) +
   theme_minimal()
 ```
+
 ## Building a non-spatial multiple linear regression
+
 This code chunk fits a linear regression model (`lm_ols`) using the `lm()` function, where the log-transformed HDB resale price is the dependent variable. The model includes structural attributes (e.g., floor area, storey level, remaining lease, flat model) and locational factors such as proximity to CBD, MRT stations, parks, malls, and amenities like bus stops, childcare, eldercare, and CHAS clinics. The independent variables are selected based on their potential influence on resale price. The model is trained on the `hdb_train` dataset.
+
 ```{r}
 lm_ols <- lm(
   log(resale_price) ~ 
@@ -656,10 +705,13 @@ lm_ols <- lm(
 ```
 
 ### OLS Residual Diagnostics & Spatial Dependence Check
-#### Summary of the model 
+
+#### Summary of the model
+
 ```{r}
 summary(lm_ols)
 ```
+
 The OLS model explains resale prices well, with strong effects from floor area, storey height, lease, and proximity to key amenities. Significant spatial patterns remain, motivating geographically weighted modelling.
 
 ```{r}
@@ -672,10 +724,10 @@ plot(lm_ols)   # includes Residuals vs Fitted, Q-Q plot, etc.
 # Check multicollinearity
 car::vif(lm_ols)
 ```
+
 These OLS diagnostic plots show several issues with model assumptions. The Residuals vs Fitted plot indicates slight non-linearity and heteroscedasticity. The Q-Q plot shows heavy tails, meaning residuals are not normally distributed. The Scale-Location plot confirms non-constant variance, while the Residuals vs Leverage plot shows a few high-leverage points that may disproportionately influence the model.
 
 #### Spatial autocorrelation of residuals (Moran’s I)
-
 
 ```{r}
 
@@ -687,7 +739,8 @@ lw     <- nb2listw(nb, style = "W")
 # Test for spatial autocorrelation in OLS residuals
 moran.test(hdb_train$residuals, lw)
 ```
-OLS residuals exhibit strong and significant spatial autocorrelation (Moran’s I = 0.668, p < 0.001), indicating substantial spatial heterogeneity and justifying the use of geographically weighted models.
+
+OLS residuals exhibit strong and significant spatial autocorrelation (Moran’s I = 0.668, p \< 0.001), indicating substantial spatial heterogeneity and justifying the use of geographically weighted models.
 
 ### Predict on the test set (Jul–Sep 2025)
 
@@ -697,6 +750,7 @@ hdb_test$pred_price <- exp(hdb_test$pred_log)
 ```
 
 ### Evaluate predictive performance
+
 ```{r}
 library(Metrics)
 
@@ -709,14 +763,16 @@ rmse_ols
 mae_ols
 r2_ols
 ```
+
 ### Map residuals
 
 This code first reads the **Master Plan 2019 subzone boundaries** from a KML file and transforms them into Singapore’s projected coordinate system (EPSG:3414). All subzones are dissolved into a **single outline polygon of Singapore** (`sg_outline`) using `summarise()`.
 
 Two maps are generated using the **tmap** package:
 
-- **Map A** displays only the Singapore outline as a base map, styled with a light grey fill and black borders.
-- **Map B** overlays the residuals from the OLS model (`hdb_train$residuals`) onto the Singapore map using the `HDB_train_sf` spatial dataset. Points are coloured using a diverging Red-Blue palette (`-RdBu`) centered at zero, allowing for quick visual inspection of over- and under-predicted areas in the training set.
+-   **Map A** displays only the Singapore outline as a base map, styled with a light grey fill and black borders.
+-   **Map B** overlays the residuals from the OLS model (`hdb_train$residuals`) onto the Singapore map using the `HDB_train_sf` spatial dataset. Points are coloured using a diverging Red-Blue palette (`-RdBu`) centered at zero, allowing for quick visual inspection of over- and under-predicted areas in the training set.
+
 ```{r}
 # 1) Read Master Plan 2019 subzones and convert to EPSG:3414
 subzones <- st_read(
@@ -749,6 +805,7 @@ tm_shape(train_resid_sf) +
           size = 0.23) +
   tm_layout(title = "OLS Residuals (Train Set) with Singapore Outline")
 ```
+
 The residuals map overlays the OLS model’s training-set residuals onto the Singapore outline to reveal where the model systematically over- or under-predicts HDB resale prices. Each point represents an individual transaction, coloured by the magnitude and direction of its residual.
 
 Blue tones indicate negative residuals, meaning the model predicted prices higher than the actual transacted values. These typically appear in clusters across parts of the north, west, and eastern regions, suggesting local market characteristics—such as older stock, lower amenity access, or neighbourhood-specific effects—not fully captured by the model.
@@ -759,10 +816,13 @@ The presence of spatially clustered residuals signals spatial autocorrelation, i
 
 Overall, this residual map helps diagnose model limitations and highlights geographic areas where predictive accuracy can be improved.
 
-
 ## GWR Modelling
+
 ### Data prep
+
 Randomly sample up to 5,000 training points
+
+We limit the GWR training sample to 5,000 points because GWR is computationally heavy—it fits a local regression at every data point, making runtime and memory usage grow rapidly with larger datasets. A 5,000-point sample provides sufficient spatial coverage across Singapore while keeping bandwidth selection and model fitting fast, stable, and computationally feasible.
 
 ```{r}
 set.seed(123)  # reproducible sampling
@@ -779,8 +839,10 @@ HDB_train_sf_sub <- HDB_train_sf
 nrow(HDB_train_sf_sub)  # check actual sample size
 ```
 
-
 ### Select optimal GWR bandwidth
+
+This code uses bw.gwr() to automatically select the optimal bandwidth for the GWR model. The formula specifies resale price and all predictor variables, while data = HDB_train_sp_sub supplies the sampled training points. A Gaussian kernel and adaptive bandwidth are used, meaning each location uses a variable number of neighbours. longlat = FALSE ensures distances are computed in the SVY21 projected coordinate system. The resulting bw_gwr is the best-fitting bandwidth for the GWR model.
+
 ```{r}
 #| eval: false
 
@@ -797,6 +859,7 @@ longlat = FALSE
 )
 bw_gwr
 ```
+
 ```{r}
 #| eval: false
 #| include: false
@@ -807,7 +870,6 @@ saveRDS(bw_gwr, file = "data/rds/bw_gwr.rds")
 #| include: false
 bw_gwr <- readRDS("data/rds/bw_gwr.rds")
 ```
-
 
 ### Fit GWR model on sampled training set
 
@@ -838,21 +900,18 @@ gwr_fit <- readRDS("data/rds/gwr_fit.rds")
 # Diagnostics
 gwr_fit$GW.diagnostic
 ```
+
 ### Use GWR Model to Predict on Test Data
+
 #### Convert test set to Spatial
+
 ```{r}
 HDB_test_sp <- as(HDB_test_sf, "Spatial")
 ```
 
 #### Predict using the fitted GWR model (gwr_fit)
 
-In code chunks below 
-- A GWR formula (`gwr_formula`) is defined with `resale_price` as the dependent variable and multiple structural and locational predictors on the right-hand side.
-- Variables include attributes like `floor_area_sqm`, `storey_mid`, and distances to amenities such as `dist_mrt_km`, `dist_park_km`, and `WITHIN_350M_CHILDCARE`.
-- `gwr_vars` extracts all variable names on the RHS of the formula using `all.vars()` and excludes the dependent variable using `[-1]`.
-- `test_cols` retrieves the column names of the `HDB_test_sp@data` SpatialPointsDataFrame, which will be used to apply the trained GWR model.
-- The `setdiff()` function compares `gwr_vars` against `test_cols` to find any missing predictor columns in the test set.
-- This acts as a **safeguard** to ensure the test data contains all required variables for prediction, avoiding runtime errors in GWR modelling.
+In code chunks below - A GWR formula (`gwr_formula`) is defined with `resale_price` as the dependent variable and multiple structural and locational predictors on the right-hand side. - Variables include attributes like `floor_area_sqm`, `storey_mid`, and distances to amenities such as `dist_mrt_km`, `dist_park_km`, and `WITHIN_350M_CHILDCARE`. - `gwr_vars` extracts all variable names on the RHS of the formula using `all.vars()` and excludes the dependent variable using `[-1]`. - `test_cols` retrieves the column names of the `HDB_test_sp@data` SpatialPointsDataFrame, which will be used to apply the trained GWR model. - The `setdiff()` function compares `gwr_vars` against `test_cols` to find any missing predictor columns in the test set. - This acts as a **safeguard** to ensure the test data contains all required variables for prediction, avoiding runtime errors in GWR modelling.
 
 ```{r}
 gwr_formula <- resale_price ~
@@ -872,17 +931,13 @@ test_cols <- names(HDB_test_sp@data)
 
 setdiff(gwr_vars, test_cols)
 ```
-The code chunk below does the following 
-- `vars_all` stores all variables required for GWR: both the response (`resale_price`) and all predictors from `gwr_vars`.
-- The `@data` slot of the `HDB_test_sp` SpatialPointsDataFrame is extracted and a `row_id` is added to preserve row positions after filtering.
-- `test_df` keeps only the necessary columns (`row_id` + `vars_all`) to be used for prediction.
-- `test_df_clean` filters out any rows that contain missing values in the selected columns using `complete.cases()`.
-- The `valid_rows` vector stores row indices of complete observations and is used to subset `HDB_test_sp` into `HDB_test_sp_clean`, which is safe for GWR prediction.
 
+The code chunk below does the following - `vars_all` stores all variables required for GWR: both the response (`resale_price`) and all predictors from `gwr_vars`. - The `@data` slot of the `HDB_test_sp` SpatialPointsDataFrame is extracted and a `row_id` is added to preserve row positions after filtering. - `test_df` keeps only the necessary columns (`row_id` + `vars_all`) to be used for prediction. - `test_df_clean` filters out any rows that contain missing values in the selected columns using `complete.cases()`. - The `valid_rows` vector stores row indices of complete observations and is used to subset `HDB_test_sp` into `HDB_test_sp_clean`, which is safe for GWR prediction.
 
-- The second chunk (set to not evaluate with `eval: false`) calls `gwr.predict()` to make predictions on the cleaned test spatial data, using the trained model from `HDB_train_sp_sub` and a bandwidth `bw_gwr`.
-- The predicted prices are stored in a new column `gwr_pred_price` in the original `hdb_test` dataframe.
-- Only the rows corresponding to `valid_rows` are populated with predicted values to maintain alignment with the full test dataset.
+-   The second chunk (set to not evaluate with `eval: false`) calls `gwr.predict()` to make predictions on the cleaned test spatial data, using the trained model from `HDB_train_sp_sub` and a bandwidth `bw_gwr`.
+-   The predicted prices are stored in a new column `gwr_pred_price` in the original `hdb_test` dataframe.
+-   Only the rows corresponding to `valid_rows` are populated with predicted values to maintain alignment with the full test dataset.
+
 ```{r}
 # All variables needed for GWR (response + predictors)
 vars_all <- c("resale_price", gwr_vars)
@@ -901,9 +956,11 @@ valid_rows <- test_df_clean$row_id
 # Subset SpatialPointsDataFrame to these rows
 HDB_test_sp_clean <- HDB_test_sp[valid_rows, ]
 ```
-- This code chunk (set to not evaluate with `eval: false`) calls `gwr.predict()` to make predictions on the cleaned test spatial data, using the trained model from `HDB_train_sp_sub` and a bandwidth `bw_gwr`.
-- The predicted prices are stored in a new column `gwr_pred_price` in the original `hdb_test` dataframe.
-- Only the rows corresponding to `valid_rows` are populated with predicted values to maintain alignment with the full test dataset.
+
+-   This code chunk (set to not evaluate with `eval: false`) calls `gwr.predict()` to make predictions on the cleaned test spatial data, using the trained model from `HDB_train_sp_sub` and a bandwidth `bw_gwr`.
+-   The predicted prices are stored in a new column `gwr_pred_price` in the original `hdb_test` dataframe.
+-   Only the rows corresponding to `valid_rows` are populated with predicted values to maintain alignment with the full test dataset.
+
 ```{r}
 #| eval: false
 gwr_pred <- gwr.predict(
@@ -925,6 +982,7 @@ hdb_test$gwr_pred_price[valid_rows] <- gwr_pred$SDF$prediction
 nrow(HDB_test_sp)        # original test size
 nrow(HDB_test_sp_clean)  # rows used for GWR prediction
 ```
+
 ```{r}
 #| eval: false
 #| include: false
@@ -937,7 +995,8 @@ gwr_pred <- readRDS("data/rds/gwr_pred.rds")
 HDB_test_results <- readRDS("data/rds/hdb_test_with_gwr_pred.rds")
 ```
 
-### Evaulate the model 
+### Evaulate the model
+
 ```{r}
 library(Metrics)
 
@@ -958,6 +1017,7 @@ rmse_gwr
 mae_gwr
 r2_gwr
 ```
+
 ### Compute Moran’s I for GWR residuals
 
 ```{r}
@@ -973,11 +1033,13 @@ lw_test <- nb2listw(nb_test, style = "W")
 
 moran.test(HDB_test_results_sf$gwr_residual, lw_test)
 ```
-The Moran’s I statistic for the GWR residuals is 0.227 (p < 0.001), substantially lower than the OLS residual Moran’s I of approximately 0.668. This indicates that GWR captures a significant portion of the spatial structure in HDB resale prices that the global OLS model fails to account for. While some positive spatial autocorrelation remains, the large reduction in Moran’s I demonstrates that geographically varying relationships—such as differing effects of proximity to amenities and structural attributes across neighbourhoods—play an important role in price formation. Therefore, GWR provides a more spatially appropriate residual pattern and better represents local market heterogeneity compared to OLS.
+
+The Moran’s I statistic for the GWR residuals is 0.227 (p \< 0.001), substantially lower than the OLS residual Moran’s I of approximately 0.668. This indicates that GWR captures a significant portion of the spatial structure in HDB resale prices that the global OLS model fails to account for. While some positive spatial autocorrelation remains, the large reduction in Moran’s I demonstrates that geographically varying relationships—such as differing effects of proximity to amenities and structural attributes across neighbourhoods—play an important role in price formation. Therefore, GWR provides a more spatially appropriate residual pattern and better represents local market heterogeneity compared to OLS.
 
 ## Non Spatial Random Forest
 
-### Define predictors 
+### Define predictors
+
 ```{r}
 rf_formula <- resale_price ~
 floor_area_sqm +
@@ -997,6 +1059,15 @@ WITHIN_350M_CHAS
 ```
 
 ### Set up cross-validation and tuning grid
+
+This code chunk prepares the Random Forest model for training and hyperparameter tuning.  
+`trainControl()` sets up 5-fold cross-validation, ensuring the model is evaluated on five different train–validation splits for reliable performance.  
+The `expand.grid()` block defines the hyperparameter search space:  
+- `mtry` controls how many predictors are considered at each split,  
+- `splitrule = "variance"` specifies the regression splitting criterion, and  
+- `min.node.size` sets the minimum number of samples allowed in terminal nodes.  
+These combinations are systematically tested to identify the best-performing Random Forest model.
+
 
 ```{r}
 set.seed(123)
@@ -1037,6 +1108,7 @@ num.trees = 500
 rf_model
 rf_model$bestTune
 ```
+
 ```{r}
 #| eval: false
 #| include: false
@@ -1049,11 +1121,13 @@ rf_model <- readRDS("data/rds/rf_model.rds")
 ```
 
 ### Predict on the test set (Jul–Sep 2025)
+
 ```{r}
 hdb_test$rf_pred_price <- predict(rf_model, newdata = hdb_test)
 ```
 
-### Evaluate Random Forest predictive performance 
+### Evaluate Random Forest predictive performance
+
 ```{r}
 rmse_rf <- rmse(hdb_test$resale_price, hdb_test$rf_pred_price)
 mae_rf <- mae(hdb_test$resale_price, hdb_test$rf_pred_price)
@@ -1064,9 +1138,11 @@ rmse_rf
 mae_rf
 r2_rf
 ```
+
 ## Geographically Weighted Random Forest (GRF)
 
 ### Response + predictor variables from the RF formula
+
 ```{r}
 grf_vars <- all.vars(rf_formula)
 resp_var <- grf_vars[1] # "resale_price"
@@ -1074,6 +1150,7 @@ pred_vars <- grf_vars[-1]
 ```
 
 ### Training dataframe for GRF (no geometry)
+
 ```{r}
 hdb_train_grf <- HDB_train_sf_sub %>%
 sf::st_drop_geometry() %>%
@@ -1081,6 +1158,7 @@ dplyr::select(all_of(c(resp_var, pred_vars)))
 ```
 
 ### Coordinates matrix (X, Y) for GRF
+
 ```{r}
 coords_grf <- sf::st_coordinates(HDB_train_sf_sub)
 
@@ -1126,7 +1204,9 @@ best_bw_grf
 ```
 
 ### Fit GRF model on the training set
+
 Using the optimal bandwidth, we calibrate the geographically weighted random forest. The fitted object contains both a global RF and a set of local RF models, plus local goodness-of-fit and variable importance metrics.
+
 ```{r}
 #| eval: false
 set.seed(123)
@@ -1148,12 +1228,13 @@ print.results = TRUE
 
 saveRDS(grf_fit, "data/rds/grf_fit.rds")
 ```
+
 ```{r}
 #| eval: false
 grf_fit <- readRDS("data/rds/grf_fit.rds")
 ```
-Quick look at local goodness-of-fit summary
 
+Quick look at local goodness-of-fit summary
 
 ```{r}
 #| eval: false
@@ -1167,17 +1248,19 @@ class(grf_fit)
 
 ```
 
-
 ```{r}
 #| eval: false
 
 str(grf_fit$LGofFit)
 head(grf_fit$lModelSummary)
 ```
+
 ### Predict with GRF on the test set (Jul–Sep 2025)
+
 We now use predict.grf() to obtain spatially varying predictions on the test period, using the nearest local RF model for each test location.
 
 #### Test predictors and coordinates
+
 ```{r}
 #| eval: false
 # 1. Drop geometry but keep all predictors
@@ -1221,7 +1304,8 @@ readr::write_rds(HDB_test_results_grf, "data/rds/HDB_test_results_grf.rds")
 HDB_test_results_grf <- readr::read_rds("data/rds/HDB_test_results_grf.rds")
 ```
 
-### Metrics 
+### Metrics
+
 ```{r}
 rmse_grf <- rmse(HDB_test_results_grf$resale_price,
 HDB_test_results_grf$grf_pred_price)
@@ -1238,4 +1322,127 @@ rmse_grf
 mae_grf
 r2_grf
 ```
-## Comparison of models 
+
+## Comparison of models
+
+### Summary table of model performance
+This code  chunk creates a summary table comparing the performance of all four models.  
+A tibble (`model_metrics`) stores RMSE, MAE, and R² values for OLS, GWR, Random Forest, and Geographically Weighted RF.  
+The table is then sorted by RMSE and formatted using `gt()`, which rounds the numeric values and adds a title and subtitle.  
+The result is a clean, publication-ready performance summary table suitable for reporting and analysis.
+
+
+```{r}
+model_metrics <- tibble::tibble(
+Model = c("OLS", "GWR", "Random Forest", "Geog. Weighted RF"),
+RMSE = c(rmse_ols, rmse_gwr, rmse_rf, rmse_grf),
+MAE = c(mae_ols, mae_gwr, mae_rf, mae_grf),
+R2 = c(r2_ols, r2_gwr, r2_rf, r2_grf)
+)
+
+model_metrics %>%
+arrange(RMSE) %>%
+gt() %>%
+fmt_number(columns = c(RMSE, MAE), decimals = 0) %>%
+fmt_number(columns = R2, decimals = 3) %>%
+tab_header(title = "Predictive Performance Across Models",
+subtitle = "Test period: Jul–Sep 2025"
+)
+```
+### Bar chart comparison of RMSE / MAE / R²
+This code chunk reshapes the model performance table into a long format using `pivot_longer()`, so each metric (RMSE, MAE, R²) becomes a separate row.  
+A bar chart is then created using `ggplot2` to display model performance side-by-side.  
+`facet_wrap()` creates individual panels for each metric, allowing easy comparison across models.  
+`geom_text()` overlays the numeric values on top of each bar to enhance readability.  
+The plot is styled with a minimal theme, angled x-axis labels for clarity, and bold facet titles.  
+This produces a clean and visually effective comparison of model performance.
+
+```{r}
+#| label: bar chart
+metrics_long <- model_metrics %>%
+tidyr::pivot_longer(
+cols = c(RMSE, MAE, R2),
+names_to = "Metric",
+values_to = "Value"
+)
+
+ggplot(metrics_long, aes(x = Model, y = Value)) +
+geom_col() +
+facet_wrap(~ Metric, scales = "free_y") +
+geom_text(aes(label = round(Value, ifelse(Metric == "R2", 3, 0))),
+vjust = -0.4, size = 3) +
+labs(
+title = "Model Performance Comparison",
+x = NULL,
+y = NULL
+) +
+theme_minimal(base_size = 11) +
+theme(
+strip.text = element_text(face = "bold"),
+axis.text.x = element_text(angle = 20, hjust = 1)
+)
+```
+The bar graph compares the out-of-sample performance of four models on HDB resale prices for Jul–Sep 2025. Random Forest (RF) is the best-performing model, achieving the lowest RMSE (48,468) and lowest MAE (33,798), with the highest R² (0.923). This indicates that a non-spatial, nonlinear ensemble can already capture most of the variation in resale prices by flexibly modelling interactions between structural and locational variables.
+
+The Geographically Weighted Regression (GWR) model performs second best, with RMSE 56,689, MAE 40,019, and R² 0.894. GWR improves clearly over the global OLS model, confirming that allowing coefficients to vary across space helps capture local housing market differences, even within a linear framework.
+
+The OLS model yields RMSE 81,416, MAE 58,802, and R² 0.781. Although it provides a reasonable baseline, its lower R² and higher errors reflect the limitations of a single global linear relationship in the presence of spatial heterogeneity and nonlinear effects.
+
+Finally, the Geographically Weighted Random Forest (GRF) performs the weakest (RMSE 123,421, MAE 94,785, R² 0.498) in this implementation. This suggests that the added model complexity and local forest fitting did not translate into better generalisation on the test period—likely due to bandwidth choice, overfitting to local noise, or the relatively limited sample size for each local model.
+
+Overall, these results indicate that a well-tuned global Random Forest provides the most accurate and stable predictions, while GWR offers a strong spatially explicit alternative that still outperforms traditional OLS.
+
+
+### Actual vs predicted scatter by model
+This code  chunk creates a scatterplot comparing actual and predicted resale prices for all four models.  
+A tibble (`compare_df`) is first constructed containing the actual prices and each model’s predictions.  
+`pivot_longer()` converts the data into long format so each model appears as a separate row.  
+`ggplot()` then plots actual vs. predicted prices, adds a 45-degree reference line to indicate perfect prediction,  
+and uses `facet_wrap()` to display one panel per model.  
+The result visually shows how closely each model's predictions match the actual resale prices.
+
+```{r}
+compare_df <- tibble::tibble(
+resale_price = HDB_test_results_grf$resale_price,
+OLS = HDB_test_results$pred_price,
+GWR = HDB_test_results$gwr_pred_price,
+`Random Forest` = hdb_test$rf_pred_price,
+`Geog. Weighted RF` = HDB_test_results_grf$grf_pred_price
+)
+
+compare_long <- compare_df %>%
+tidyr::pivot_longer(
+cols = -resale_price,
+names_to = "Model",
+values_to = "pred_price"
+) %>%
+filter(!is.na(pred_price))
+
+ggplot(compare_long,
+aes(x = resale_price, y = pred_price)) +
+geom_point(alpha = 0.4) +
+geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+facet_wrap(~ Model, scales = "free") +
+scale_x_continuous(labels = scales::comma) +
+scale_y_continuous(labels = scales::comma) +
+labs(
+title = "Actual vs Predicted HDB Resale Prices",
+x = "Actual price (SGD)",
+y = "Predicted price (SGD)"
+) +
+theme_minimal(base_size = 11)
+```
+The scatterplots provide a visual assessment of how well each model predicts resale prices for the Jul–Sep 2025 test period. The 45-degree dashed line represents perfect prediction, where predicted values exactly match actual transaction prices. Deviations from this line indicate under- or over-prediction.
+
+The Random Forest model exhibits the tightest clustering around the reference line, reflecting its strong predictive performance. Most points lie very close to the 45-degree line across the full price range (approximately $600,000 to $1.6 million), indicating that the RF model captures nonlinear effects and complex interactions effectively. This visual pattern aligns with its top performance metrics (lowest RMSE and highest R²).
+
+The GWR model also shows relatively close alignment to the reference line, though with slightly wider dispersion than Random Forest. While GWR captures spatial heterogeneity well, its linear structure limits its ability to fully model nonlinear price dynamics, leading to moderate under- and over-prediction in mid- and high-priced units.
+
+The OLS model shows noticeably larger spread around the reference line, indicating weaker predictive accuracy. High-priced transactions above $1.2 million tend to be systematically under-predicted, suggesting that a global linear specification does not accommodate varying relationships across neighbourhoods or price tiers. This visual pattern aligns with OLS having the third-best R² and higher errors.
+
+The Geographically Weighted Random Forest (GRF) shows the weakest fit, with a wide horizontal spread and clear bias in the upper price ranges where predictions flatten. This suggests that the GRF configuration used may be overfitting to local noise or using suboptimal bandwidth settings, resulting in poorer generalisation.
+
+Overall, the scatterplots reinforce the quantitative results: Random Forest provides the most accurate and stable predictions, while GWR improves over OLS but remains limited by linearity. GRF underperforms in this implementation, indicating that additional tuning may be required for effective spatial machine learning.
+
+
+
