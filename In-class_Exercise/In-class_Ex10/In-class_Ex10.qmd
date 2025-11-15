@@ -1,0 +1,18 @@
+---
+title: "In class Exercise 10"
+author: "Gautamgovan"
+date: "November 15, 2025"
+date-modified: "last-modified"
+format: 
+  html:
+    toc: true
+    toc-depth: 4
+    number-sections: true
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  freeze: true
+---
+
+
