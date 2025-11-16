@@ -1036,6 +1036,53 @@ moran.test(HDB_test_results_sf$gwr_residual, lw_test)
 
 The Moran’s I statistic for the GWR residuals is 0.227 (p \< 0.001), substantially lower than the OLS residual Moran’s I of approximately 0.668. This indicates that GWR captures a significant portion of the spatial structure in HDB resale prices that the global OLS model fails to account for. While some positive spatial autocorrelation remains, the large reduction in Moran’s I demonstrates that geographically varying relationships—such as differing effects of proximity to amenities and structural attributes across neighbourhoods—play an important role in price formation. Therefore, GWR provides a more spatially appropriate residual pattern and better represents local market heterogeneity compared to OLS.
 
+### Mapping GWR Coefficient Surface (floor_area_sqm)
+
+#### Extract local coefficients from GWR fitted model
+```{r}
+gwr_coef_sf <- HDB_train_sf_sub %>%
+mutate(floor_coef = gwr_fit$SDF$floor_area_sqm)
+```
+
+```{r}
+if (!exists("sg_outline")) {
+subzones <- st_read("data/rawdata/MasterPlan2019SubzoneBoundaryNoSeaKML.kml", quiet = TRUE) %>%
+st_transform(3414)
+sg_outline <- subzones %>% summarise()
+}
+```
+
+#### Plot coefficient surface with tmap
+This code chunk creates a scatterplot comparing actual and predicted resale prices for all four models.  
+A tibble (`compare_df`) is first constructed containing the actual prices and each model’s predictions.  
+`pivot_longer()` converts the data into long format so each model appears as a separate row.  
+`ggplot()` then plots actual vs. predicted prices, adds a 45-degree reference line to indicate perfect prediction,  
+and uses `facet_wrap()` to display one panel per model.  
+The result visually shows how closely each model's predictions match the actual resale prices.
+```{r}
+tmap_mode("plot")
+
+tm_shape(sg_outline) +
+tm_polygons(col = "grey95", border.col = "black") +
+tm_shape(gwr_coef_sf) +
+tm_dots(
+col = "floor_coef",
+palette = "-RdBu",
+style = "quantile",
+size = 0.19,
+title = "Coefficient\n(floor_area_sqm)"
+) +
+tm_layout(
+title = "Local GWR Coefficients for Floor Area (sqm)",
+legend.outside = TRUE
+)
+```
+The GWR coefficient map shows that the influence of floor area on HDB resale prices varies noticeably across Singapore. In central and mature estates such as Toa Payoh, Bishan, Kallang–Whampoa, and parts of Queenstown, coefficients are highest, indicating that buyers pay a significantly larger premium for additional space. These areas have strong accessibility, mature amenities, and limited supply of larger flats, which amplifies the marginal value of floor area.
+
+In contrast, lower coefficients are observed in Sengkang, Punggol, Yishun, Jurong West, and Woodlands. Here, adding more space contributes less to the overall price. These towns have a higher supply of large flats and more uniform building typologies, reducing the scarcity value of size. Buyers in these areas may also be more price-sensitive, placing greater emphasis on affordability or flat age rather than spaciousness.
+
+Overall, the spatial variation highlights that size does not influence resale prices uniformly. GWR reveals these locally varying relationships, demonstrating that a single global model (like OLS) cannot fully capture differences in housing market behaviour across neighbourhoods.
+
 ## Non Spatial Random Forest
 
 ### Define predictors

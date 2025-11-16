@@ -312,6 +312,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </ul></li>
   <li><a href="#evaulate-the-model" id="toc-evaulate-the-model" class="nav-link" data-scroll-target="#evaulate-the-model"><span class="header-section-number">5.5</span> Evaulate the model</a></li>
   <li><a href="#compute-morans-i-for-gwr-residuals" id="toc-compute-morans-i-for-gwr-residuals" class="nav-link" data-scroll-target="#compute-morans-i-for-gwr-residuals"><span class="header-section-number">5.6</span> Compute Moran’s I for GWR residuals</a></li>
+  <li><a href="#mapping-gwr-coefficient-surface-floor_area_sqm" id="toc-mapping-gwr-coefficient-surface-floor_area_sqm" class="nav-link" data-scroll-target="#mapping-gwr-coefficient-surface-floor_area_sqm"><span class="header-section-number">5.7</span> Mapping GWR Coefficient Surface (floor_area_sqm)</a>
+  <ul class="collapse">
+  <li><a href="#extract-local-coefficients-from-gwr-fitted-model" id="toc-extract-local-coefficients-from-gwr-fitted-model" class="nav-link" data-scroll-target="#extract-local-coefficients-from-gwr-fitted-model"><span class="header-section-number">5.7.1</span> Extract local coefficients from GWR fitted model</a></li>
+  <li><a href="#plot-coefficient-surface-with-tmap" id="toc-plot-coefficient-surface-with-tmap" class="nav-link" data-scroll-target="#plot-coefficient-surface-with-tmap"><span class="header-section-number">5.7.2</span> Plot coefficient surface with tmap</a></li>
+  </ul></li>
   </ul></li>
   <li><a href="#non-spatial-random-forest" id="toc-non-spatial-random-forest" class="nav-link" data-scroll-target="#non-spatial-random-forest"><span class="header-section-number">6</span> Non Spatial Random Forest</a>
   <ul>
@@ -373,7 +378,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">November 15, 2025</p>
+      <p class="date-modified">November 16, 2025</p>
     </div>
   </div>
     
@@ -1194,40 +1199,40 @@ lm(formula = log(resale_price) ~ floor_area_sqm + storey_mid +
 
 Residuals:
      Min       1Q   Median       3Q      Max 
--0.43400 -0.06047  0.00075  0.05693  0.51111 
+-0.43383 -0.06047  0.00071  0.05698  0.51139 
 
 Coefficients:
                                    Estimate Std. Error t value Pr(&gt;|t|)    
-(Intercept)                      11.6412985  0.0460781 252.643  &lt; 2e-16 ***
-floor_area_sqm                    0.0119593  0.0002794  42.802  &lt; 2e-16 ***
-storey_mid                        0.0067450  0.0002085  32.344  &lt; 2e-16 ***
-remaining_lease_yrs               0.0096932  0.0001422  68.147  &lt; 2e-16 ***
-flat_modelAdjoined flat           0.1500658  0.0257293   5.832 5.73e-09 ***
-flat_modelDBSS                    0.3520370  0.0198220  17.760  &lt; 2e-16 ***
-flat_modelImproved                0.1456072  0.0183570   7.932 2.54e-15 ***
-flat_modelImproved-Maisonette     0.2274638  0.0488404   4.657 3.27e-06 ***
-flat_modelModel A                 0.0719954  0.0191073   3.768 0.000166 ***
-flat_modelModel A-Maisonette      0.1469783  0.0229551   6.403 1.64e-10 ***
-flat_modelPremium Apartment       0.1247742  0.0185675   6.720 1.98e-11 ***
-flat_modelPremium Apartment Loft  0.1722584  0.0490544   3.512 0.000449 ***
-flat_modelStandard                0.1895470  0.0200546   9.452  &lt; 2e-16 ***
-flat_modelType S2                 0.2664948  0.0303128   8.791  &lt; 2e-16 ***
-proximity_to_cbd_km              -0.0306116  0.0003747 -81.691  &lt; 2e-16 ***
-WITHIN_350M_BUSSTOP               0.0008806  0.0004133   2.131 0.033144 *  
-WITHIN_350M_ELDERCARE            -0.0011384  0.0021181  -0.537 0.590980    
-dist_good_ps_km                   0.0043525  0.0009893   4.399 1.10e-05 ***
-dist_mrt_km                      -0.0234161  0.0038393  -6.099 1.13e-09 ***
-dist_park_km                     -0.0439363  0.0052353  -8.392  &lt; 2e-16 ***
-dist_mall_km                     -0.0272724  0.0026156 -10.427  &lt; 2e-16 ***
-dist_hawker_km                   -0.0374014  0.0025713 -14.546  &lt; 2e-16 ***
-WITHIN_350M_CHILDCARE            -0.0035940  0.0005290  -6.793 1.20e-11 ***
-WITHIN_350M_CHAS                  0.0076947  0.0006133  12.547  &lt; 2e-16 ***
+(Intercept)                      11.6419030  0.0460711 252.694  &lt; 2e-16 ***
+floor_area_sqm                    0.0119540  0.0002794  42.792  &lt; 2e-16 ***
+storey_mid                        0.0067469  0.0002085  32.357  &lt; 2e-16 ***
+remaining_lease_yrs               0.0096916  0.0001422  68.152  &lt; 2e-16 ***
+flat_modelAdjoined flat           0.1501633  0.0257274   5.837 5.59e-09 ***
+flat_modelDBSS                    0.3521385  0.0198201  17.767  &lt; 2e-16 ***
+flat_modelImproved                0.1454957  0.0183558   7.926 2.65e-15 ***
+flat_modelImproved-Maisonette     0.2279463  0.0488362   4.668 3.11e-06 ***
+flat_modelModel A                 0.0719204  0.0191057   3.764 0.000169 ***
+flat_modelModel A-Maisonette      0.1471605  0.0229533   6.411 1.55e-10 ***
+flat_modelPremium Apartment       0.1246484  0.0185664   6.714 2.07e-11 ***
+flat_modelPremium Apartment Loft  0.1722691  0.0490505   3.512 0.000448 ***
+flat_modelStandard                0.1894316  0.0200530   9.447  &lt; 2e-16 ***
+flat_modelType S2                 0.2657998  0.0303147   8.768  &lt; 2e-16 ***
+proximity_to_cbd_km              -0.0306184  0.0003744 -81.778  &lt; 2e-16 ***
+WITHIN_350M_BUSSTOP               0.0008867  0.0004133   2.145 0.031957 *  
+WITHIN_350M_ELDERCARE            -0.0011916  0.0021181  -0.563 0.573744    
+dist_good_ps_km                   0.0044592  0.0009878   4.514 6.47e-06 ***
+dist_mrt_km                      -0.0234093  0.0038381  -6.099 1.13e-09 ***
+dist_park_km                     -0.0438653  0.0052334  -8.382  &lt; 2e-16 ***
+dist_mall_km                     -0.0272980  0.0026134 -10.445  &lt; 2e-16 ***
+dist_hawker_km                   -0.0374051  0.0025705 -14.552  &lt; 2e-16 ***
+WITHIN_350M_CHILDCARE            -0.0035919  0.0005290  -6.790 1.22e-11 ***
+WITHIN_350M_CHAS                  0.0076984  0.0006132  12.554  &lt; 2e-16 ***
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-Residual standard error: 0.09011 on 6240 degrees of freedom
-Multiple R-squared:  0.7797,    Adjusted R-squared:  0.7788 
-F-statistic:   960 on 23 and 6240 DF,  p-value: &lt; 2.2e-16</code></pre>
+Residual standard error: 0.0901 on 6240 degrees of freedom
+Multiple R-squared:  0.7797,    Adjusted R-squared:  0.7789 
+F-statistic: 960.1 on 23 and 6240 DF,  p-value: &lt; 2.2e-16</code></pre>
 </div>
 </div>
 <p>The OLS model explains resale prices well, with strong effects from floor area, storey height, lease, and proximity to key amenities. Significant spatial patterns remain, motivating geographically weighted modelling.</p>
@@ -1248,19 +1253,19 @@ F-statistic:   960 on 23 and 6240 DF,  p-value: &lt; 2.2e-16</code></pre>
 <span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>car<span class="sc">::</span><span class="fu">vif</span>(lm_ols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                          GVIF Df GVIF^(1/(2*Df))
-floor_area_sqm        3.118910  1        1.766044
-storey_mid            1.181940  1        1.087171
-remaining_lease_yrs   2.315321  1        1.521618
-flat_model            3.688964 10        1.067444
-proximity_to_cbd_km   1.675233  1        1.294308
-WITHIN_350M_BUSSTOP   1.185193  1        1.088666
-WITHIN_350M_ELDERCARE 1.136285  1        1.065967
-dist_good_ps_km       1.236676  1        1.112059
-dist_mrt_km           1.600478  1        1.265100
-dist_park_km          1.183862  1        1.088054
-dist_mall_km          1.443975  1        1.201655
-dist_hawker_km        1.220523  1        1.104773
-WITHIN_350M_CHILDCARE 1.212859  1        1.101299
+floor_area_sqm        3.118037  1        1.765796
+storey_mid            1.181813  1        1.087112
+remaining_lease_yrs   2.314616  1        1.521386
+flat_model            3.689082 10        1.067446
+proximity_to_cbd_km   1.672676  1        1.293320
+WITHIN_350M_BUSSTOP   1.185371  1        1.088748
+WITHIN_350M_ELDERCARE 1.136474  1        1.066055
+dist_good_ps_km       1.233993  1        1.110852
+dist_mrt_km           1.599653  1        1.264774
+dist_park_km          1.183192  1        1.087746
+dist_mall_km          1.441810  1        1.200754
+dist_hawker_km        1.219929  1        1.104504
+WITHIN_350M_CHILDCARE 1.212742  1        1.101246
 WITHIN_350M_CHAS      1.254051  1        1.119844</code></pre>
 </div>
 </div>
@@ -1283,11 +1288,11 @@ WITHIN_350M_CHAS      1.254051  1        1.119844</code></pre>
 data:  hdb_train$residuals  
 weights: lw    
 
-Moran I statistic standard deviate = 112.58, p-value &lt; 2.2e-16
+Moran I statistic standard deviate = 112.57, p-value &lt; 2.2e-16
 alternative hypothesis: greater
 sample estimates:
 Moran I statistic       Expectation          Variance 
-     6.686585e-01     -1.596679e-04      3.529028e-05 </code></pre>
+     6.685898e-01     -1.596679e-04      3.529027e-05 </code></pre>
 </div>
 </div>
 <p>OLS residuals exhibit strong and significant spatial autocorrelation (Moran’s I = 0.668, p &lt; 0.001), indicating substantial spatial heterogeneity and justifying the use of geographically weighted models.</p>
@@ -1312,15 +1317,15 @@ Moran I statistic       Expectation          Variance
 <span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>rmse_ols</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 81415.55</code></pre>
+<pre><code>[1] 81411.68</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb52"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>mae_ols</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 58801.82</code></pre>
+<pre><code>[1] 58785.22</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>r2_ols</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.7814982</code></pre>
+<pre><code>[1] 0.7815189</code></pre>
 </div>
 </div>
 </section>
@@ -1630,27 +1635,81 @@ Moran I statistic       Expectation          Variance
 </div>
 <p>The Moran’s I statistic for the GWR residuals is 0.227 (p &lt; 0.001), substantially lower than the OLS residual Moran’s I of approximately 0.668. This indicates that GWR captures a significant portion of the spatial structure in HDB resale prices that the global OLS model fails to account for. While some positive spatial autocorrelation remains, the large reduction in Moran’s I demonstrates that geographically varying relationships—such as differing effects of proximity to amenities and structural attributes across neighbourhoods—play an important role in price formation. Therefore, GWR provides a more spatially appropriate residual pattern and better represents local market heterogeneity compared to OLS.</p>
 </section>
+<section id="mapping-gwr-coefficient-surface-floor_area_sqm" class="level3" data-number="5.7">
+<h3 data-number="5.7" class="anchored" data-anchor-id="mapping-gwr-coefficient-surface-floor_area_sqm"><span class="header-section-number">5.7</span> Mapping GWR Coefficient Surface (floor_area_sqm)</h3>
+<section id="extract-local-coefficients-from-gwr-fitted-model" class="level4" data-number="5.7.1">
+<h4 data-number="5.7.1" class="anchored" data-anchor-id="extract-local-coefficients-from-gwr-fitted-model"><span class="header-section-number">5.7.1</span> Extract local coefficients from GWR fitted model</h4>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>gwr_coef_sf <span class="ot">&lt;-</span> HDB_train_sf_sub <span class="sc">%&gt;%</span></span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mutate</span>(<span class="at">floor_coef =</span> gwr_fit<span class="sc">$</span>SDF<span class="sc">$</span>floor_area_sqm)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">exists</span>(<span class="st">"sg_outline"</span>)) {</span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a>subzones <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"data/rawdata/MasterPlan2019SubzoneBoundaryNoSeaKML.kml"</span>, <span class="at">quiet =</span> <span class="cn">TRUE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a><span class="fu">st_transform</span>(<span class="dv">3414</span>)</span>
+<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a>sg_outline <span class="ot">&lt;-</span> subzones <span class="sc">%&gt;%</span> <span class="fu">summarise</span>()</span>
+<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="plot-coefficient-surface-with-tmap" class="level4" data-number="5.7.2">
+<h4 data-number="5.7.2" class="anchored" data-anchor-id="plot-coefficient-surface-with-tmap"><span class="header-section-number">5.7.2</span> Plot coefficient surface with tmap</h4>
+<p>This code chunk creates a scatterplot comparing actual and predicted resale prices for all four models.<br>
+A tibble (<code>compare_df</code>) is first constructed containing the actual prices and each model’s predictions.<br>
+<code>pivot_longer()</code> converts the data into long format so each model appears as a separate row.<br>
+<code>ggplot()</code> then plots actual vs.&nbsp;predicted prices, adds a 45-degree reference line to indicate perfect prediction,<br>
+and uses <code>facet_wrap()</code> to display one panel per model.<br>
+The result visually shows how closely each model’s predictions match the actual resale prices.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">"plot"</span>)</span>
+<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(sg_outline) <span class="sc">+</span></span>
+<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_polygons</span>(<span class="at">col =</span> <span class="st">"grey95"</span>, <span class="at">border.col =</span> <span class="st">"black"</span>) <span class="sc">+</span></span>
+<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(gwr_coef_sf) <span class="sc">+</span></span>
+<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_dots</span>(</span>
+<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a><span class="at">col =</span> <span class="st">"floor_coef"</span>,</span>
+<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a><span class="at">palette =</span> <span class="st">"-RdBu"</span>,</span>
+<span id="cb85-9"><a href="#cb85-9" aria-hidden="true" tabindex="-1"></a><span class="at">style =</span> <span class="st">"quantile"</span>,</span>
+<span id="cb85-10"><a href="#cb85-10" aria-hidden="true" tabindex="-1"></a><span class="at">size =</span> <span class="fl">0.19</span>,</span>
+<span id="cb85-11"><a href="#cb85-11" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Coefficient</span><span class="sc">\n</span><span class="st">(floor_area_sqm)"</span></span>
+<span id="cb85-12"><a href="#cb85-12" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb85-13"><a href="#cb85-13" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_layout</span>(</span>
+<span id="cb85-14"><a href="#cb85-14" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Local GWR Coefficients for Floor Area (sqm)"</span>,</span>
+<span id="cb85-15"><a href="#cb85-15" aria-hidden="true" tabindex="-1"></a><span class="at">legend.outside =</span> <span class="cn">TRUE</span></span>
+<span id="cb85-16"><a href="#cb85-16" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take_Home_Ex03_files/figure-html/unnamed-chunk-65-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The GWR coefficient map shows that the influence of floor area on HDB resale prices varies noticeably across Singapore. In central and mature estates such as Toa Payoh, Bishan, Kallang–Whampoa, and parts of Queenstown, coefficients are highest, indicating that buyers pay a significantly larger premium for additional space. These areas have strong accessibility, mature amenities, and limited supply of larger flats, which amplifies the marginal value of floor area.</p>
+<p>In contrast, lower coefficients are observed in Sengkang, Punggol, Yishun, Jurong West, and Woodlands. Here, adding more space contributes less to the overall price. These towns have a higher supply of large flats and more uniform building typologies, reducing the scarcity value of size. Buyers in these areas may also be more price-sensitive, placing greater emphasis on affordability or flat age rather than spaciousness.</p>
+<p>Overall, the spatial variation highlights that size does not influence resale prices uniformly. GWR reveals these locally varying relationships, demonstrating that a single global model (like OLS) cannot fully capture differences in housing market behaviour across neighbourhoods.</p>
+</section>
+</section>
 </section>
 <section id="non-spatial-random-forest" class="level2" data-number="6">
 <h2 data-number="6" class="anchored" data-anchor-id="non-spatial-random-forest"><span class="header-section-number">6</span> Non Spatial Random Forest</h2>
 <section id="define-predictors" class="level3" data-number="6.1">
 <h3 data-number="6.1" class="anchored" data-anchor-id="define-predictors"><span class="header-section-number">6.1</span> Define predictors</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>rf_formula <span class="ot">&lt;-</span> resale_price <span class="sc">~</span></span>
-<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>floor_area_sqm <span class="sc">+</span></span>
-<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>storey_mid <span class="sc">+</span></span>
-<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>remaining_lease_yrs <span class="sc">+</span></span>
-<span id="cb83-5"><a href="#cb83-5" aria-hidden="true" tabindex="-1"></a>flat_model <span class="sc">+</span></span>
-<span id="cb83-6"><a href="#cb83-6" aria-hidden="true" tabindex="-1"></a>proximity_to_cbd_km <span class="sc">+</span></span>
-<span id="cb83-7"><a href="#cb83-7" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_BUSSTOP <span class="sc">+</span></span>
-<span id="cb83-8"><a href="#cb83-8" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_ELDERCARE <span class="sc">+</span></span>
-<span id="cb83-9"><a href="#cb83-9" aria-hidden="true" tabindex="-1"></a>dist_good_ps_km <span class="sc">+</span></span>
-<span id="cb83-10"><a href="#cb83-10" aria-hidden="true" tabindex="-1"></a>dist_mrt_km <span class="sc">+</span></span>
-<span id="cb83-11"><a href="#cb83-11" aria-hidden="true" tabindex="-1"></a>dist_park_km <span class="sc">+</span></span>
-<span id="cb83-12"><a href="#cb83-12" aria-hidden="true" tabindex="-1"></a>dist_mall_km <span class="sc">+</span></span>
-<span id="cb83-13"><a href="#cb83-13" aria-hidden="true" tabindex="-1"></a>dist_hawker_km <span class="sc">+</span></span>
-<span id="cb83-14"><a href="#cb83-14" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_CHILDCARE <span class="sc">+</span></span>
-<span id="cb83-15"><a href="#cb83-15" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_CHAS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a>rf_formula <span class="ot">&lt;-</span> resale_price <span class="sc">~</span></span>
+<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a>floor_area_sqm <span class="sc">+</span></span>
+<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>storey_mid <span class="sc">+</span></span>
+<span id="cb86-4"><a href="#cb86-4" aria-hidden="true" tabindex="-1"></a>remaining_lease_yrs <span class="sc">+</span></span>
+<span id="cb86-5"><a href="#cb86-5" aria-hidden="true" tabindex="-1"></a>flat_model <span class="sc">+</span></span>
+<span id="cb86-6"><a href="#cb86-6" aria-hidden="true" tabindex="-1"></a>proximity_to_cbd_km <span class="sc">+</span></span>
+<span id="cb86-7"><a href="#cb86-7" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_BUSSTOP <span class="sc">+</span></span>
+<span id="cb86-8"><a href="#cb86-8" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_ELDERCARE <span class="sc">+</span></span>
+<span id="cb86-9"><a href="#cb86-9" aria-hidden="true" tabindex="-1"></a>dist_good_ps_km <span class="sc">+</span></span>
+<span id="cb86-10"><a href="#cb86-10" aria-hidden="true" tabindex="-1"></a>dist_mrt_km <span class="sc">+</span></span>
+<span id="cb86-11"><a href="#cb86-11" aria-hidden="true" tabindex="-1"></a>dist_park_km <span class="sc">+</span></span>
+<span id="cb86-12"><a href="#cb86-12" aria-hidden="true" tabindex="-1"></a>dist_mall_km <span class="sc">+</span></span>
+<span id="cb86-13"><a href="#cb86-13" aria-hidden="true" tabindex="-1"></a>dist_hawker_km <span class="sc">+</span></span>
+<span id="cb86-14"><a href="#cb86-14" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_CHILDCARE <span class="sc">+</span></span>
+<span id="cb86-15"><a href="#cb86-15" aria-hidden="true" tabindex="-1"></a>WITHIN_350M_CHAS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="set-up-cross-validation-and-tuning-grid" class="level3" data-number="6.2">
@@ -1663,69 +1722,69 @@ The <code>expand.grid()</code> block defines the hyperparameter search space:<br
 - <code>min.node.size</code> sets the minimum number of samples allowed in terminal nodes.<br>
 These combinations are systematically tested to identify the best-performing Random Forest model.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a><span class="co">#5-fold cross-validation</span></span>
-<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a>rf_ctrl <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(</span>
-<span id="cb84-6"><a href="#cb84-6" aria-hidden="true" tabindex="-1"></a><span class="at">method =</span> <span class="st">"cv"</span>,</span>
-<span id="cb84-7"><a href="#cb84-7" aria-hidden="true" tabindex="-1"></a><span class="at">number =</span> <span class="dv">5</span>,</span>
-<span id="cb84-8"><a href="#cb84-8" aria-hidden="true" tabindex="-1"></a><span class="at">verboseIter =</span> <span class="cn">FALSE</span></span>
-<span id="cb84-9"><a href="#cb84-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb84-10"><a href="#cb84-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb84-11"><a href="#cb84-11" aria-hidden="true" tabindex="-1"></a><span class="co">#Hyperparameter grid for calibration</span></span>
-<span id="cb84-12"><a href="#cb84-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb84-13"><a href="#cb84-13" aria-hidden="true" tabindex="-1"></a>rf_grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
-<span id="cb84-14"><a href="#cb84-14" aria-hidden="true" tabindex="-1"></a><span class="at">mtry =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">7</span>, <span class="dv">9</span>), <span class="co"># number of variables tried at each split</span></span>
-<span id="cb84-15"><a href="#cb84-15" aria-hidden="true" tabindex="-1"></a><span class="at">splitrule =</span> <span class="st">"variance"</span>, <span class="co"># regression split rule</span></span>
-<span id="cb84-16"><a href="#cb84-16" aria-hidden="true" tabindex="-1"></a><span class="at">min.node.size =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>) <span class="co"># minimum node size</span></span>
-<span id="cb84-17"><a href="#cb84-17" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a><span class="co">#5-fold cross-validation</span></span>
+<span id="cb87-4"><a href="#cb87-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-5"><a href="#cb87-5" aria-hidden="true" tabindex="-1"></a>rf_ctrl <span class="ot">&lt;-</span> <span class="fu">trainControl</span>(</span>
+<span id="cb87-6"><a href="#cb87-6" aria-hidden="true" tabindex="-1"></a><span class="at">method =</span> <span class="st">"cv"</span>,</span>
+<span id="cb87-7"><a href="#cb87-7" aria-hidden="true" tabindex="-1"></a><span class="at">number =</span> <span class="dv">5</span>,</span>
+<span id="cb87-8"><a href="#cb87-8" aria-hidden="true" tabindex="-1"></a><span class="at">verboseIter =</span> <span class="cn">FALSE</span></span>
+<span id="cb87-9"><a href="#cb87-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb87-10"><a href="#cb87-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-11"><a href="#cb87-11" aria-hidden="true" tabindex="-1"></a><span class="co">#Hyperparameter grid for calibration</span></span>
+<span id="cb87-12"><a href="#cb87-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb87-13"><a href="#cb87-13" aria-hidden="true" tabindex="-1"></a>rf_grid <span class="ot">&lt;-</span> <span class="fu">expand.grid</span>(</span>
+<span id="cb87-14"><a href="#cb87-14" aria-hidden="true" tabindex="-1"></a><span class="at">mtry =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">5</span>, <span class="dv">7</span>, <span class="dv">9</span>), <span class="co"># number of variables tried at each split</span></span>
+<span id="cb87-15"><a href="#cb87-15" aria-hidden="true" tabindex="-1"></a><span class="at">splitrule =</span> <span class="st">"variance"</span>, <span class="co"># regression split rule</span></span>
+<span id="cb87-16"><a href="#cb87-16" aria-hidden="true" tabindex="-1"></a><span class="at">min.node.size =</span> <span class="fu">c</span>(<span class="dv">5</span>, <span class="dv">10</span>, <span class="dv">20</span>) <span class="co"># minimum node size</span></span>
+<span id="cb87-17"><a href="#cb87-17" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="train-and-calibrate-the-random-forest" class="level3" data-number="6.3">
 <h3 data-number="6.3" class="anchored" data-anchor-id="train-and-calibrate-the-random-forest"><span class="header-section-number">6.3</span> Train and calibrate the Random Forest</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a>rf_model <span class="ot">&lt;-</span> <span class="fu">train</span>(</span>
-<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>rf_formula,</span>
-<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a><span class="at">data =</span> hdb_train,</span>
-<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a><span class="at">method =</span> <span class="st">"ranger"</span>,</span>
-<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a><span class="at">trControl =</span> rf_ctrl,</span>
-<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a><span class="at">tuneGrid =</span> rf_grid,</span>
-<span id="cb85-9"><a href="#cb85-9" aria-hidden="true" tabindex="-1"></a><span class="at">importance =</span> <span class="st">"permutation"</span>,</span>
-<span id="cb85-10"><a href="#cb85-10" aria-hidden="true" tabindex="-1"></a><span class="at">num.trees =</span> <span class="dv">500</span></span>
-<span id="cb85-11"><a href="#cb85-11" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb85-12"><a href="#cb85-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb85-13"><a href="#cb85-13" aria-hidden="true" tabindex="-1"></a>rf_model</span>
-<span id="cb85-14"><a href="#cb85-14" aria-hidden="true" tabindex="-1"></a>rf_model<span class="sc">$</span>bestTune</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-3"><a href="#cb88-3" aria-hidden="true" tabindex="-1"></a>rf_model <span class="ot">&lt;-</span> <span class="fu">train</span>(</span>
+<span id="cb88-4"><a href="#cb88-4" aria-hidden="true" tabindex="-1"></a>rf_formula,</span>
+<span id="cb88-5"><a href="#cb88-5" aria-hidden="true" tabindex="-1"></a><span class="at">data =</span> hdb_train,</span>
+<span id="cb88-6"><a href="#cb88-6" aria-hidden="true" tabindex="-1"></a><span class="at">method =</span> <span class="st">"ranger"</span>,</span>
+<span id="cb88-7"><a href="#cb88-7" aria-hidden="true" tabindex="-1"></a><span class="at">trControl =</span> rf_ctrl,</span>
+<span id="cb88-8"><a href="#cb88-8" aria-hidden="true" tabindex="-1"></a><span class="at">tuneGrid =</span> rf_grid,</span>
+<span id="cb88-9"><a href="#cb88-9" aria-hidden="true" tabindex="-1"></a><span class="at">importance =</span> <span class="st">"permutation"</span>,</span>
+<span id="cb88-10"><a href="#cb88-10" aria-hidden="true" tabindex="-1"></a><span class="at">num.trees =</span> <span class="dv">500</span></span>
+<span id="cb88-11"><a href="#cb88-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb88-12"><a href="#cb88-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb88-13"><a href="#cb88-13" aria-hidden="true" tabindex="-1"></a>rf_model</span>
+<span id="cb88-14"><a href="#cb88-14" aria-hidden="true" tabindex="-1"></a>rf_model<span class="sc">$</span>bestTune</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="predict-on-the-test-set-julsep-2025-1" class="level3" data-number="6.4">
 <h3 data-number="6.4" class="anchored" data-anchor-id="predict-on-the-test-set-julsep-2025-1"><span class="header-section-number">6.4</span> Predict on the test set (Jul–Sep 2025)</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a>hdb_test<span class="sc">$</span>rf_pred_price <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_model, <span class="at">newdata =</span> hdb_test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a>hdb_test<span class="sc">$</span>rf_pred_price <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_model, <span class="at">newdata =</span> hdb_test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="evaluate-random-forest-predictive-performance" class="level3" data-number="6.5">
 <h3 data-number="6.5" class="anchored" data-anchor-id="evaluate-random-forest-predictive-performance"><span class="header-section-number">6.5</span> Evaluate Random Forest predictive performance</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a>rmse_rf <span class="ot">&lt;-</span> <span class="fu">rmse</span>(hdb_test<span class="sc">$</span>resale_price, hdb_test<span class="sc">$</span>rf_pred_price)</span>
-<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>mae_rf <span class="ot">&lt;-</span> <span class="fu">mae</span>(hdb_test<span class="sc">$</span>resale_price, hdb_test<span class="sc">$</span>rf_pred_price)</span>
-<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a>r2_rf <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">sum</span>((hdb_test<span class="sc">$</span>resale_price <span class="sc">-</span> hdb_test<span class="sc">$</span>rf_pred_price)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span></span>
-<span id="cb87-4"><a href="#cb87-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>((hdb_test<span class="sc">$</span>resale_price <span class="sc">-</span> <span class="fu">mean</span>(hdb_test<span class="sc">$</span>resale_price))<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb87-5"><a href="#cb87-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb87-6"><a href="#cb87-6" aria-hidden="true" tabindex="-1"></a>rmse_rf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a>rmse_rf <span class="ot">&lt;-</span> <span class="fu">rmse</span>(hdb_test<span class="sc">$</span>resale_price, hdb_test<span class="sc">$</span>rf_pred_price)</span>
+<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>mae_rf <span class="ot">&lt;-</span> <span class="fu">mae</span>(hdb_test<span class="sc">$</span>resale_price, hdb_test<span class="sc">$</span>rf_pred_price)</span>
+<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a>r2_rf <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">sum</span>((hdb_test<span class="sc">$</span>resale_price <span class="sc">-</span> hdb_test<span class="sc">$</span>rf_pred_price)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span></span>
+<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>((hdb_test<span class="sc">$</span>resale_price <span class="sc">-</span> <span class="fu">mean</span>(hdb_test<span class="sc">$</span>resale_price))<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb90-6"><a href="#cb90-6" aria-hidden="true" tabindex="-1"></a>rmse_rf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 48468.14</code></pre>
+<pre><code>[1] 48516.74</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a>mae_rf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a>mae_rf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 33797.92</code></pre>
+<pre><code>[1] 33832.05</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb91"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a>r2_rf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a>r2_rf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.9225622</code></pre>
+<pre><code>[1] 0.9224068</code></pre>
 </div>
 </div>
 </section>
@@ -1735,29 +1794,29 @@ These combinations are systematically tested to identify the best-performing Ran
 <section id="response-predictor-variables-from-the-rf-formula" class="level3" data-number="7.1">
 <h3 data-number="7.1" class="anchored" data-anchor-id="response-predictor-variables-from-the-rf-formula"><span class="header-section-number">7.1</span> Response + predictor variables from the RF formula</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a>grf_vars <span class="ot">&lt;-</span> <span class="fu">all.vars</span>(rf_formula)</span>
-<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a>resp_var <span class="ot">&lt;-</span> grf_vars[<span class="dv">1</span>] <span class="co"># "resale_price"</span></span>
-<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a>pred_vars <span class="ot">&lt;-</span> grf_vars[<span class="sc">-</span><span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a>grf_vars <span class="ot">&lt;-</span> <span class="fu">all.vars</span>(rf_formula)</span>
+<span id="cb96-2"><a href="#cb96-2" aria-hidden="true" tabindex="-1"></a>resp_var <span class="ot">&lt;-</span> grf_vars[<span class="dv">1</span>] <span class="co"># "resale_price"</span></span>
+<span id="cb96-3"><a href="#cb96-3" aria-hidden="true" tabindex="-1"></a>pred_vars <span class="ot">&lt;-</span> grf_vars[<span class="sc">-</span><span class="dv">1</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="training-dataframe-for-grf-no-geometry" class="level3" data-number="7.2">
 <h3 data-number="7.2" class="anchored" data-anchor-id="training-dataframe-for-grf-no-geometry"><span class="header-section-number">7.2</span> Training dataframe for GRF (no geometry)</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a>hdb_train_grf <span class="ot">&lt;-</span> HDB_train_sf_sub <span class="sc">%&gt;%</span></span>
-<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a>sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">all_of</span>(<span class="fu">c</span>(resp_var, pred_vars)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a>hdb_train_grf <span class="ot">&lt;-</span> HDB_train_sf_sub <span class="sc">%&gt;%</span></span>
+<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a>sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="fu">all_of</span>(<span class="fu">c</span>(resp_var, pred_vars)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="coordinates-matrix-x-y-for-grf" class="level3" data-number="7.3">
 <h3 data-number="7.3" class="anchored" data-anchor-id="coordinates-matrix-x-y-for-grf"><span class="header-section-number">7.3</span> Coordinates matrix (X, Y) for GRF</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a>coords_grf <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_coordinates</span>(HDB_train_sf_sub)</span>
-<span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb95-3"><a href="#cb95-3" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(hdb_train_grf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a>coords_grf <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_coordinates</span>(HDB_train_sf_sub)</span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a><span class="fu">nrow</span>(hdb_train_grf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 5000</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(hdb_train_grf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(hdb_train_grf)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 6 × 15
   resale_price floor_area_sqm storey_mid remaining_lease_yrs flat_model       
@@ -1778,27 +1837,27 @@ These combinations are systematically tested to identify the best-performing Ran
 <section id="select-optimal-grf-bandwidth" class="level3" data-number="7.4">
 <h3 data-number="7.4" class="anchored" data-anchor-id="select-optimal-grf-bandwidth"><span class="header-section-number">7.4</span> Select optimal GRF bandwidth</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb99"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a>grf_bw <span class="ot">&lt;-</span> <span class="fu">grf.bw</span>(</span>
-<span id="cb99-3"><a href="#cb99-3" aria-hidden="true" tabindex="-1"></a><span class="at">formula =</span> rf_formula,</span>
-<span id="cb99-4"><a href="#cb99-4" aria-hidden="true" tabindex="-1"></a><span class="at">dataset =</span> hdb_train_grf,</span>
-<span id="cb99-5"><a href="#cb99-5" aria-hidden="true" tabindex="-1"></a><span class="at">coords =</span> coords_grf,</span>
-<span id="cb99-6"><a href="#cb99-6" aria-hidden="true" tabindex="-1"></a><span class="at">kernel =</span> <span class="st">"adaptive"</span>,</span>
-<span id="cb99-7"><a href="#cb99-7" aria-hidden="true" tabindex="-1"></a><span class="at">bw.min =</span> <span class="dv">50</span>,</span>
-<span id="cb99-8"><a href="#cb99-8" aria-hidden="true" tabindex="-1"></a><span class="at">bw.max =</span> <span class="dv">400</span>,</span>
-<span id="cb99-9"><a href="#cb99-9" aria-hidden="true" tabindex="-1"></a><span class="at">step =</span> <span class="dv">25</span>,</span>
-<span id="cb99-10"><a href="#cb99-10" aria-hidden="true" tabindex="-1"></a><span class="at">trees =</span> <span class="dv">500</span>,</span>
-<span id="cb99-11"><a href="#cb99-11" aria-hidden="true" tabindex="-1"></a><span class="at">importance =</span> <span class="st">"impurity"</span>,</span>
-<span id="cb99-12"><a href="#cb99-12" aria-hidden="true" tabindex="-1"></a><span class="at">nthreads =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span>,</span>
-<span id="cb99-13"><a href="#cb99-13" aria-hidden="true" tabindex="-1"></a><span class="at">forests =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb99-14"><a href="#cb99-14" aria-hidden="true" tabindex="-1"></a><span class="at">geo.weighted =</span> <span class="cn">TRUE</span></span>
-<span id="cb99-15"><a href="#cb99-15" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb99-16"><a href="#cb99-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb99-17"><a href="#cb99-17" aria-hidden="true" tabindex="-1"></a>grf_bw<span class="sc">$</span>best.bw</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a>grf_bw <span class="ot">&lt;-</span> <span class="fu">grf.bw</span>(</span>
+<span id="cb102-3"><a href="#cb102-3" aria-hidden="true" tabindex="-1"></a><span class="at">formula =</span> rf_formula,</span>
+<span id="cb102-4"><a href="#cb102-4" aria-hidden="true" tabindex="-1"></a><span class="at">dataset =</span> hdb_train_grf,</span>
+<span id="cb102-5"><a href="#cb102-5" aria-hidden="true" tabindex="-1"></a><span class="at">coords =</span> coords_grf,</span>
+<span id="cb102-6"><a href="#cb102-6" aria-hidden="true" tabindex="-1"></a><span class="at">kernel =</span> <span class="st">"adaptive"</span>,</span>
+<span id="cb102-7"><a href="#cb102-7" aria-hidden="true" tabindex="-1"></a><span class="at">bw.min =</span> <span class="dv">50</span>,</span>
+<span id="cb102-8"><a href="#cb102-8" aria-hidden="true" tabindex="-1"></a><span class="at">bw.max =</span> <span class="dv">400</span>,</span>
+<span id="cb102-9"><a href="#cb102-9" aria-hidden="true" tabindex="-1"></a><span class="at">step =</span> <span class="dv">25</span>,</span>
+<span id="cb102-10"><a href="#cb102-10" aria-hidden="true" tabindex="-1"></a><span class="at">trees =</span> <span class="dv">500</span>,</span>
+<span id="cb102-11"><a href="#cb102-11" aria-hidden="true" tabindex="-1"></a><span class="at">importance =</span> <span class="st">"impurity"</span>,</span>
+<span id="cb102-12"><a href="#cb102-12" aria-hidden="true" tabindex="-1"></a><span class="at">nthreads =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span>,</span>
+<span id="cb102-13"><a href="#cb102-13" aria-hidden="true" tabindex="-1"></a><span class="at">forests =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb102-14"><a href="#cb102-14" aria-hidden="true" tabindex="-1"></a><span class="at">geo.weighted =</span> <span class="cn">TRUE</span></span>
+<span id="cb102-15"><a href="#cb102-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb102-16"><a href="#cb102-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb102-17"><a href="#cb102-17" aria-hidden="true" tabindex="-1"></a>grf_bw<span class="sc">$</span>best.bw</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a>best_bw_grf <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"data/rds/grf_bw.rds"</span>)</span>
-<span id="cb100-2"><a href="#cb100-2" aria-hidden="true" tabindex="-1"></a>best_bw_grf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb103"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>best_bw_grf <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"data/rds/grf_bw.rds"</span>)</span>
+<span id="cb103-2"><a href="#cb103-2" aria-hidden="true" tabindex="-1"></a>best_bw_grf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>$tested.bandwidths
    Bandwidth     Local     Mixed Low.Local
@@ -1827,38 +1886,38 @@ $Best.BW
 <h3 data-number="7.5" class="anchored" data-anchor-id="fit-grf-model-on-the-training-set"><span class="header-section-number">7.5</span> Fit GRF model on the training set</h3>
 <p>Using the optimal bandwidth, we calibrate the geographically weighted random forest. The fitted object contains both a global RF and a set of local RF models, plus local goodness-of-fit and variable importance metrics.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
-<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-3"><a href="#cb102-3" aria-hidden="true" tabindex="-1"></a>grf_fit <span class="ot">&lt;-</span> <span class="fu">grf</span>(</span>
-<span id="cb102-4"><a href="#cb102-4" aria-hidden="true" tabindex="-1"></a><span class="at">formula =</span> rf_formula,</span>
-<span id="cb102-5"><a href="#cb102-5" aria-hidden="true" tabindex="-1"></a><span class="at">dframe =</span> hdb_train_grf,</span>
-<span id="cb102-6"><a href="#cb102-6" aria-hidden="true" tabindex="-1"></a><span class="at">bw =</span> <span class="dv">375</span>,</span>
-<span id="cb102-7"><a href="#cb102-7" aria-hidden="true" tabindex="-1"></a><span class="at">kernel =</span> <span class="st">"adaptive"</span>,</span>
-<span id="cb102-8"><a href="#cb102-8" aria-hidden="true" tabindex="-1"></a><span class="at">coords =</span> coords_grf,</span>
-<span id="cb102-9"><a href="#cb102-9" aria-hidden="true" tabindex="-1"></a><span class="at">ntree =</span> <span class="dv">500</span>,</span>
-<span id="cb102-10"><a href="#cb102-10" aria-hidden="true" tabindex="-1"></a><span class="at">mtry =</span> <span class="cn">NULL</span>, <span class="co"># default p/3</span></span>
-<span id="cb102-11"><a href="#cb102-11" aria-hidden="true" tabindex="-1"></a><span class="at">importance =</span> <span class="st">"impurity"</span>,</span>
-<span id="cb102-12"><a href="#cb102-12" aria-hidden="true" tabindex="-1"></a><span class="at">nthreads =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span>,</span>
-<span id="cb102-13"><a href="#cb102-13" aria-hidden="true" tabindex="-1"></a><span class="at">forests =</span> <span class="cn">TRUE</span>, <span class="co"># TRUE if you want all local forests</span></span>
-<span id="cb102-14"><a href="#cb102-14" aria-hidden="true" tabindex="-1"></a><span class="at">geo.weighted =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb102-15"><a href="#cb102-15" aria-hidden="true" tabindex="-1"></a><span class="at">print.results =</span> <span class="cn">TRUE</span></span>
-<span id="cb102-16"><a href="#cb102-16" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb102-17"><a href="#cb102-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-18"><a href="#cb102-18" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(grf_fit, <span class="st">"data/rds/grf_fit.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb105"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb105-1"><a href="#cb105-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">123</span>)</span>
+<span id="cb105-2"><a href="#cb105-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb105-3"><a href="#cb105-3" aria-hidden="true" tabindex="-1"></a>grf_fit <span class="ot">&lt;-</span> <span class="fu">grf</span>(</span>
+<span id="cb105-4"><a href="#cb105-4" aria-hidden="true" tabindex="-1"></a><span class="at">formula =</span> rf_formula,</span>
+<span id="cb105-5"><a href="#cb105-5" aria-hidden="true" tabindex="-1"></a><span class="at">dframe =</span> hdb_train_grf,</span>
+<span id="cb105-6"><a href="#cb105-6" aria-hidden="true" tabindex="-1"></a><span class="at">bw =</span> <span class="dv">375</span>,</span>
+<span id="cb105-7"><a href="#cb105-7" aria-hidden="true" tabindex="-1"></a><span class="at">kernel =</span> <span class="st">"adaptive"</span>,</span>
+<span id="cb105-8"><a href="#cb105-8" aria-hidden="true" tabindex="-1"></a><span class="at">coords =</span> coords_grf,</span>
+<span id="cb105-9"><a href="#cb105-9" aria-hidden="true" tabindex="-1"></a><span class="at">ntree =</span> <span class="dv">500</span>,</span>
+<span id="cb105-10"><a href="#cb105-10" aria-hidden="true" tabindex="-1"></a><span class="at">mtry =</span> <span class="cn">NULL</span>, <span class="co"># default p/3</span></span>
+<span id="cb105-11"><a href="#cb105-11" aria-hidden="true" tabindex="-1"></a><span class="at">importance =</span> <span class="st">"impurity"</span>,</span>
+<span id="cb105-12"><a href="#cb105-12" aria-hidden="true" tabindex="-1"></a><span class="at">nthreads =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>() <span class="sc">-</span> <span class="dv">1</span>,</span>
+<span id="cb105-13"><a href="#cb105-13" aria-hidden="true" tabindex="-1"></a><span class="at">forests =</span> <span class="cn">TRUE</span>, <span class="co"># TRUE if you want all local forests</span></span>
+<span id="cb105-14"><a href="#cb105-14" aria-hidden="true" tabindex="-1"></a><span class="at">geo.weighted =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb105-15"><a href="#cb105-15" aria-hidden="true" tabindex="-1"></a><span class="at">print.results =</span> <span class="cn">TRUE</span></span>
+<span id="cb105-16"><a href="#cb105-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb105-17"><a href="#cb105-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb105-18"><a href="#cb105-18" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(grf_fit, <span class="st">"data/rds/grf_fit.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb103"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>grf_fit <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"data/rds/grf_fit.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a>grf_fit <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="st">"data/rds/grf_fit.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Quick look at local goodness-of-fit summary</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(grf_fit) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"GRF"</span>, <span class="st">"list"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb107"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(grf_fit) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"GRF"</span>, <span class="st">"list"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb105"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb105-1"><a href="#cb105-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(grf_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(grf_fit)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(grf_fit<span class="sc">$</span>LGofFit)</span>
-<span id="cb106-2"><a href="#cb106-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(grf_fit<span class="sc">$</span>lModelSummary)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(grf_fit<span class="sc">$</span>LGofFit)</span>
+<span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(grf_fit<span class="sc">$</span>lModelSummary)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="predict-with-grf-on-the-test-set-julsep-2025" class="level3" data-number="7.6">
@@ -1867,60 +1926,60 @@ $Best.BW
 <section id="test-predictors-and-coordinates" class="level4" data-number="7.6.1">
 <h4 data-number="7.6.1" class="anchored" data-anchor-id="test-predictors-and-coordinates"><span class="header-section-number">7.6.1</span> Test predictors and coordinates</h4>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb107"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Drop geometry but keep all predictors</span></span>
-<span id="cb107-2"><a href="#cb107-2" aria-hidden="true" tabindex="-1"></a>test_data_nogeom <span class="ot">&lt;-</span> HDB_test_sf <span class="sc">%&gt;%</span></span>
-<span id="cb107-3"><a href="#cb107-3" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>()</span>
-<span id="cb107-4"><a href="#cb107-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb107-5"><a href="#cb107-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Add X / Y columns from the sf geometry</span></span>
-<span id="cb107-6"><a href="#cb107-6" aria-hidden="true" tabindex="-1"></a>coords_test <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_coordinates</span>(HDB_test_sf)</span>
-<span id="cb107-7"><a href="#cb107-7" aria-hidden="true" tabindex="-1"></a>test_data_nogeom<span class="sc">$</span>X <span class="ot">&lt;-</span> coords_test[, <span class="dv">1</span>]</span>
-<span id="cb107-8"><a href="#cb107-8" aria-hidden="true" tabindex="-1"></a>test_data_nogeom<span class="sc">$</span>Y <span class="ot">&lt;-</span> coords_test[, <span class="dv">2</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb110"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Drop geometry but keep all predictors</span></span>
+<span id="cb110-2"><a href="#cb110-2" aria-hidden="true" tabindex="-1"></a>test_data_nogeom <span class="ot">&lt;-</span> HDB_test_sf <span class="sc">%&gt;%</span></span>
+<span id="cb110-3"><a href="#cb110-3" aria-hidden="true" tabindex="-1"></a>  sf<span class="sc">::</span><span class="fu">st_drop_geometry</span>()</span>
+<span id="cb110-4"><a href="#cb110-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb110-5"><a href="#cb110-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Add X / Y columns from the sf geometry</span></span>
+<span id="cb110-6"><a href="#cb110-6" aria-hidden="true" tabindex="-1"></a>coords_test <span class="ot">&lt;-</span> sf<span class="sc">::</span><span class="fu">st_coordinates</span>(HDB_test_sf)</span>
+<span id="cb110-7"><a href="#cb110-7" aria-hidden="true" tabindex="-1"></a>test_data_nogeom<span class="sc">$</span>X <span class="ot">&lt;-</span> coords_test[, <span class="dv">1</span>]</span>
+<span id="cb110-8"><a href="#cb110-8" aria-hidden="true" tabindex="-1"></a>test_data_nogeom<span class="sc">$</span>Y <span class="ot">&lt;-</span> coords_test[, <span class="dv">2</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="grf-predictions-resale_price" class="level4" data-number="7.6.2">
 <h4 data-number="7.6.2" class="anchored" data-anchor-id="grf-predictions-resale_price"><span class="header-section-number">7.6.2</span> GRF predictions (resale_price)</h4>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a>grf_pred <span class="ot">&lt;-</span> <span class="fu">predict.grf</span>(</span>
-<span id="cb108-2"><a href="#cb108-2" aria-hidden="true" tabindex="-1"></a>  grf_fit,</span>
-<span id="cb108-3"><a href="#cb108-3" aria-hidden="true" tabindex="-1"></a>  test_data_nogeom,</span>
-<span id="cb108-4"><a href="#cb108-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">x.var.name =</span> <span class="st">"X"</span>,</span>
-<span id="cb108-5"><a href="#cb108-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">y.var.name =</span> <span class="st">"Y"</span>,</span>
-<span id="cb108-6"><a href="#cb108-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">local.w    =</span> <span class="dv">1</span>,</span>
-<span id="cb108-7"><a href="#cb108-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">global.w   =</span> <span class="dv">0</span></span>
-<span id="cb108-8"><a href="#cb108-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a>grf_pred <span class="ot">&lt;-</span> <span class="fu">predict.grf</span>(</span>
+<span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a>  grf_fit,</span>
+<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a>  test_data_nogeom,</span>
+<span id="cb111-4"><a href="#cb111-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">x.var.name =</span> <span class="st">"X"</span>,</span>
+<span id="cb111-5"><a href="#cb111-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">y.var.name =</span> <span class="st">"Y"</span>,</span>
+<span id="cb111-6"><a href="#cb111-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">local.w    =</span> <span class="dv">1</span>,</span>
+<span id="cb111-7"><a href="#cb111-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">global.w   =</span> <span class="dv">0</span></span>
+<span id="cb111-8"><a href="#cb111-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb109"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb109-1"><a href="#cb109-1" aria-hidden="true" tabindex="-1"></a>HDB_test_results_grf <span class="ot">&lt;-</span> hdb_test <span class="sc">%&gt;%</span></span>
-<span id="cb109-2"><a href="#cb109-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">grf_pred_price =</span> <span class="fu">as.numeric</span>(grf_pred))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb112"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb112-1"><a href="#cb112-1" aria-hidden="true" tabindex="-1"></a>HDB_test_results_grf <span class="ot">&lt;-</span> hdb_test <span class="sc">%&gt;%</span></span>
+<span id="cb112-2"><a href="#cb112-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">grf_pred_price =</span> <span class="fu">as.numeric</span>(grf_pred))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb110"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a>HDB_test_results_grf <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_rds</span>(<span class="st">"data/rds/HDB_test_results_grf.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a>HDB_test_results_grf <span class="ot">&lt;-</span> readr<span class="sc">::</span><span class="fu">read_rds</span>(<span class="st">"data/rds/HDB_test_results_grf.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
 <section id="metrics" class="level3" data-number="7.7">
 <h3 data-number="7.7" class="anchored" data-anchor-id="metrics"><span class="header-section-number">7.7</span> Metrics</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a>rmse_grf <span class="ot">&lt;-</span> <span class="fu">rmse</span>(HDB_test_results_grf<span class="sc">$</span>resale_price,</span>
-<span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a>HDB_test_results_grf<span class="sc">$</span>grf_pred_price)</span>
-<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb111-4"><a href="#cb111-4" aria-hidden="true" tabindex="-1"></a>mae_grf <span class="ot">&lt;-</span> <span class="fu">mae</span>(HDB_test_results_grf<span class="sc">$</span>resale_price,</span>
-<span id="cb111-5"><a href="#cb111-5" aria-hidden="true" tabindex="-1"></a>HDB_test_results_grf<span class="sc">$</span>grf_pred_price)</span>
-<span id="cb111-6"><a href="#cb111-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb111-7"><a href="#cb111-7" aria-hidden="true" tabindex="-1"></a>r2_grf <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">sum</span>((HDB_test_results_grf<span class="sc">$</span>resale_price <span class="sc">-</span></span>
-<span id="cb111-8"><a href="#cb111-8" aria-hidden="true" tabindex="-1"></a>HDB_test_results_grf<span class="sc">$</span>grf_pred_price)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span></span>
-<span id="cb111-9"><a href="#cb111-9" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>((HDB_test_results_grf<span class="sc">$</span>resale_price <span class="sc">-</span></span>
-<span id="cb111-10"><a href="#cb111-10" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(HDB_test_results_grf<span class="sc">$</span>resale_price))<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb111-11"><a href="#cb111-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb111-12"><a href="#cb111-12" aria-hidden="true" tabindex="-1"></a>rmse_grf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb114"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a>rmse_grf <span class="ot">&lt;-</span> <span class="fu">rmse</span>(HDB_test_results_grf<span class="sc">$</span>resale_price,</span>
+<span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a>HDB_test_results_grf<span class="sc">$</span>grf_pred_price)</span>
+<span id="cb114-3"><a href="#cb114-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-4"><a href="#cb114-4" aria-hidden="true" tabindex="-1"></a>mae_grf <span class="ot">&lt;-</span> <span class="fu">mae</span>(HDB_test_results_grf<span class="sc">$</span>resale_price,</span>
+<span id="cb114-5"><a href="#cb114-5" aria-hidden="true" tabindex="-1"></a>HDB_test_results_grf<span class="sc">$</span>grf_pred_price)</span>
+<span id="cb114-6"><a href="#cb114-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-7"><a href="#cb114-7" aria-hidden="true" tabindex="-1"></a>r2_grf <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">sum</span>((HDB_test_results_grf<span class="sc">$</span>resale_price <span class="sc">-</span></span>
+<span id="cb114-8"><a href="#cb114-8" aria-hidden="true" tabindex="-1"></a>HDB_test_results_grf<span class="sc">$</span>grf_pred_price)<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span></span>
+<span id="cb114-9"><a href="#cb114-9" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>((HDB_test_results_grf<span class="sc">$</span>resale_price <span class="sc">-</span></span>
+<span id="cb114-10"><a href="#cb114-10" aria-hidden="true" tabindex="-1"></a><span class="fu">mean</span>(HDB_test_results_grf<span class="sc">$</span>resale_price))<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb114-11"><a href="#cb114-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb114-12"><a href="#cb114-12" aria-hidden="true" tabindex="-1"></a>rmse_grf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 123421.2</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb113"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb113-1"><a href="#cb113-1" aria-hidden="true" tabindex="-1"></a>mae_grf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb116"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb116-1"><a href="#cb116-1" aria-hidden="true" tabindex="-1"></a>mae_grf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 94785.11</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb115"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a>r2_grf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb118"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a>r2_grf</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 0.4978656</code></pre>
 </div>
@@ -1936,21 +1995,21 @@ A tibble (<code>model_metrics</code>) stores RMSE, MAE, and R² values for OLS, 
 The table is then sorted by RMSE and formatted using <code>gt()</code>, which rounds the numeric values and adds a title and subtitle.<br>
 The result is a clean, publication-ready performance summary table suitable for reporting and analysis.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb117"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a>model_metrics <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
-<span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a><span class="at">Model =</span> <span class="fu">c</span>(<span class="st">"OLS"</span>, <span class="st">"GWR"</span>, <span class="st">"Random Forest"</span>, <span class="st">"Geog. Weighted RF"</span>),</span>
-<span id="cb117-3"><a href="#cb117-3" aria-hidden="true" tabindex="-1"></a><span class="at">RMSE =</span> <span class="fu">c</span>(rmse_ols, rmse_gwr, rmse_rf, rmse_grf),</span>
-<span id="cb117-4"><a href="#cb117-4" aria-hidden="true" tabindex="-1"></a><span class="at">MAE =</span> <span class="fu">c</span>(mae_ols, mae_gwr, mae_rf, mae_grf),</span>
-<span id="cb117-5"><a href="#cb117-5" aria-hidden="true" tabindex="-1"></a><span class="at">R2 =</span> <span class="fu">c</span>(r2_ols, r2_gwr, r2_rf, r2_grf)</span>
-<span id="cb117-6"><a href="#cb117-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb117-7"><a href="#cb117-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb117-8"><a href="#cb117-8" aria-hidden="true" tabindex="-1"></a>model_metrics <span class="sc">%&gt;%</span></span>
-<span id="cb117-9"><a href="#cb117-9" aria-hidden="true" tabindex="-1"></a><span class="fu">arrange</span>(RMSE) <span class="sc">%&gt;%</span></span>
-<span id="cb117-10"><a href="#cb117-10" aria-hidden="true" tabindex="-1"></a><span class="fu">gt</span>() <span class="sc">%&gt;%</span></span>
-<span id="cb117-11"><a href="#cb117-11" aria-hidden="true" tabindex="-1"></a><span class="fu">fmt_number</span>(<span class="at">columns =</span> <span class="fu">c</span>(RMSE, MAE), <span class="at">decimals =</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb117-12"><a href="#cb117-12" aria-hidden="true" tabindex="-1"></a><span class="fu">fmt_number</span>(<span class="at">columns =</span> R2, <span class="at">decimals =</span> <span class="dv">3</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb117-13"><a href="#cb117-13" aria-hidden="true" tabindex="-1"></a><span class="fu">tab_header</span>(<span class="at">title =</span> <span class="st">"Predictive Performance Across Models"</span>,</span>
-<span id="cb117-14"><a href="#cb117-14" aria-hidden="true" tabindex="-1"></a><span class="at">subtitle =</span> <span class="st">"Test period: Jul–Sep 2025"</span></span>
-<span id="cb117-15"><a href="#cb117-15" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb120"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb120-1"><a href="#cb120-1" aria-hidden="true" tabindex="-1"></a>model_metrics <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb120-2"><a href="#cb120-2" aria-hidden="true" tabindex="-1"></a><span class="at">Model =</span> <span class="fu">c</span>(<span class="st">"OLS"</span>, <span class="st">"GWR"</span>, <span class="st">"Random Forest"</span>, <span class="st">"Geog. Weighted RF"</span>),</span>
+<span id="cb120-3"><a href="#cb120-3" aria-hidden="true" tabindex="-1"></a><span class="at">RMSE =</span> <span class="fu">c</span>(rmse_ols, rmse_gwr, rmse_rf, rmse_grf),</span>
+<span id="cb120-4"><a href="#cb120-4" aria-hidden="true" tabindex="-1"></a><span class="at">MAE =</span> <span class="fu">c</span>(mae_ols, mae_gwr, mae_rf, mae_grf),</span>
+<span id="cb120-5"><a href="#cb120-5" aria-hidden="true" tabindex="-1"></a><span class="at">R2 =</span> <span class="fu">c</span>(r2_ols, r2_gwr, r2_rf, r2_grf)</span>
+<span id="cb120-6"><a href="#cb120-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb120-7"><a href="#cb120-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb120-8"><a href="#cb120-8" aria-hidden="true" tabindex="-1"></a>model_metrics <span class="sc">%&gt;%</span></span>
+<span id="cb120-9"><a href="#cb120-9" aria-hidden="true" tabindex="-1"></a><span class="fu">arrange</span>(RMSE) <span class="sc">%&gt;%</span></span>
+<span id="cb120-10"><a href="#cb120-10" aria-hidden="true" tabindex="-1"></a><span class="fu">gt</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb120-11"><a href="#cb120-11" aria-hidden="true" tabindex="-1"></a><span class="fu">fmt_number</span>(<span class="at">columns =</span> <span class="fu">c</span>(RMSE, MAE), <span class="at">decimals =</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb120-12"><a href="#cb120-12" aria-hidden="true" tabindex="-1"></a><span class="fu">fmt_number</span>(<span class="at">columns =</span> R2, <span class="at">decimals =</span> <span class="dv">3</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb120-13"><a href="#cb120-13" aria-hidden="true" tabindex="-1"></a><span class="fu">tab_header</span>(<span class="at">title =</span> <span class="st">"Predictive Performance Across Models"</span>,</span>
+<span id="cb120-14"><a href="#cb120-14" aria-hidden="true" tabindex="-1"></a><span class="at">subtitle =</span> <span class="st">"Test period: Jul–Sep 2025"</span></span>
+<span id="cb120-15"><a href="#cb120-15" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div id="osncjrvket" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
 <style>#osncjrvket table {
@@ -2420,9 +2479,9 @@ The result is a clean, publication-ready performance summary table suitable for 
 <tbody class="gt_table_body">
 <tr class="odd">
 <td class="gt_row gt_left" headers="Model">Random Forest</td>
-<td class="gt_row gt_right" headers="RMSE">48,468</td>
-<td class="gt_row gt_right" headers="MAE">33,798</td>
-<td class="gt_row gt_right" headers="R2">0.923</td>
+<td class="gt_row gt_right" headers="RMSE">48,517</td>
+<td class="gt_row gt_right" headers="MAE">33,832</td>
+<td class="gt_row gt_right" headers="R2">0.922</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_left" headers="Model">GWR</td>
@@ -2432,9 +2491,9 @@ The result is a clean, publication-ready performance summary table suitable for 
 </tr>
 <tr class="odd">
 <td class="gt_row gt_left" headers="Model">OLS</td>
-<td class="gt_row gt_right" headers="RMSE">81,416</td>
-<td class="gt_row gt_right" headers="MAE">58,802</td>
-<td class="gt_row gt_right" headers="R2">0.781</td>
+<td class="gt_row gt_right" headers="RMSE">81,412</td>
+<td class="gt_row gt_right" headers="MAE">58,785</td>
+<td class="gt_row gt_right" headers="R2">0.782</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_left" headers="Model">Geog. Weighted RF</td>
@@ -2458,28 +2517,28 @@ A bar chart is then created using <code>ggplot2</code> to display model performa
 The plot is styled with a minimal theme, angled x-axis labels for clarity, and bold facet titles.<br>
 This produces a clean and visually effective comparison of model performance.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb118"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a>metrics_long <span class="ot">&lt;-</span> model_metrics <span class="sc">%&gt;%</span></span>
-<span id="cb118-2"><a href="#cb118-2" aria-hidden="true" tabindex="-1"></a>tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(</span>
-<span id="cb118-3"><a href="#cb118-3" aria-hidden="true" tabindex="-1"></a><span class="at">cols =</span> <span class="fu">c</span>(RMSE, MAE, R2),</span>
-<span id="cb118-4"><a href="#cb118-4" aria-hidden="true" tabindex="-1"></a><span class="at">names_to =</span> <span class="st">"Metric"</span>,</span>
-<span id="cb118-5"><a href="#cb118-5" aria-hidden="true" tabindex="-1"></a><span class="at">values_to =</span> <span class="st">"Value"</span></span>
-<span id="cb118-6"><a href="#cb118-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb118-7"><a href="#cb118-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb118-8"><a href="#cb118-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(metrics_long, <span class="fu">aes</span>(<span class="at">x =</span> Model, <span class="at">y =</span> Value)) <span class="sc">+</span></span>
-<span id="cb118-9"><a href="#cb118-9" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_col</span>() <span class="sc">+</span></span>
-<span id="cb118-10"><a href="#cb118-10" aria-hidden="true" tabindex="-1"></a><span class="fu">facet_wrap</span>(<span class="sc">~</span> Metric, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span></span>
-<span id="cb118-11"><a href="#cb118-11" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(Value, <span class="fu">ifelse</span>(Metric <span class="sc">==</span> <span class="st">"R2"</span>, <span class="dv">3</span>, <span class="dv">0</span>))),</span>
-<span id="cb118-12"><a href="#cb118-12" aria-hidden="true" tabindex="-1"></a><span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.4</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
-<span id="cb118-13"><a href="#cb118-13" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(</span>
-<span id="cb118-14"><a href="#cb118-14" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Model Performance Comparison"</span>,</span>
-<span id="cb118-15"><a href="#cb118-15" aria-hidden="true" tabindex="-1"></a><span class="at">x =</span> <span class="cn">NULL</span>,</span>
-<span id="cb118-16"><a href="#cb118-16" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="cn">NULL</span></span>
-<span id="cb118-17"><a href="#cb118-17" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
-<span id="cb118-18"><a href="#cb118-18" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
-<span id="cb118-19"><a href="#cb118-19" aria-hidden="true" tabindex="-1"></a><span class="fu">theme</span>(</span>
-<span id="cb118-20"><a href="#cb118-20" aria-hidden="true" tabindex="-1"></a><span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>),</span>
-<span id="cb118-21"><a href="#cb118-21" aria-hidden="true" tabindex="-1"></a><span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">20</span>, <span class="at">hjust =</span> <span class="dv">1</span>)</span>
-<span id="cb118-22"><a href="#cb118-22" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb121"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a>metrics_long <span class="ot">&lt;-</span> model_metrics <span class="sc">%&gt;%</span></span>
+<span id="cb121-2"><a href="#cb121-2" aria-hidden="true" tabindex="-1"></a>tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(</span>
+<span id="cb121-3"><a href="#cb121-3" aria-hidden="true" tabindex="-1"></a><span class="at">cols =</span> <span class="fu">c</span>(RMSE, MAE, R2),</span>
+<span id="cb121-4"><a href="#cb121-4" aria-hidden="true" tabindex="-1"></a><span class="at">names_to =</span> <span class="st">"Metric"</span>,</span>
+<span id="cb121-5"><a href="#cb121-5" aria-hidden="true" tabindex="-1"></a><span class="at">values_to =</span> <span class="st">"Value"</span></span>
+<span id="cb121-6"><a href="#cb121-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb121-7"><a href="#cb121-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb121-8"><a href="#cb121-8" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(metrics_long, <span class="fu">aes</span>(<span class="at">x =</span> Model, <span class="at">y =</span> Value)) <span class="sc">+</span></span>
+<span id="cb121-9"><a href="#cb121-9" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_col</span>() <span class="sc">+</span></span>
+<span id="cb121-10"><a href="#cb121-10" aria-hidden="true" tabindex="-1"></a><span class="fu">facet_wrap</span>(<span class="sc">~</span> Metric, <span class="at">scales =</span> <span class="st">"free_y"</span>) <span class="sc">+</span></span>
+<span id="cb121-11"><a href="#cb121-11" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">label =</span> <span class="fu">round</span>(Value, <span class="fu">ifelse</span>(Metric <span class="sc">==</span> <span class="st">"R2"</span>, <span class="dv">3</span>, <span class="dv">0</span>))),</span>
+<span id="cb121-12"><a href="#cb121-12" aria-hidden="true" tabindex="-1"></a><span class="at">vjust =</span> <span class="sc">-</span><span class="fl">0.4</span>, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb121-13"><a href="#cb121-13" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(</span>
+<span id="cb121-14"><a href="#cb121-14" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Model Performance Comparison"</span>,</span>
+<span id="cb121-15"><a href="#cb121-15" aria-hidden="true" tabindex="-1"></a><span class="at">x =</span> <span class="cn">NULL</span>,</span>
+<span id="cb121-16"><a href="#cb121-16" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="cn">NULL</span></span>
+<span id="cb121-17"><a href="#cb121-17" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb121-18"><a href="#cb121-18" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">11</span>) <span class="sc">+</span></span>
+<span id="cb121-19"><a href="#cb121-19" aria-hidden="true" tabindex="-1"></a><span class="fu">theme</span>(</span>
+<span id="cb121-20"><a href="#cb121-20" aria-hidden="true" tabindex="-1"></a><span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">face =</span> <span class="st">"bold"</span>),</span>
+<span id="cb121-21"><a href="#cb121-21" aria-hidden="true" tabindex="-1"></a><span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">20</span>, <span class="at">hjust =</span> <span class="dv">1</span>)</span>
+<span id="cb121-22"><a href="#cb121-22" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -2503,39 +2562,39 @@ A tibble (<code>compare_df</code>) is first constructed containing the actual pr
 and uses <code>facet_wrap()</code> to display one panel per model.<br>
 The result visually shows how closely each model’s predictions match the actual resale prices.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb119"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1" aria-hidden="true" tabindex="-1"></a>compare_df <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
-<span id="cb119-2"><a href="#cb119-2" aria-hidden="true" tabindex="-1"></a><span class="at">resale_price =</span> HDB_test_results_grf<span class="sc">$</span>resale_price,</span>
-<span id="cb119-3"><a href="#cb119-3" aria-hidden="true" tabindex="-1"></a><span class="at">OLS =</span> HDB_test_results<span class="sc">$</span>pred_price,</span>
-<span id="cb119-4"><a href="#cb119-4" aria-hidden="true" tabindex="-1"></a><span class="at">GWR =</span> HDB_test_results<span class="sc">$</span>gwr_pred_price,</span>
-<span id="cb119-5"><a href="#cb119-5" aria-hidden="true" tabindex="-1"></a><span class="st">`</span><span class="at">Random Forest</span><span class="st">`</span> <span class="ot">=</span> hdb_test<span class="sc">$</span>rf_pred_price,</span>
-<span id="cb119-6"><a href="#cb119-6" aria-hidden="true" tabindex="-1"></a><span class="st">`</span><span class="at">Geog. Weighted RF</span><span class="st">`</span> <span class="ot">=</span> HDB_test_results_grf<span class="sc">$</span>grf_pred_price</span>
-<span id="cb119-7"><a href="#cb119-7" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb119-8"><a href="#cb119-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb119-9"><a href="#cb119-9" aria-hidden="true" tabindex="-1"></a>compare_long <span class="ot">&lt;-</span> compare_df <span class="sc">%&gt;%</span></span>
-<span id="cb119-10"><a href="#cb119-10" aria-hidden="true" tabindex="-1"></a>tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(</span>
-<span id="cb119-11"><a href="#cb119-11" aria-hidden="true" tabindex="-1"></a><span class="at">cols =</span> <span class="sc">-</span>resale_price,</span>
-<span id="cb119-12"><a href="#cb119-12" aria-hidden="true" tabindex="-1"></a><span class="at">names_to =</span> <span class="st">"Model"</span>,</span>
-<span id="cb119-13"><a href="#cb119-13" aria-hidden="true" tabindex="-1"></a><span class="at">values_to =</span> <span class="st">"pred_price"</span></span>
-<span id="cb119-14"><a href="#cb119-14" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
-<span id="cb119-15"><a href="#cb119-15" aria-hidden="true" tabindex="-1"></a><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(pred_price))</span>
-<span id="cb119-16"><a href="#cb119-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb119-17"><a href="#cb119-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(compare_long,</span>
-<span id="cb119-18"><a href="#cb119-18" aria-hidden="true" tabindex="-1"></a><span class="fu">aes</span>(<span class="at">x =</span> resale_price, <span class="at">y =</span> pred_price)) <span class="sc">+</span></span>
-<span id="cb119-19"><a href="#cb119-19" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
-<span id="cb119-20"><a href="#cb119-20" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_abline</span>(<span class="at">slope =</span> <span class="dv">1</span>, <span class="at">intercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
-<span id="cb119-21"><a href="#cb119-21" aria-hidden="true" tabindex="-1"></a><span class="fu">facet_wrap</span>(<span class="sc">~</span> Model, <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span></span>
-<span id="cb119-22"><a href="#cb119-22" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
-<span id="cb119-23"><a href="#cb119-23" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
-<span id="cb119-24"><a href="#cb119-24" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(</span>
-<span id="cb119-25"><a href="#cb119-25" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Actual vs Predicted HDB Resale Prices"</span>,</span>
-<span id="cb119-26"><a href="#cb119-26" aria-hidden="true" tabindex="-1"></a><span class="at">x =</span> <span class="st">"Actual price (SGD)"</span>,</span>
-<span id="cb119-27"><a href="#cb119-27" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="st">"Predicted price (SGD)"</span></span>
-<span id="cb119-28"><a href="#cb119-28" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
-<span id="cb119-29"><a href="#cb119-29" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb122"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a>compare_df <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">tibble</span>(</span>
+<span id="cb122-2"><a href="#cb122-2" aria-hidden="true" tabindex="-1"></a><span class="at">resale_price =</span> HDB_test_results_grf<span class="sc">$</span>resale_price,</span>
+<span id="cb122-3"><a href="#cb122-3" aria-hidden="true" tabindex="-1"></a><span class="at">OLS =</span> HDB_test_results<span class="sc">$</span>pred_price,</span>
+<span id="cb122-4"><a href="#cb122-4" aria-hidden="true" tabindex="-1"></a><span class="at">GWR =</span> HDB_test_results<span class="sc">$</span>gwr_pred_price,</span>
+<span id="cb122-5"><a href="#cb122-5" aria-hidden="true" tabindex="-1"></a><span class="st">`</span><span class="at">Random Forest</span><span class="st">`</span> <span class="ot">=</span> hdb_test<span class="sc">$</span>rf_pred_price,</span>
+<span id="cb122-6"><a href="#cb122-6" aria-hidden="true" tabindex="-1"></a><span class="st">`</span><span class="at">Geog. Weighted RF</span><span class="st">`</span> <span class="ot">=</span> HDB_test_results_grf<span class="sc">$</span>grf_pred_price</span>
+<span id="cb122-7"><a href="#cb122-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb122-8"><a href="#cb122-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb122-9"><a href="#cb122-9" aria-hidden="true" tabindex="-1"></a>compare_long <span class="ot">&lt;-</span> compare_df <span class="sc">%&gt;%</span></span>
+<span id="cb122-10"><a href="#cb122-10" aria-hidden="true" tabindex="-1"></a>tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(</span>
+<span id="cb122-11"><a href="#cb122-11" aria-hidden="true" tabindex="-1"></a><span class="at">cols =</span> <span class="sc">-</span>resale_price,</span>
+<span id="cb122-12"><a href="#cb122-12" aria-hidden="true" tabindex="-1"></a><span class="at">names_to =</span> <span class="st">"Model"</span>,</span>
+<span id="cb122-13"><a href="#cb122-13" aria-hidden="true" tabindex="-1"></a><span class="at">values_to =</span> <span class="st">"pred_price"</span></span>
+<span id="cb122-14"><a href="#cb122-14" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb122-15"><a href="#cb122-15" aria-hidden="true" tabindex="-1"></a><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(pred_price))</span>
+<span id="cb122-16"><a href="#cb122-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb122-17"><a href="#cb122-17" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(compare_long,</span>
+<span id="cb122-18"><a href="#cb122-18" aria-hidden="true" tabindex="-1"></a><span class="fu">aes</span>(<span class="at">x =</span> resale_price, <span class="at">y =</span> pred_price)) <span class="sc">+</span></span>
+<span id="cb122-19"><a href="#cb122-19" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.4</span>) <span class="sc">+</span></span>
+<span id="cb122-20"><a href="#cb122-20" aria-hidden="true" tabindex="-1"></a><span class="fu">geom_abline</span>(<span class="at">slope =</span> <span class="dv">1</span>, <span class="at">intercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>) <span class="sc">+</span></span>
+<span id="cb122-21"><a href="#cb122-21" aria-hidden="true" tabindex="-1"></a><span class="fu">facet_wrap</span>(<span class="sc">~</span> Model, <span class="at">scales =</span> <span class="st">"free"</span>) <span class="sc">+</span></span>
+<span id="cb122-22"><a href="#cb122-22" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_x_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
+<span id="cb122-23"><a href="#cb122-23" aria-hidden="true" tabindex="-1"></a><span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> scales<span class="sc">::</span>comma) <span class="sc">+</span></span>
+<span id="cb122-24"><a href="#cb122-24" aria-hidden="true" tabindex="-1"></a><span class="fu">labs</span>(</span>
+<span id="cb122-25"><a href="#cb122-25" aria-hidden="true" tabindex="-1"></a><span class="at">title =</span> <span class="st">"Actual vs Predicted HDB Resale Prices"</span>,</span>
+<span id="cb122-26"><a href="#cb122-26" aria-hidden="true" tabindex="-1"></a><span class="at">x =</span> <span class="st">"Actual price (SGD)"</span>,</span>
+<span id="cb122-27"><a href="#cb122-27" aria-hidden="true" tabindex="-1"></a><span class="at">y =</span> <span class="st">"Predicted price (SGD)"</span></span>
+<span id="cb122-28"><a href="#cb122-28" aria-hidden="true" tabindex="-1"></a>) <span class="sc">+</span></span>
+<span id="cb122-29"><a href="#cb122-29" aria-hidden="true" tabindex="-1"></a><span class="fu">theme_minimal</span>(<span class="at">base_size =</span> <span class="dv">11</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take_Home_Ex03_files/figure-html/unnamed-chunk-88-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take_Home_Ex03_files/figure-html/unnamed-chunk-91-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
